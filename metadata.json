@@ -1,0 +1,5 @@
+{
+  "name": "GuardiasManager",
+  "description": "Aplicación de gestión de guardias escolares con Supabase. Permite solicitar, asignar y cerrar guardias, visualizar estadísticas y gestionar el profesorado.",
+  "requestFramePermissions": []
+}
