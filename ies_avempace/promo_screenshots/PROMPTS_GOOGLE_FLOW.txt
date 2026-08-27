@@ -1,0 +1,176 @@
+PROMPTS PARA GOOGLE FLOW — GUARDIAS IES ARAGÓN
+================================================
+Instrucciones de uso:
+1. En Google Flow, crea un nuevo proyecto
+2. Para cada escena: sube la imagen de referencia (PNG) + escribe el prompt en inglés
+3. Selecciona estilo: "Cinematic" o "Screen Recording" según la escena
+4. Duración sugerida: 4-6 segundos por escena
+
+
+=== ESCENA 1 — INTRO ===
+[SIN IMAGEN — TEXTO EN PANTALLA]
+Prompt:
+"Dark background with subtle animated particles of light slowly floating upward. A modern school building silhouette appears fading in. Clean, cinematic, dark teal color palette. Professional and modern."
+
+
+=== ESCENA 2 — LOGIN ===
+Imagen de referencia: 01_login.png
+Prompt:
+"A sleek dark-themed web app login screen appears on a monitor in a modern school office. Smooth cinematic zoom-in toward the glowing login card. Blue and teal accent lights. Professional corporate feel. Camera slowly pushes forward."
+
+
+=== ESCENA 3 — MODO DEMOSTRACIÓN ===
+Imagen de referencia: 02_login_modo_demo.png
+Prompt:
+"The login screen expands as a purple dropdown menu appears with animated fade-in. A list of teacher names slides down smoothly. Screen recording style with a gentle camera pan down to reveal the demo options."
+
+
+=== ESCENA 4 — PANEL PRINCIPAL ===
+Imagen de referencia: 03_panel_guardias.png
+Prompt:
+"A modern dark web dashboard fills the screen showing a guard management panel. Cards with teacher avatars and schedule slots appear with subtle entrance animations. Cinematic wide shot of the full interface. Teal glow effects. Camera slowly zooms in."
+
+
+=== ESCENA 5 — PRÓXIMAS GUARDIAS ===
+Imagen de referencia: 14_proximas_guardias.png
+Prompt:
+"A web interface showing upcoming guard duty assignments. Horizontal cards slide in from the right. Teacher avatar photos visible. Dark background with teal and blue highlights. Smooth camera drift from left to right."
+
+
+=== ESCENA 6 — GUARDIAS PENDIENTES ===
+Imagen de referencia: 15_guardias_pendientes.png
+Prompt:
+"A list of pending school guard assignments displayed on a dark web interface. Yellow warning badges highlight pending items. Clean typography. Camera slowly zooms into one of the highlighted cards."
+
+
+=== ESCENA 7 — NUEVA GUARDIA (MODAL) ===
+Imagen de referencia: 16_nueva_guardia_modal.png
+Prompt:
+"A dark modal dialog box appears over a web dashboard with a smooth scale-up animation. Form fields glow softly when focused. Professional dark UI design. Camera zoom in to the center modal with a slight depth-of-field blur on the background."
+
+
+=== ESCENA 8 — DETALLE DE GUARDIA ===
+Imagen de referencia: 17_detalle_guardia.png
+Prompt:
+"Detailed view of a school guard record in a dark web app. Information cards expand to show teacher details, classroom, subject and notes. Clean data visualization. Camera slow pan down revealing all the details."
+
+
+=== ESCENA 9 — HISTORIAL COMPLETO ===
+Imagen de referencia: 09_historial_guardias.png
+Prompt:
+"A dark web interface shows a chronological list of completed school guard records scrolling smoothly. Each row shows dates, teacher names and color-coded status badges. Camera slowly scrolls down the list."
+
+
+=== ESCENA 10 — CUADRANTE DE GRUPOS ===
+Imagen de referencia: 28_grupos_cuadrante.png
+Prompt:
+"A school schedule grid appears on a dark web dashboard. Time slots in columns and teacher groups in rows. Cells animate in one by one with a gentle glow. Cinematic overhead camera pull-back to show the full grid."
+
+
+=== ESCENA 11 — MIS GUARDIAS ===
+Imagen de referencia: 19_mis_guardias.png
+Prompt:
+"A personal dashboard view for a teacher showing their guard duty history. Clean cards with completion status badges in green and yellow. Dark UI. Camera drift from top to bottom showing personal stats."
+
+
+=== ESCENA 12 — MI HORARIO ===
+Imagen de referencia: 11_mi_horario.png
+Prompt:
+"A weekly schedule grid for a teacher displayed in a dark modern web app. Time blocks filled with class names in different colors. Camera slowly zooms in from a wide shot to reveal the details of the schedule."
+
+
+=== ESCENA 13 — ESTADÍSTICAS PERSONALES ===
+Imagen de referencia: 20_estadisticas_mis_grupos.png
+Prompt:
+"Personal statistics dashboard in a dark web app. Animated number counters at the top show totals. Charts and graphs load with smooth entrance animations. Teal and purple color scheme. Camera pulls back to show the full stats view."
+
+
+=== ESCENA 14 — ESTADÍSTICAS GLOBALES ===
+Imagen de referencia: 21_estadisticas_todos.png
+Prompt:
+"A school-wide analytics dashboard in a dark modern web app. Donut charts and bar graphs are filled with animated data. Teal and purple glowing charts on dark background. Cinematic camera pan from left to right across the dashboard."
+
+
+=== ESCENA 15 — GRÁFICOS GENERALES ===
+Imagen de referencia: 04_estadisticas.png
+Prompt:
+"Animated bar charts and ring charts in a dark analytics dashboard. Data bars rise from zero to their values. Color-coded categories. Glowing chart elements. Camera slowly zooms in on the charts."
+
+
+=== ESCENA 16 — CALENDARIO ESCOLAR ===
+Imagen de referencia: 05_calendario.png
+Prompt:
+"A school year calendar displayed in a dark modern web app. Days are color-coded for holidays, school days and events. Month grid layout. Camera pans slowly across the calendar from left to right."
+
+
+=== ESCENA 17 — VISTA MENSUAL ===
+Imagen de referencia: 22_calendario_mes.png
+Prompt:
+"A monthly calendar view in a dark web interface. Small badges appear on certain days showing event counts. Highlighted days glow softly. Camera gently zooms in on a specific week."
+
+
+=== ESCENA 18 — DIRECTORIO DE PROFESORADO ===
+Imagen de referencia: 18_profesorado_tarjetas.png
+Prompt:
+"A grid of teacher profile cards in a dark web app. Each card shows a colorful avatar, teacher name, department and role badge. Cards appear with staggered fade-in animation. Camera pulls back to reveal the full grid."
+
+
+=== ESCENA 19 — LIBRE DISPOSICIÓN ===
+Imagen de referencia: 12_libre_disposicion.png
+Prompt:
+"A teacher leave management panel in a dark modern web app. Calendar date picker and teacher selector visible. Form inputs with subtle glow effects. Camera zoom in toward the form controls."
+
+
+=== ESCENA 20 — LIBRE DISPOSICIÓN REGISTROS ===
+Imagen de referencia: 26_libre_disposicion_vista.png
+Prompt:
+"A table of approved teacher leave records in a dark web interface. Each row shows teacher name, date, type and status badge. Table rows highlight on hover. Camera slowly scrolls down the list."
+
+
+=== ESCENA 21 — AULAS LIBRES ===
+Imagen de referencia: 07_aulas_libres.png
+Prompt:
+"A classroom availability panel in a dark web app. Time slot selector on top, classroom list below with green and red availability indicators. Clean and informative UI. Camera zoom out to show the full availability grid."
+
+
+=== ESCENA 22 — AULAS LIBRES DETALLE ===
+Imagen de referencia: 27_aulas_libres_franjas.png
+Prompt:
+"Detailed classroom booking view for a specific time slot in a dark web interface. Classroom names with occupancy status shown in colored badges. Camera pans across the rooms from left to right."
+
+
+=== ESCENA 23 — PLANO DEL CENTRO ===
+Imagen de referencia: 08_plano.png
+Prompt:
+"An interactive floor plan of a school building displayed in a dark web app. Rooms are highlighted in different colors showing occupancy. Camera slowly zooms in on one section of the building floor plan."
+
+
+=== ESCENA 24 — PANEL ADMINISTRADOR ===
+Imagen de referencia: 24_admin_panel_completo.png
+Prompt:
+"A comprehensive school administration panel in a dark web app. Multiple tabs and settings sections visible. Data tables and configuration options. Camera pans left to right showing the full admin interface."
+
+
+=== ESCENA 25 — CONFIGURACIÓN AVANZADA ===
+Imagen de referencia: 13_panel_administrador.png
+Prompt:
+"Advanced school management settings panel in a dark modern web interface. Configuration options, toggles and selectors. Professional administrative UI. Camera slowly zooms in toward the settings controls."
+
+
+=== ESCENA 26 — CIERRE ===
+Imagen de referencia: 01_login.png
+Prompt:
+"The school guard app login screen is shown from a distance as the camera slowly pulls back. The glowing teal logo and app name 'Guardias IES Aragón' are centered. URL text fades in at the bottom. Cinematic depth of field. Fade to dark."
+
+
+================================================
+ESTILO GLOBAL PARA TODO EL VÍDEO
+================================================
+Aplica estas instrucciones como "Global Style" o añádelas al inicio de cada prompt:
+
+"Dark modern web application UI. Teal and cyan accent colors. Smooth professional animations. Cinematic color grading. Dark background with subtle gradient. School/education technology context."
+
+Duración: 4-6 segundos por escena
+Relación de aspecto: 16:9 (1920x1080)
+Estilo: Cinematic / Screen Recording hybrid
+================================================
