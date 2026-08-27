@@ -383,20 +383,28 @@ const SchoolCalendar: React.FC<SchoolCalendarProps> = ({ currentUser }) => {
             )}
 
             {/* Calendar Grid */}
-            <div style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border-subtle)', overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+            <div style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border-subtle)', overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.08)', padding: 12 }}>
                 {/* Day name headers */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1px solid var(--border-subtle)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid var(--border-subtle)' }}>
                     {DAY_NAMES.map(name => (
-                        <div key={name} style={{ padding: '12px 4px', textAlign: 'center', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>
+                        <div key={name} style={{
+                            padding: '6px 0',
+                            textAlign: 'center',
+                            fontSize: '0.8rem',
+                            fontWeight: 800,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            color: (name === 'Sáb' || name === 'Dom') ? '#f87171' : 'var(--text-muted)'
+                        }}>
                             {name}
                         </div>
                     ))}
                 </div>
 
                 {/* Days grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, padding: 4 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6 }}>
                     {monthGrid.map((day, i) => {
-                        if (!day) return <div key={`empty-${i}`} style={{ aspectRatio: '1', padding: 4 }} />;
+                        if (!day) return <div key={`empty-${i}`} style={{ aspectRatio: '1', minHeight: 50 }} />;
 
                         const isSelected = selectedDays.has(day.fecha);
                         const style = getDayStyle(day, isSelected);
