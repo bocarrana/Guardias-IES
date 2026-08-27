@@ -304,4 +304,55 @@ CREATE POLICY "Permitir escritura para todos" ON public."libre_disposicion" FOR 
 CREATE POLICY "Permitir lectura para todos" ON public."configuracion_centro" FOR SELECT USING (true);
 CREATE POLICY "Permitir escritura para todos" ON public."configuracion_centro" FOR ALL USING (true);
 
+-- Tabla: Calendario
+CREATE TABLE IF NOT EXISTS public."Calendario" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "fecha" DATE UNIQUE NOT NULL,
+    "es_lectivo" BOOLEAN NOT NULL DEFAULT true,
+    "descripcion" TEXT,
+    "created_at" TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public."Calendario" ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Permitir lectura para todos" ON public."Calendario" FOR SELECT USING (true);
+CREATE POLICY "Permitir escritura para todos" ON public."Calendario" FOR ALL USING (true);
+
+-- Población automática del Calendario Escolar Oficial Aragón 2026-2027
+TRUNCATE TABLE public."Calendario" CASCADE;
+INSERT INTO public."Calendario" ("fecha", "es_lectivo", "descripcion")
+SELECT 
+    d::date AS fecha,
+    CASE 
+        WHEN EXTRACT(DOW FROM d) IN (0, 6) THEN false
+        WHEN d::date = '2026-10-12' THEN false
+        WHEN d::date = '2026-11-02' THEN false
+        WHEN d::date = '2026-12-07' THEN false
+        WHEN d::date = '2026-12-08' THEN false
+        WHEN d::date BETWEEN '2026-12-23' AND '2027-01-06' THEN false
+        WHEN d::date IN ('2027-02-18', '2027-02-19') THEN false
+        WHEN d::date BETWEEN '2027-03-25' AND '2027-04-02' THEN false
+        WHEN d::date = '2027-04-23' THEN false
+        WHEN d::date = '2027-05-01' THEN false
+        WHEN d::date = '2027-05-03' THEN false
+        WHEN d::date < '2026-09-08' THEN false
+        WHEN d::date > '2027-06-18' THEN false
+        ELSE true
+    END AS es_lectivo,
+    CASE 
+        WHEN EXTRACT(DOW FROM d) IN (0, 6) THEN 'Fin de semana'
+        WHEN d::date = '2026-10-12' THEN 'Fiesta Nacional de España / El Pilar'
+        WHEN d::date = '2026-11-02' THEN 'Lunes siguiente a Todos los Santos'
+        WHEN d::date = '2026-12-07' THEN 'Puente de la Constitución'
+        WHEN d::date = '2026-12-08' THEN 'Inmaculada Concepción'
+        WHEN d::date BETWEEN '2026-12-23' AND '2027-01-06' THEN 'Vacaciones de Navidad'
+        WHEN d::date IN ('2027-02-18', '2027-02-19') THEN 'Día no lectivo provincial (Carnaval / Huesca)'
+        WHEN d::date BETWEEN '2027-03-25' AND '2027-04-02' THEN 'Vacaciones de Semana Santa'
+        WHEN d::date = '2027-04-23' THEN 'Día de Aragón (San Jorge)'
+        WHEN d::date = '2027-05-01' THEN 'Fiesta del Trabajo'
+        WHEN d::date = '2027-05-03' THEN 'Día no lectivo provincial (Huesca)'
+        WHEN d::date < '2026-09-08' THEN 'Inicio de curso profesorado / Preparación'
+        WHEN d::date > '2027-06-18' THEN 'Evaluaciones y trámites fin de curso'
+        ELSE NULL
+    END AS descripcion
+FROM generate_series('2026-09-01'::date, '2027-06-30'::date, '1 day'::interval) d;
+
 COMMIT;
