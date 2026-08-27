@@ -13,9 +13,77 @@ interface LoginScreenProps {
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ loading }) => {
-    const { authError } = useAuth();
+    const { authError, setAuthError, loginAsDemoUser } = useAuth();
     const { theme } = useTheme();
     const [isPrivacyOpen, setIsPrivacyOpen] = React.useState(false);
+    const [isDemoMode, setIsDemoMode] = React.useState(false);
+    const [demoTeachers, setDemoTeachers] = React.useState<any[]>([]);
+    const [selectedTeacherId, setSelectedTeacherId] = React.useState('');
+    const [loadingDemo, setLoadingDemo] = React.useState(false);
+    const [demoEmail, setDemoEmail] = React.useState('');
+    const [demoPassword, setDemoPassword] = React.useState('');
+
+    // Activar modo demo automáticamente en la web de demo o mediante variable de entorno
+    const showDemoOptions = import.meta.env.VITE_ENABLE_DEMO === 'true' ||
+        (typeof window !== 'undefined' && window.location.hostname.includes('guardias-ies-aragon'));
+
+    const handleCredentialLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setAuthError(null);
+        if (demoEmail.trim() === 'usuariodemo@educa.aragon.es' && demoPassword === 'iesaragon.2026') {
+            try {
+                const { getTeacherByEmail } = await import('../services/supabaseClient');
+                const teacher = await getTeacherByEmail(demoEmail.trim());
+                if (teacher) {
+                    loginAsDemoUser(teacher);
+                } else {
+                    loginAsDemoUser({
+                        id: 'P088',
+                        name: 'Jefe de Estudios (Demo)',
+                        email: 'usuariodemo@educa.aragon.es',
+                        department: 'EQUIPO DIRECTIVO',
+                        guard_group: '',
+                        role: 'Jefatura',
+                        horas_guardia: 1,
+                        active: true
+                    });
+                }
+            } catch (err) {
+                console.error(err);
+                loginAsDemoUser({
+                    id: 'P088',
+                    name: 'Jefe de Estudios (Demo)',
+                    email: 'usuariodemo@educa.aragon.es',
+                    department: 'EQUIPO DIRECTIVO',
+                    guard_group: '',
+                    role: 'Jefatura',
+                    horas_guardia: 1,
+                    active: true
+                });
+            }
+        } else {
+            setAuthError('Credenciales de demostración incorrectas.');
+        }
+    };
+
+    const handleToggleDemo = async () => {
+        if (!isDemoMode && demoTeachers.length === 0) {
+            setLoadingDemo(true);
+            try {
+                const { getTeachers } = await import('../services/supabaseClient');
+                const teachers = await getTeachers(true);
+                setDemoTeachers(teachers);
+                if (teachers.length > 0) {
+                    setSelectedTeacherId(teachers[0].id);
+                }
+            } catch (err) {
+                console.error('Error fetching teachers for demo:', err);
+            } finally {
+                setLoadingDemo(false);
+            }
+        }
+        setIsDemoMode(!isDemoMode);
+    };
 
     if (loading) {
         return (
@@ -141,8 +209,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ loading }) => {
                         <p style={{ fontSize: '0.8rem', color: '#fca5a5' }}>{authError}</p>
                     </motion.div>
                 )}
-                {/* Botón de Inicio de Sesión con Google */}
-                <div style={{ marginTop: 8, marginBottom: 20 }}>
+
+                {/* Botón de Inicio de Sesión con Google (Siempre presente) */}
+                <div style={{ marginTop: 8, marginBottom: showDemoOptions ? 20 : 0 }}>
                     <button
                         onClick={signInWithGoogle}
                         style={{
@@ -189,6 +258,149 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ loading }) => {
                         Accede con tu cuenta corporativa del centro educativo.
                     </p>
                 </div>
+
+                {/* Opciones exclusivas de Modo Demo (Solo se muestran si showDemoOptions es true) */}
+                {showDemoOptions && (
+                    <div style={{ marginTop: 20, borderTop: '1px dashed var(--border-subtle)', paddingTop: 16 }}>
+                        <form onSubmit={handleCredentialLogin} style={{ display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'left', marginBottom: 16 }}>
+                            <div>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4, display: 'block' }}>
+                                    Email de Prueba Demo
+                                </label>
+                                <input
+                                    type="email"
+                                    placeholder="usuariodemo@educa.aragon.es"
+                                    value={demoEmail}
+                                    onChange={(e) => setDemoEmail(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '10px 14px',
+                                        borderRadius: 'var(--radius-md)',
+                                        background: 'var(--bg-main)',
+                                        color: 'var(--text-main)',
+                                        border: '1px solid var(--border-subtle)',
+                                        fontSize: '0.9rem',
+                                    }}
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4, display: 'block' }}>
+                                    Contraseña Demo
+                                </label>
+                                <input
+                                    type="password"
+                                    placeholder="••••••••"
+                                    value={demoPassword}
+                                    onChange={(e) => setDemoPassword(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '10px 14px',
+                                        borderRadius: 'var(--radius-md)',
+                                        background: 'var(--bg-main)',
+                                        color: 'var(--text-main)',
+                                        border: '1px solid var(--border-subtle)',
+                                        fontSize: '0.9rem',
+                                    }}
+                                    required
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                style={{
+                                    width: '100%',
+                                    padding: '10px 16px',
+                                    borderRadius: 'var(--radius-md)',
+                                    background: 'rgba(6, 182, 212, 0.1)',
+                                    border: '1px solid rgba(6, 182, 212, 0.2)',
+                                    color: 'var(--brand-400)',
+                                    fontWeight: 700,
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer',
+                                    textAlign: 'center',
+                                    transition: 'background 0.2s'
+                                }}
+                                onMouseOver={e => e.currentTarget.style.background = 'rgba(6, 182, 212, 0.2)'}
+                                onMouseOut={e => e.currentTarget.style.background = 'rgba(6, 182, 212, 0.1)'}
+                            >
+                                Iniciar Sesión Demo
+                            </button>
+                        </form>
+
+                        <button
+                            onClick={handleToggleDemo}
+                            style={{
+                                background: 'rgba(168, 85, 247, 0.1)',
+                                border: '1px solid rgba(168, 85, 247, 0.2)',
+                                color: 'var(--purple-400)',
+                                fontSize: '0.85rem',
+                                fontWeight: 700,
+                                padding: '8px 16px',
+                                borderRadius: 'var(--radius-md)',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                width: '100%',
+                                justifyContent: 'center',
+                            }}
+                        >
+                            🚀 Acceder en Modo Demostración
+                        </button>
+                        
+                        {isDemoMode && (
+                            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                {loadingDemo ? (
+                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Cargando profesores...</p>
+                                ) : (
+                                    <>
+                                        <select
+                                            value={selectedTeacherId}
+                                            onChange={(e) => setSelectedTeacherId(e.target.value)}
+                                            style={{
+                                                padding: 10,
+                                                borderRadius: 'var(--radius-md)',
+                                                background: 'var(--bg-main)',
+                                                color: 'var(--text-main)',
+                                                border: '1px solid var(--border-subtle)',
+                                                fontSize: '0.85rem',
+                                                width: '100%'
+                                            }}
+                                        >
+                                            {demoTeachers.map(t => (
+                                                <option key={t.id} value={t.id}>
+                                                    {t.name} ({t.role} - {t.department})
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <button
+                                            onClick={() => {
+                                                const teacher = demoTeachers.find(t => t.id === selectedTeacherId);
+                                                if (teacher) loginAsDemoUser(teacher);
+                                            }}
+                                            style={{
+                                                padding: '10px 16px',
+                                                borderRadius: 'var(--radius-md)',
+                                                background: 'var(--purple-600)',
+                                                color: 'white',
+                                                fontWeight: 600,
+                                                fontSize: '0.85rem',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                width: '100%',
+                                                transition: 'background 0.2s'
+                                            }}
+                                            onMouseOver={e => e.currentTarget.style.background = 'var(--purple-700)'}
+                                            onMouseOut={e => e.currentTarget.style.background = 'var(--purple-600)'}
+                                        >
+                                            Entrar como {demoTeachers.find(t => t.id === selectedTeacherId)?.name.split(' ')[0]}
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
 
 
 
