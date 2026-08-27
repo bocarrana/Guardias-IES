@@ -114,7 +114,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ loading }) => {
                 </motion.div>
 
                 <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--heading-color)', marginBottom: 4 }}>
-                    Guardias IES <span style={{ color: 'var(--brand-400)' }}>Aragón</span>
+                    Guardias IES
                 </h1>
                 <p style={{ color: 'var(--text-secondary)', marginBottom: 32, fontSize: '0.875rem' }}>
                     Sistema de Gestión de Guardias

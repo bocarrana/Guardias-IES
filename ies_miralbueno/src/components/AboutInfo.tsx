@@ -146,7 +146,7 @@ const AboutInfo: React.FC<AboutInfoProps> = ({ isOpen, onClose, isMobile }) => {
                             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', gap: 8, margin: 0 }}>
                                 <MessageSquare size={16} style={{ flexShrink: 0, color: 'var(--brand-400)', marginTop: 2 }} />
                                 <span>
-                                    Para dudas o sugerencias, búscame por el centro o envíame un mensaje directo.
+                                    Para dudas o sugerencias, mándame un mensaje a mi correo <a href="mailto:alplanast@iesreyescatolicos.com" style={{ color: 'var(--brand-400)', textDecoration: 'underline', fontWeight: 600 }}>alplanast@iesreyescatolicos.com</a>
                                 </span>
                             </p>
                         </div>

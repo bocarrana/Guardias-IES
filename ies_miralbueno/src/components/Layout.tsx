@@ -117,7 +117,7 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, view, onViewChange, onCrea
                 </div>
                 {!collapsed && (
                     <h1 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--heading-color)', letterSpacing: '0.01em', margin: 0 }}>
-                        Guardias IES <span style={{ color: 'var(--brand-400)' }}>Aragón</span>
+                        Guardias IES
                     </h1>
                 )}
                 {/* Info */}

@@ -13,9 +13,9 @@ export const supabase: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY)
 export const BUCKET_PHOTOS = 'Fotos';
 export const BUCKET_LOGOS = 'Logos';
 
-// Logo URLs (con cache busting para forzar actualización inmediata)
-export const LOGO_DARK_URL = `/logo.png?v=${Date.now()}`;
-export const LOGO_LIGHT_URL = `/logo.png?v=${Date.now()}`;
+// Logo URLs
+export const LOGO_DARK_URL = '/logo.png';
+export const LOGO_LIGHT_URL = '/logo.png';
 
 // Helper: get public URL for a storage path
 export const getStorageUrl = (path: string | undefined, bucket: string = BUCKET_PHOTOS): string => {
