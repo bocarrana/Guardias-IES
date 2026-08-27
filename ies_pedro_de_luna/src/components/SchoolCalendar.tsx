@@ -181,8 +181,8 @@ const SchoolCalendar: React.FC<SchoolCalendarProps> = ({ currentUser }) => {
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
 
-        let startDow = firstDay.getDay() - 1;
-        if (startDow < 0) startDow = 6;
+        const dayOfWeek = firstDay.getDay(); // 0 = Domingo, 1 = Lunes, 2 = Martes...
+        const startDow = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
 
         const days: (CalendarDay | null)[] = [];
         for (let i = 0; i < startDow; i++) days.push(null);
@@ -414,7 +414,7 @@ const SchoolCalendar: React.FC<SchoolCalendarProps> = ({ currentUser }) => {
                 {/* Days grid */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8 }}>
                     {monthGrid.map((day, i) => {
-                        if (!day) return <div key={`empty-${i}`} style={{ height: 76 }} />;
+                        if (!day) return <div key={`empty-${i}`} style={{ aspectRatio: '1' }} />;
 
                         const isSelected = selectedDays.has(day.fecha);
                         const style = getDayStyle(day, isSelected);
@@ -432,7 +432,7 @@ const SchoolCalendar: React.FC<SchoolCalendarProps> = ({ currentUser }) => {
                                 }}
                                 title={day.descripcion || (day.es_lectivo ? 'Día lectivo' : 'No lectivo')}
                                 style={{
-                                    height: 76,
+                                    aspectRatio: '1',
                                     display: 'flex',
                                     flexDirection: 'column',
                                     alignItems: 'center',
@@ -444,7 +444,7 @@ const SchoolCalendar: React.FC<SchoolCalendarProps> = ({ currentUser }) => {
                                     cursor: !style.isOutside ? 'pointer' : 'default',
                                     position: 'relative',
                                     transition: 'all 0.2s',
-                                    padding: '4px 6px',
+                                    padding: '4px',
                                     ...(style.isFull ? { boxShadow: 'inset 0 0 0 1px rgba(239,68,68,0.35)' } : {}),
                                 }}
                             >
@@ -491,11 +491,6 @@ const SchoolCalendar: React.FC<SchoolCalendarProps> = ({ currentUser }) => {
                                     </div>
                                 )}
 
-                                {day.descripcion && !style.isWeekend && !style.isOutside && (
-                                    <span style={{ fontSize: '0.55rem', maxWidth: '90%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1, opacity: 0.85 }}>
-                                        {day.descripcion}
-                                    </span>
-                                )}
                                 {style.isToday && !isSelected && (
                                     <span style={{ position: 'absolute', top: 2, right: 4, fontSize: '0.5rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>
                                         Hoy
