@@ -56,7 +56,8 @@ const AboutInfo: React.FC<AboutInfoProps> = ({ isOpen, onClose, isMobile }) => {
                             position: 'fixed',
                             top: 85,
                             left: 20,
-                            width: 300,
+                            width: 350,
+                            maxWidth: 'calc(100vw - 40px)',
                             background: 'var(--bg-card)',
                             border: '1px solid var(--border-subtle)',
                             borderRadius: 'var(--radius-lg)',
@@ -138,15 +139,26 @@ const AboutInfo: React.FC<AboutInfoProps> = ({ isOpen, onClose, isMobile }) => {
                         {/* Contact */}
                         <div style={{
                             background: 'rgba(30, 41, 59, 0.3)',
-                            padding: 16,
+                            padding: '16px 18px',
                             borderRadius: 'var(--radius-md)',
                             border: '1px solid var(--border-subtle)',
                             marginBottom: 20
                         }}>
-                            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', gap: 8, margin: 0 }}>
-                                <MessageSquare size={16} style={{ flexShrink: 0, color: 'var(--brand-400)', marginTop: 2 }} />
+                            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', display: 'flex', gap: 10, margin: 0, lineHeight: 1.55 }}>
+                                <MessageSquare size={16} style={{ flexShrink: 0, color: 'var(--brand-400)', marginTop: 3 }} />
                                 <span>
-                                    Para dudas o sugerencias, mándame un mensaje a mi correo <a href="mailto:alplanast@iesreyescatolicos.com" style={{ color: 'var(--brand-400)', textDecoration: 'underline', fontWeight: 600 }}>alplanast@iesreyescatolicos.com</a>
+                                    Para dudas o sugerencias, mándame un mensaje a mi correo{' '}
+                                    <a
+                                        href="mailto:alplanast@iesreyescatolicos.com"
+                                        style={{
+                                            color: 'var(--brand-400)',
+                                            textDecoration: 'underline',
+                                            fontWeight: 600,
+                                            display: 'inline-block'
+                                        }}
+                                    >
+                                        alplanast@iesreyescatolicos.com
+                                    </a>
                                 </span>
                             </p>
                         </div>
