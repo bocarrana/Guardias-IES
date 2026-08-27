@@ -383,9 +383,19 @@ const SchoolCalendar: React.FC<SchoolCalendarProps> = ({ currentUser }) => {
             )}
 
             {/* Calendar Grid */}
-            <div style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border-subtle)', overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.08)', padding: 12 }}>
+            <div style={{
+                background: 'var(--bg-card)',
+                borderRadius: 16,
+                border: '1px solid var(--border-subtle)',
+                overflow: 'hidden',
+                boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+                padding: 16,
+                maxWidth: 1050,
+                margin: '0 auto',
+                width: '100%'
+            }}>
                 {/* Day name headers */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid var(--border-subtle)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid var(--border-subtle)' }}>
                     {DAY_NAMES.map(name => (
                         <div key={name} style={{
                             padding: '6px 0',
@@ -402,9 +412,9 @@ const SchoolCalendar: React.FC<SchoolCalendarProps> = ({ currentUser }) => {
                 </div>
 
                 {/* Days grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8 }}>
                     {monthGrid.map((day, i) => {
-                        if (!day) return <div key={`empty-${i}`} style={{ aspectRatio: '1', minHeight: 50 }} />;
+                        if (!day) return <div key={`empty-${i}`} style={{ height: 76 }} />;
 
                         const isSelected = selectedDays.has(day.fecha);
                         const style = getDayStyle(day, isSelected);
@@ -414,20 +424,27 @@ const SchoolCalendar: React.FC<SchoolCalendarProps> = ({ currentUser }) => {
                         return (
                             <motion.div
                                 key={day.fecha}
-                                whileHover={!style.isOutside ? { scale: 1.05 } : {}}
-                                whileTap={!style.isOutside ? { scale: 0.95 } : {}}
+                                whileHover={!style.isOutside ? { scale: 1.03 } : {}}
+                                whileTap={!style.isOutside ? { scale: 0.97 } : {}}
                                 onClick={() => handleDayClick(day)}
                                 onContextMenu={e => {
                                     if (isAdmin && !style.isOutside) { e.preventDefault(); toggleDaySelection(day.fecha); }
                                 }}
                                 title={day.descripcion || (day.es_lectivo ? 'Día lectivo' : 'No lectivo')}
                                 style={{
-                                    aspectRatio: '1', display: 'flex', flexDirection: 'column',
-                                    alignItems: 'center', justifyContent: 'center', borderRadius: 10,
-                                    background: style.bg, color: style.color,
-                                    border: `2px solid ${style.border}`,
+                                    height: 76,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderRadius: 10,
+                                    background: style.bg,
+                                    color: style.color,
+                                    border: `1.5px solid ${style.border}`,
                                     cursor: !style.isOutside ? 'pointer' : 'default',
-                                    position: 'relative', transition: 'all 0.2s', minHeight: 50,
+                                    position: 'relative',
+                                    transition: 'all 0.2s',
+                                    padding: '4px 6px',
                                     ...(style.isFull ? { boxShadow: 'inset 0 0 0 1px rgba(239,68,68,0.35)' } : {}),
                                 }}
                             >
