@@ -53,7 +53,7 @@ const SIDEBAR_EXPANDED = 260;
 const SIDEBAR_COLLAPSED = 68;
 
 const Layout: React.FC<LayoutProps> = ({ currentUser, view, onViewChange, onCreateGuard, onRefresh, children }) => {
-    const { logout, refreshUser, changeDemoRole } = useAuth();
+    const { logout, refreshUser, canSwitchRole, switchRole } = useAuth();
     const { theme } = useTheme();
     const [isAboutOpen, setIsAboutOpen] = React.useState(false);
     const [isPrivacyOpen, setIsPrivacyOpen] = React.useState(false);
@@ -250,27 +250,32 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, view, onViewChange, onCrea
                             <p style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--heading-color)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
                                 {currentUser?.name || 'Usuario'}
                             </p>
-                            {currentUser?.email === 'usuariodemo@educa.aragon.es' || localStorage.getItem('demo-user') ? (
-                                <select
-                                    value={currentUser?.role || ''}
-                                    onChange={(e) => changeDemoRole(e.target.value)}
-                                    style={{
-                                        fontSize: '0.7rem',
-                                        background: 'var(--bg-main)',
-                                        color: 'var(--text-main)',
-                                        border: '1px solid var(--border-subtle)',
-                                        borderRadius: 'var(--radius-sm)',
-                                        padding: '2px 4px',
-                                        width: '100%',
-                                        marginTop: 2
-                                    }}
-                                >
-                                    <option value="Admin">Admin</option>
-                                    <option value="Jefatura">Jefatura</option>
-                                    <option value="Docente">Docente</option>
-                                    <option value="Administración">Administración</option>
-                                    <option value="Pantalla">Pantalla</option>
-                                </select>
+                            {canSwitchRole ? (
+                                <div style={{ marginTop: 2 }}>
+                                    <select
+                                        value={currentUser?.role || 'Admin'}
+                                        onChange={(e) => switchRole(e.target.value)}
+                                        style={{
+                                            fontSize: '0.68rem',
+                                            fontWeight: 600,
+                                            background: 'var(--bg-main)',
+                                            color: 'var(--brand-400)',
+                                            border: '1px solid var(--border-subtle)',
+                                            borderRadius: 'var(--radius-sm)',
+                                            padding: '2px 4px',
+                                            width: '100%',
+                                            cursor: 'pointer',
+                                            outline: 'none'
+                                        }}
+                                        title="Cambiar vista de rol (Simulación Admin)"
+                                    >
+                                        <option value="Admin">👑 Admin</option>
+                                        <option value="Jefatura">🛡️ Jefatura</option>
+                                        <option value="Administración">📋 Administración</option>
+                                        <option value="Docente">👨‍🏫 Docente</option>
+                                        <option value="Pantalla">📺 Pantalla TV</option>
+                                    </select>
+                                </div>
                             ) : (
                                 <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
                                     {getRoleDisplayName(currentUser?.role)}
