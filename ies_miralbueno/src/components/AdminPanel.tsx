@@ -857,7 +857,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
 
             {/* Search + Action Bar */}
             <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                {activeTab !== 'infra' && activeTab !== 'personal_schedule' && activeTab !== 'schedules' && (
+                {(activeTab === 'guards' || activeTab === 'audit') && (
                     <div style={{ position: 'relative', flex: 1, maxWidth: 400 }}>
                         <Search style={{
                             position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',

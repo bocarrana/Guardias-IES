@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Guía Maestra de Despliegue - Guardias IES</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 15mm 15mm 15mm 15mm;
+    }
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b;
+      line-height: 1.45;
+      font-size: 10.5pt;
+      margin: 0;
+      padding: 0;
+    }
+    .header {
+      border-bottom: 2px solid #0284c7;
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header h1 {
+      font-size: 18pt;
+      margin: 0;
+      color: #0f172a;
+      font-weight: 800;
+    }
+    .header p {
+      margin: 3px 0 0 0;
+      font-size: 9pt;
+      color: #64748b;
+    }
+    .badge {
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 8.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 20px 0;
+      font-size: 9.5pt;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 7px 10px;
+      text-align: left;
+    }
+    th {
+      background: #f1f5f9;
+      color: #334155;
+      font-weight: 700;
+    }
+    .step-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid #0284c7;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      page-break-inside: avoid;
+    }
+    .step-card.supabase { border-left-color: #10b981; }
+    .step-card.google { border-left-color: #f59e0b; }
+    .step-card.code { border-left-color: #8b5cf6; }
+    .step-card.vercel { border-left-color: #0f172a; }
+    
+    .step-title {
+      font-size: 11.5pt;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 6px 0;
+      display: flex;
+      justify-content: space-between;
+    }
+    .step-time {
+      font-size: 8.5pt;
+      color: #64748b;
+      font-weight: normal;
+    }
+    ul, ol {
+      margin: 4px 0 6px 20px;
+      padding: 0;
+    }
+    li {
+      margin-bottom: 3px;
+    }
+    code {
+      font-family: 'Consolas', 'Courier New', monospace;
+      background: #f1f5f9;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 9pt;
+      color: #0369a1;
+    }
+    pre {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 8.5pt;
+      overflow-x: auto;
+      margin: 6px 0;
+    }
+    .highlight-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #166534;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 9pt;
+      margin: 8px 0;
+    }
+    .footer {
+      margin-top: 20px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 8px;
+      text-align: center;
+      font-size: 8pt;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div>
+      <h1>🏫 Guía Maestra de Despliegue para Nuevos IES</h1>
+      <p>Procedimiento estandarizado de puesta en marcha para institutos de Aragón · Tiempo total: ~8 minutos</p>
+    </div>
+    <div class="badge">Guardias IES v2.0</div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 10%;">Paso</th>
+        <th style="width: 25%;">Plataforma</th>
+        <th style="width: 15%;">Tiempo</th>
+        <th style="width: 50%;">Acción Principal</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1</strong></td>
+        <td>Supabase</td>
+        <td>2 min</td>
+        <td>Crear nuevo proyecto para el instituto</td>
+      </tr>
+      <tr>
+        <td><strong>2</strong></td>
+        <td>Supabase (SQL Editor)</td>
+        <td>1 min</td>
+        <td>Ejecutar <code>schema_completo.sql</code> e insertar Admin</td>
+      </tr>
+      <tr>
+        <td><strong>3</strong></td>
+        <td>Google Cloud & Supabase</td>
+        <td>2 min</td>
+        <td>Añadir URI de redirección y activar Google Provider</td>
+      </tr>
+      <tr>
+        <td><strong>4</strong></td>
+        <td>Proyecto Local</td>
+        <td>1 min</td>
+        <td>Copiar <code>logo.png</code> y configurar <code>.env</code></td>
+      </tr>
+      <tr>
+        <td><strong>5</strong></td>
+        <td>Vercel</td>
+        <td>2 min</td>
+        <td>Importar repo, configurar Root Directory y desplegar</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- PASO 1 -->
+  <div class="step-card supabase">
+    <div class="step-title">
+      <span>1️⃣ Crear el Proyecto en Supabase</span>
+      <span class="step-time">⏱️ 2 minutos</span>
+    </div>
+    <ol>
+      <li>Entra en tu panel de <strong>Supabase</strong> (<code>supabase.com/dashboard</code>).</li>
+      <li>Haz clic en <strong>"New Project"</strong>.</li>
+      <li><strong>Name:</strong> <code>IES [Nombre]</code> (ej: <em>IES Ramón y Cajal</em>).</li>
+      <li><strong>Password:</strong> Genera una contraseña segura y anótala.</li>
+      <li><strong>Region:</strong> Selecciona <code>Frankfurt (eu-central-1)</code> o <code>London (eu-west-2)</code>.</li>
+      <li>Pulsa en <strong>"Create new project"</strong> y espera ~1 min a que termine de crearse.</li>
+    </ol>
+  </div>
+
+  <!-- PASO 2 -->
+  <div class="step-card supabase">
+    <div class="step-title">
+      <span>2️⃣ Inicializar la Base de Datos con Tablas y Calendario 2026-2027</span>
+      <span class="step-time">⏱️ 1 minuto</span>
+    </div>
+    <ol>
+      <li>En el menú de la izquierda del nuevo proyecto, ve a <strong>"SQL Editor"</strong> (<code>&gt;_</code>).</li>
+      <li>Pulsa en <strong>"New query"</strong>.</li>
+      <li>Copia todo el contenido de <code>_plantilla_base/schema_completo.sql</code>, pégalo en el editor y pulsa <strong>"Run"</strong>.
+        <div class="highlight-box">
+          ✨ <strong>Automático:</strong> Este script crea todas las tablas, activa la seguridad RLS y carga los 303 días del <strong>Calendario Oficial de Aragón 2026-2027</strong> con todos sus festivos autonómicos y provinciales.
+        </div>
+      </li>
+      <li>En una nueva consulta SQL, inserta la cuenta administradora de Jefatura de Estudios:
+        <pre>INSERT INTO public."Profesores" (id, "nombre y apellidos", email, departamento, rol, horas_guardia, activo)
+VALUES ('P001', 'Jefatura de Estudios', 'guardias@ies[dominio].es', 'EQUIPO DIRECTIVO', 'Admin', 1, true);</pre>
+      </li>
+    </ol>
+  </div>
+
+  <!-- PASO 3 -->
+  <div class="step-card google">
+    <div class="step-title">
+      <span>3️⃣ Configurar Autenticación Oficial con Google Workspace</span>
+      <span class="step-time">⏱️ 2 minutos</span>
+    </div>
+    <ol>
+      <li><strong>En Supabase:</strong> Ve a <em>Authentication</em> &rarr; <em>Providers</em> &rarr; <em>Google</em>. Activa la casilla <strong>"Enable Google provider"</strong>, pega el <code>Client ID</code> y <code>Client Secret</code> (los mismos que ya tenemos en Google Cloud), y copia la <strong>Callback URL</strong> que te muestra (ej: <code>https://xyz.supabase.co/auth/v1/callback</code>).</li>
+      <li><strong>En Google Cloud Console:</strong> Entra en <em>APIs y Servicios &rarr; Credenciales</em>, abre el cliente OAuth <strong>"Guardias IES"</strong>, pulsa <strong>+ Añadir URI</strong> en <em>URIs de redireccionamiento autorizados</em>, pega la Callback URL copiada de Supabase y pulsa <strong>Guardar</strong>.</li>
+      <li><strong>En Supabase (URL Configuration):</strong> Ve a <em>Authentication</em> &rarr; <em>URL Configuration</em>. Pon <strong>Site URL:</strong> <code>https://guardias-[centro].vercel.app</code> y en <strong>Redirect URLs:</strong> añade <code>https://guardias-[centro].vercel.app/**</code> y <code>http://localhost:5173/**</code>. Pulsa <strong>Save</strong>.</li>
+    </ol>
+  </div>
+
+  <!-- PASO 4 -->
+  <div class="step-card code">
+    <div class="step-title">
+      <span>4️⃣ Configurar la Carpeta Local del Centro</span>
+      <span class="step-time">⏱️ 1 minuto</span>
+    </div>
+    <ol>
+      <li>En tu carpeta local, busca el directorio del centro (ej: <code>ies_ramon_y_cajal/</code>).</li>
+      <li>Pega el logo del instituto en <code>ies_[centro]/public/logo.png</code>.</li>
+      <li>Crea/edita los archivos <code>.env</code> y <code>.env.local</code> en esa carpeta con las claves de Supabase:
+        <pre>VITE_SUPABASE_URL=https://[tu-id-proyecto].supabase.co
+VITE_SUPABASE_ANON_KEY=sb_publishable_[clave-anon-de-supabase]</pre>
+      </li>
+      <li>Guarda y sube a GitHub: <code>git add . &amp;&amp; git commit -m "Configurado nuevo centro" &amp;&amp; git push origin main</code></li>
+    </ol>
+  </div>
+
+  <!-- PASO 5 -->
+  <div class="step-card vercel">
+    <div class="step-title">
+      <span>5️⃣ Desplegar en Vercel</span>
+      <span class="step-time">⏱️ 2 minutos</span>
+    </div>
+    <ol>
+      <li>Entra en <strong>Vercel</strong> (<code>vercel.com/dashboard</code>) &rarr; <strong>"Add New..."</strong> &rarr; <strong>"Project"</strong>.</li>
+      <li>Selecciona el repositorio <code>bocarrana/Guardias-IES</code>.</li>
+      <li><strong>Project Name:</strong> <code>guardias-[centro]</code> (ej: <em>guardias-ramon-y-cajal</em>).</li>
+      <li><strong>Root Directory:</strong> Haz clic en <strong>Edit</strong> y selecciona la carpeta <code>ies_[centro]</code>.</li>
+      <li><strong>Environment Variables:</strong> Añade <code>VITE_SUPABASE_URL</code> y <code>VITE_SUPABASE_ANON_KEY</code>.</li>
+      <li>Haz clic en <strong>"Deploy"</strong>. En ~40 segundos estará activo y listo para usar en <code>https://guardias-[centro].vercel.app</code>.</li>
+    </ol>
+  </div>
+
+  <div class="footer">
+    Documento oficial · Guardias IES Aragón · Generado para Alberto Planas · 2026
+  </div>
+
+</body>
+</html>
