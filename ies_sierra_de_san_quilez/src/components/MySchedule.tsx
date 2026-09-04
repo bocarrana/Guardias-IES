@@ -359,8 +359,35 @@ const MySchedule: React.FC<MyScheduleProps> = ({ currentUser, meta }) => {
                                     {meta.classrooms.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
                             </div>
-                            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 20 }}>
-                                Selecciona arriba la asignatura, grupo y aula, y luego haz clic en las celdas vacías para "pintar" tu horario. Si haces clic en una celda llena, se borrará.
+                            <div style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'space-between', 
+                                background: 'var(--brand-950-subtle)', 
+                                padding: '16px 20px', 
+                                borderRadius: 12, 
+                                border: '1px solid var(--brand-500-40)', 
+                                marginBottom: 20,
+                                gap: 16,
+                            }}>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', flex: 1 }}>
+                                    Selecciona arriba la asignatura, grupo y aula, y luego haz clic en las celdas vacías para "pintar" tu horario. Si haces clic en una celda llena, se borrará.
+                                </div>
+
+                                {/* ── Contador de Horas Lectivas ─────────────────── */}
+                                <div style={{ display: 'flex', gap: 16, flexShrink: 0 }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                        <div style={{
+                                            fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)',
+                                            textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2
+                                        }}>
+                                            Lectivas
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'baseline', color: 'var(--brand-400)' }}>
+                                            <span style={{ fontSize: '1.1rem', fontWeight: 800, lineHeight: 1 }}>{draftPersonal.length}</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <InteractiveScheduleGrid
