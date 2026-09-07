@@ -156,7 +156,7 @@ DELETE FROM "Profesores";
 -- 4. Inserción de Profesores Mock (85 usuarios de pruebas con perfiles variados y dominio @educa.aragon.es)
 -- Cuenta Administrador principal de pruebas
 INSERT INTO "Profesores" (id, "nombre y apellidos", email, departamento, rol, horas_guardia, activo) 
-VALUES ('P001', 'Alberto Planas (Pruebas)', 'alplanast@educa.aragon.es', 'INFORMÁTICA', 'Admin', 1, true);
+VALUES ('P001', 'Jefatura de Estudios', 'guardias@educa.aragon.es', 'EQUIPO DIRECTIVO', 'Admin', 1, true);
 
 -- Profesorado de distintos departamentos
 INSERT INTO "Profesores" (id, "nombre y apellidos", email, departamento, rol, horas_guardia) VALUES ('P002', 'Pilar Moreno Blanco', 'pilar.morenob002@educa.aragon.es', 'AGRARIAS', 'Usuario', 1);
