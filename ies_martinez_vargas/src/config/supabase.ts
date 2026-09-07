@@ -13,8 +13,8 @@ export const supabase: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY)
 export const BUCKET_PHOTOS = 'Fotos';
 export const BUCKET_LOGOS = 'Logos';
 
-// Logo URLs
-export const LOGO_DARK_URL = '/logo1.png';
+// Logo URLs (Default fallback: Bandera de Aragón)
+export const LOGO_DARK_URL = '/logo.png';
 export const LOGO_LIGHT_URL = '/logo.png';
 
 // Helper: get public URL for a storage path

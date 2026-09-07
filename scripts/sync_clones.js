@@ -11,7 +11,6 @@ const PROTECTED_FILES = [
   '.env',
   '.env.local',
   'public/logo.png',
-  'public/logo1.png',
 ];
 
 // Archivos/Carpetas que nunca se copian de la base
