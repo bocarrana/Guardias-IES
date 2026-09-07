@@ -33,12 +33,16 @@ import {
     ShieldCheck,
     UserMinus,
     Shield,
-    Coffee
+    Coffee,
+    Image as ImageIcon
 } from 'lucide-react';
 import Papa from 'papaparse';
 import CrownLogo from './CrownLogo';
 import { MonthDayPicker } from './MonthDayPicker';
 import {
+    uploadCenterLogo,
+    deleteCenterLogo,
+    getCenterLogoUrl,
     updateTeacher,
     deleteTeacher,
     createTeacher,
@@ -245,6 +249,48 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
             else next.add(id);
             return next;
         });
+    };
+
+    // Center Logo Upload State
+    const [isUploadingLight, setIsUploadingLight] = useState(false);
+    const [isUploadingDark, setIsUploadingDark] = useState(false);
+    const [lightLogoKey, setLightLogoKey] = useState(Date.now());
+    const [darkLogoKey, setDarkLogoKey] = useState(Date.now());
+
+    const handleUploadLogo = async (file: File, variant: 'light' | 'dark') => {
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('El archivo no debe superar los 5 MB');
+            return;
+        }
+
+        if (variant === 'light') setIsUploadingLight(true);
+        else setIsUploadingDark(true);
+
+        try {
+            await uploadCenterLogo(file, variant);
+            toast.success(`Logotipo para Modo ${variant === 'light' ? 'Claro' : 'Oscuro'} guardado en Supabase`);
+            if (variant === 'light') setLightLogoKey(Date.now());
+            else setDarkLogoKey(Date.now());
+        } catch (error: any) {
+            console.error(error);
+            toast.error(`Error al subir el logotipo: ${error.message || 'Error desconocido'}`);
+        } finally {
+            if (variant === 'light') setIsUploadingLight(false);
+            else setIsUploadingDark(false);
+        }
+    };
+
+    const handleDeleteLogo = async (variant: 'light' | 'dark') => {
+        try {
+            await deleteCenterLogo(variant);
+            toast.success(`Logotipo para Modo ${variant === 'light' ? 'Claro' : 'Oscuro'} restablecido`);
+            if (variant === 'light') setLightLogoKey(Date.now());
+            else setDarkLogoKey(Date.now());
+        } catch (error: any) {
+            console.error(error);
+            toast.error(`Error al restablecer el logotipo`);
+        }
     };
 
     const fetchSchedules = async () => {
@@ -1142,6 +1188,159 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                     </div>
                 ) : (
                     <>
+                        {activeTab === 'infra' && (
+                            <div style={{
+                                background: 'var(--brand-950-subtle)',
+                                borderRadius: 16,
+                                border: '1px solid var(--brand-500-30)',
+                                padding: 20,
+                                marginBottom: 16,
+                                boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                        <div style={{ padding: 8, borderRadius: 8, background: 'var(--brand-950)', color: 'var(--brand-400)' }}>
+                                            <ImageIcon size={20} />
+                                        </div>
+                                        <div>
+                                            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: 'var(--brand-50)' }}>
+                                                Identidad Visual y Logotipos del Centro
+                                            </h3>
+                                            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
+                                                Sube los logotipos de tu instituto a Supabase Storage. Se aplicarán al instante en la barra lateral y en el inicio de sesión.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+                                    {/* Modo Claro */}
+                                    <div style={{
+                                        background: 'rgba(255,255,255,0.03)',
+                                        border: '1px solid var(--border-subtle)',
+                                        borderRadius: 12,
+                                        padding: 16,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 12
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                ☀️ Logotipo para Modo Claro
+                                            </span>
+                                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Fondo Blanco</span>
+                                        </div>
+
+                                        <div style={{
+                                            height: 90,
+                                            background: '#ffffff',
+                                            borderRadius: 8,
+                                            border: '1px solid #e2e8f0',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            padding: 12,
+                                            position: 'relative'
+                                        }}>
+                                            <img 
+                                                key={`light-${lightLogoKey}`}
+                                                src={getCenterLogoUrl('light')}
+                                                alt="Logo Claro" 
+                                                style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
+                                                onError={(e) => { (e.target as HTMLImageElement).src = LOGO_LIGHT_URL; }}
+                                            />
+                                        </div>
+
+                                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                            <label className="btn btn-primary" style={{ flex: 1, fontSize: '0.8rem', padding: '8px 12px', cursor: isUploadingLight ? 'wait' : 'pointer', justifyContent: 'center' }}>
+                                                {isUploadingLight ? 'Subiendo...' : 'Subir Logo Claro'}
+                                                <input
+                                                    type="file"
+                                                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                                                    hidden
+                                                    disabled={isUploadingLight}
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) handleUploadLogo(file, 'light');
+                                                    }}
+                                                />
+                                            </label>
+                                            <button
+                                                onClick={() => handleDeleteLogo('light')}
+                                                className="btn btn-danger-subtle"
+                                                style={{ padding: '8px 12px', fontSize: '0.8rem' }}
+                                                title="Restablecer logo predeterminado"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Modo Oscuro */}
+                                    <div style={{
+                                        background: 'rgba(255,255,255,0.03)',
+                                        border: '1px solid var(--border-subtle)',
+                                        borderRadius: 12,
+                                        padding: 16,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 12
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                🌙 Logotipo para Modo Oscuro
+                                            </span>
+                                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Fondo Oscuro</span>
+                                        </div>
+
+                                        <div style={{
+                                            height: 90,
+                                            background: '#090d16',
+                                            borderRadius: 8,
+                                            border: '1px solid #1e293b',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            padding: 12,
+                                            position: 'relative'
+                                        }}>
+                                            <img 
+                                                key={`dark-${darkLogoKey}`}
+                                                src={getCenterLogoUrl('dark')}
+                                                alt="Logo Oscuro" 
+                                                style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
+                                                onError={(e) => { (e.target as HTMLImageElement).src = LOGO_DARK_URL; }}
+                                            />
+                                        </div>
+
+                                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                            <label className="btn btn-primary" style={{ flex: 1, fontSize: '0.8rem', padding: '8px 12px', cursor: isUploadingDark ? 'wait' : 'pointer', justifyContent: 'center' }}>
+                                                {isUploadingDark ? 'Subiendo...' : 'Subir Logo Oscuro'}
+                                                <input
+                                                    type="file"
+                                                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                                                    hidden
+                                                    disabled={isUploadingDark}
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) handleUploadLogo(file, 'dark');
+                                                    }}
+                                                />
+                                            </label>
+                                            <button
+                                                onClick={() => handleDeleteLogo('dark')}
+                                                className="btn btn-danger-subtle"
+                                                style={{ padding: '8px 12px', fontSize: '0.8rem' }}
+                                                title="Restablecer logo predeterminado"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {['guards', 'infra'].includes(activeTab) && (
                             <div style={{ 
                                 overflow: 'auto', 

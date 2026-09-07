@@ -1860,4 +1860,53 @@ export const generateCalendarRange = async (startDate: string, endDate: string):
     invalidateCache(['calendar_days', 'school_day']);
 };
 
+// ─── CENTER LOGO STORAGE MANAGEMENT ──────────────────────────
 
+/**
+ * Uploads center logo to Supabase storage bucket 'Logos' (logo_light.png or logo_dark.png)
+ */
+export const uploadCenterLogo = async (file: File, variant: 'light' | 'dark'): Promise<string> => {
+    const fileName = variant === 'dark' ? 'logo_dark.png' : 'logo_light.png';
+    const { error } = await supabase.storage
+        .from('Logos')
+        .upload(fileName, file, {
+            upsert: true,
+            cacheControl: '0',
+            contentType: file.type || 'image/png'
+        });
+
+    if (error) {
+        console.error(`Error uploading ${variant} logo:`, error);
+        throw error;
+    }
+
+    const { data } = supabase.storage.from('Logos').getPublicUrl(fileName);
+    const timestamp = Date.now();
+    localStorage.setItem(`center_logo_${variant}_ts`, String(timestamp));
+    window.dispatchEvent(new CustomEvent('center-logo-updated', { detail: { variant, timestamp } }));
+    return `${data.publicUrl}?t=${timestamp}`;
+};
+
+/**
+ * Gets public URL for center logo from Supabase storage
+ */
+export const getCenterLogoUrl = (variant: 'light' | 'dark'): string => {
+    const fileName = variant === 'dark' ? 'logo_dark.png' : 'logo_light.png';
+    const { data } = supabase.storage.from('Logos').getPublicUrl(fileName);
+    const ts = localStorage.getItem(`center_logo_${variant}_ts`) || Date.now();
+    return `${data.publicUrl}?t=${ts}`;
+};
+
+/**
+ * Deletes center logo from Supabase storage
+ */
+export const deleteCenterLogo = async (variant: 'light' | 'dark'): Promise<void> => {
+    const fileName = variant === 'dark' ? 'logo_dark.png' : 'logo_light.png';
+    const { error } = await supabase.storage.from('Logos').remove([fileName]);
+    if (error) {
+        console.error(`Error removing ${variant} logo:`, error);
+        throw error;
+    }
+    localStorage.removeItem(`center_logo_${variant}_ts`);
+    window.dispatchEvent(new CustomEvent('center-logo-updated', { detail: { variant, timestamp: Date.now() } }));
+};
