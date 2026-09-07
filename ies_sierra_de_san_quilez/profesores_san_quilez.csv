@@ -1,0 +1,91 @@
+"nombre y apellidos","email","departamento","grupo de guardia","rol","horas_guardia","activo"
+"Abigail Lopez Ibarz","abigail.lopez@iesbinefar.es","Inglés","Profesorado","Docente",1,true
+"Ainara Mendoza","ainara.mendoza@iesbinefar.es","Orientación","Profesorado","Docente",1,true
+"Alba Maria Taboada Prieto","alba.taboada@iesbinefar.es","Lengua Castellana y Literatura","Profesorado","Docente",1,true
+"Alberto Galicia Albert","alberto.galicia@iesbinefar.es","Matemáticas","Profesorado","Docente",1,true
+"Alberto Ferraz Molina","alberto.ferraz@iesbinefar.es","Orientación","Profesorado","Docente",1,true
+"Ana Carrasquer Senar","ana.carrasquer@iesbinefar.es","Lengua Castellana y Literatura","Profesorado","Docente",1,true
+"Ana Torres Pere","ana.torres@iesbinefar.es","Inglés","Profesorado","Docente",1,true
+"Ana Maria Tornos Cullere","anamaria.tornos@iesbinefar.es","Música","Profesorado","Docente",1,true
+"Anabel Albero","anabel.albero@iesbinefar.es","Educación Física","Profesorado","Docente",1,true
+"Andrea Abenoza Mur","andrea.abenoza@iesbinefar.es","Inglés","Profesorado","Docente",1,true
+"Andrea Plata Gabas","andrea.plata@iesbinefar.es","Matemáticas","Profesorado","Docente",1,true
+"Anna Parras Martinez","anna.parras@iesbinefar.es","Lengua Castellana y Literatura","Profesorado","Docente",1,true
+"Antonio Diaz Merino","antonio.diaz@iesbinefar.es","Tecnología","Profesorado","Docente",1,true
+"Asier Gimeno Erburu","asier.gimeno@iesbinefar.es","IMA","Profesorado","Docente",1,true
+"Barbara Casas Floria","barbara.casas@iesbinefar.es","Inglés","Profesorado","Docente",1,true
+"Beatriz Salanova Ardanuy","beatriz.salanova@iesbinefar.es","Filosofía","Profesorado","Docente",1,true
+"Berenice Tierno Rios","berenice.tierno@iesbinefar.es","Francés","Profesorado","Docente",1,true
+"Bernardo Posa Cardiel","bernardo.posa@iesbinefar.es","Economía","Profesorado","Docente",1,true
+"Celia Alvarez Rodriguez","celia.alvarez@iesbinefar.es","Música","Profesorado","Docente",1,true
+"Cristina Santoveña Sanchez","cristina.santovena@iesbinefar.es","Peluquería","Profesorado","Docente",1,true
+"Cristina Piedrafita Claveria","cristina.piedrafita@iesbinefar.es","Tecnología","Profesorado","Docente",1,true
+"David Coma Folguera","david.coma@iesbinefar.es","Inglés","Profesorado","Docente",1,true
+"David Gimeno Clua","david.gimeno@iesbinefar.es","Orientación","Profesorado","Docente",1,true
+"Elias Lacasta Casterad","elias.lacasta@iesbinefar.es","Física y Química","Profesorado","Docente",1,true
+"Ester Polaina Lacambra","ester.polaina@iesbinefar.es","Biología y Geología","Profesorado","Docente",1,true
+"Francisco Javier Sandez Sieiro","franciscojavier.sandez@iesbinefar.es","Tecnología","Profesorado","Docente",1,true
+"Guillermo Jubero Garreta","guillermo.jubero@iesbinefar.es","Geografía e Historia","Profesorado","Docente",1,true
+"Ingrid Gruas","ingrid.gruas@iesbinefar.es","Geografía e Historia","Profesorado","Docente",1,true
+"Isabel Calvillo Olmedo","isabel.calvillo@iesbinefar.es","Inglés","Profesorado","Docente",1,true
+"Isabel Sese Monclus","isabel.sese@iesbinefar.es","Matemáticas","Profesorado","Docente",1,true
+"Isabel Ruiz Cerrillo","isabel.ruiz@iesbinefar.es","Latín y Griego","Profesorado","Docente",1,true
+"Jason Bautista Vera","jason.bautista@iesbinefar.es","Filosofía","Profesorado","Docente",1,true
+"Javier Chine Mestres","javier.chine@iesbinefar.es","IMA","Profesorado","Docente",1,true
+"Javier Cristobal","javier.cristobal@iesbinefar.es","IMA","Profesorado","Docente",1,true
+"Jenny Martinez Adell","jenny.martinez@iesbinefar.es","Peluquería","Profesorado","Docente",1,true
+"Jose Agustin Aldaz Goni","joseagustin.aldaz@iesbinefar.es","Matemáticas","Profesorado","Docente",1,true
+"Jose Antonio Oliva Martin","joseantonio.oliva@iesbinefar.es","Orientación","Profesorado","Docente",1,true
+"Jose Emilio Castillon Solano","joseemilio.castillon@iesbinefar.es","Tecnología","Profesorado","Docente",1,true
+"José Luis Ibañez Pons","joseluis.ibanez@iesbinefar.es","Matemáticas","Profesorado","Docente",1,true
+"José Manuel Gorjon Sanz","josemanuel.gorjon@iesbinefar.es","Educación Física","Profesorado","Docente",1,true
+"Juan de la Cruz Irazabal Villar","juandelacruz.irazabal@iesbinefar.es","Educación Plástica","Profesorado","Docente",1,true
+"Julia Barrio Ruiz de Viñaspre","julia.barrio@iesbinefar.es","IMA","Profesorado","Docente",1,true
+"Laura Vilalta Rodellar","laura.vilalta@iesbinefar.es","FOL","Profesorado","Docente",1,true
+"Lidia Borruel Mairal","lidia.borruel@iesbinefar.es","Educación Física","Profesorado","Docente",1,true
+"Lourdes Carrasquer","lourdes.carrasquer@iesbinefar.es","Educación Física","Profesorado","Docente",1,true
+"Lourdes Sanchez de los Santos","lourdes.sanchez@iesbinefar.es","Educación Física","Profesorado","Docente",1,true
+"Lucia Oliva","lucia.oliva@iesbinefar.es","Peluquería","Profesorado","Docente",1,true
+"Lucia Gracia Salazar","lucia.graciasalazar@iesbinefar.es","Educación Plástica","Profesorado","Docente",1,true
+"Luis Orus Calvet","luis.orus@iesbinefar.es","Música","Profesorado","Docente",1,true
+"Luis Miguel Clemente Aljaro","luismi.clemente@iesbinefar.es","Lengua Castellana y Literatura","Profesorado","Docente",1,true
+"Manuel Buil Trigo","manuel.buil@iesbinefar.es","Biología y Geología","Profesorado","Docente",1,true
+"Maria Dueso","maria.dueso@iesbinefar.es","Orientación","Profesorado","Docente",1,true
+"Maria Carmen Tornos Mola","mariacarmen.tornos@iesbinefar.es","Geografía e Historia","Profesorado","Docente",1,true
+"Maria Dolores Vazquez Miranda","mariadolores.vazquez@iesbinefar.es","Lengua Castellana y Literatura","Profesorado","Docente",1,true
+"Maria Dolores Raso Escur","mariadolores.raso@iesbinefar.es","Inglés","Profesorado","Docente",1,true
+"Maria Jesus Garces Ramos","mariajesus.garces@iesbinefar.es","Geografía e Historia","Profesorado","Docente",1,true
+"Maria Jose Paniello Alastruey","mariajose.paniello@iesbinefar.es","Física y Química","Profesorado","Docente",1,true
+"Marina Sopesens Vinos","marina.sopesens@iesbinefar.es","Francés","Profesorado","Docente",1,true
+"Marta Ibarz","marta.ibarz@iesbinefar.es","Lengua Castellana y Literatura","Profesorado","Docente",1,true
+"María del Pilar Miguel Casanova","mariadelpilar.miguel@iesbinefar.es","Lengua Castellana y Literatura","Profesorado","Docente",1,true
+"Miguel Angel Gomez Saso","miguelangel.gomez@iesbinefar.es","Física y Química","Profesorado","Docente",1,true
+"Montserrat Bañeres Farrero","montserrat.baneres@iesbinefar.es","Tecnología","Profesorado","Docente",1,true
+"Montserrat Martinez Cordero","montserrat.martinez@iesbinefar.es","Religión","Profesorado","Docente",1,true
+"Natalia Carrera","natalia.carrera@iesbinefar.es","Orientación","Profesorado","Docente",1,true
+"Pablo Rodrigo Cardona","pablo.rodrigo@iesbinefar.es","Inglés","Profesorado","Docente",1,true
+"Patricia Salamero Aguayos","patricia.salamero@iesbinefar.es","Orientación","Profesorado","Docente",1,true
+"Raquel Prats Avilla","raquel.prats@iesbinefar.es","Educación Plástica","Profesorado","Docente",1,true
+"Raquel Garcia Perales","raquel.garcia@iesbinefar.es","Lengua Castellana y Literatura","Profesorado","Docente",1,true
+"Raquel Abadias Ibarbia","raquel.abadias@iesbinefar.es","Física y Química","Profesorado","Docente",1,true
+"Roi Silva Casal","roi.silva@iesbinefar.es","Biología y Geología","Profesorado","Docente",1,true
+"Samuel Cester Aguirre","samuel.cester@iesbinefar.es","Economía","Profesorado","Docente",1,true
+"Samuel Garcia Lasheras","samuel.garcia@iesbinefar.es","Geografía e Historia","Profesorado","Docente",1,true
+"Sandhya Carmona Ogalla","sandhya.carmona@iesbinefar.es","Lengua Castellana y Literatura","Profesorado","Docente",1,true
+"Sandra Espada Senar","sandra.espada@iesbinefar.es","Orientación","Profesorado","Docente",1,true
+"Sandra Claver Romeo","sandra.claver@iesbinefar.es","Biología y Geología","Profesorado","Docente",1,true
+"Santiago Felez Moliner","santiago.felez@iesbinefar.es","Matemáticas","Profesorado","Docente",1,true
+"Santiago Martin Ulecia","santiago.martin@iesbinefar.es","Religión","Profesorado","Docente",1,true
+"Sergio Blazquez","sergio.blazquez@iesbinefar.es","IMA","Profesorado","Docente",1,true
+"Teresa Bernues Alcolea","teresa.bernues@iesbinefar.es","Geografía e Historia","Profesorado","Docente",1,true
+"Yolanda Salas Herbera","yolanda.salas@iesbinefar.es","Matemáticas","Profesorado","Docente",1,true
+"Yolanda Marias Ferrer","yolanda.marias@iesbinefar.es","Matemáticas","Equipo Directivo","Jefatura",1,true
+"Rocio Guarné Chaverri","rocio.guarne@iesbinefar.es","Lengua Castellana y Literatura","Equipo Directivo","Jefatura",1,true
+"Sara Samitier Boix","sara.samitier@iesbinefar.es","Lengua Castellana y Literatura","Equipo Directivo","Jefatura",1,true
+"Susana Sanz Moros","susana.sanz@iesbinefar.es","Tecnología","Equipo Directivo","Jefatura",1,true
+"José Ramón Barrabés Campo","joseramon.barrabes@iesbinefar.es","IMA","Equipo Directivo","Jefatura",1,true
+"Araceli Muñoz Jiménez","araceli.munoz@iesbinefar.es","Matemáticas","Profesorado","Docente",1,true
+"Juan José Nieto Callén","juanjose.nieto@iesbinefar.es","Geografía e Historia","Profesorado","Docente",1,true
+"Samuel Villabrille Naharro","samuel.villabrille@iesbinefar.es","API","Profesorado","Docente",1,true
+"Jorge Calvo Martín","jorge.calvo@iesbinefar.es","Física y Química","Profesorado","Docente",1,true
+"Rosabel Sancho Lostal","rosabel.sancho@iesbinefar.es","Peluquería","Profesorado","Docente",1,true
