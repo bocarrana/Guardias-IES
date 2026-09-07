@@ -34,7 +34,8 @@ import {
     UserMinus,
     Shield,
     Coffee,
-    Image as ImageIcon
+    Image as ImageIcon,
+    ArrowLeft
 } from 'lucide-react';
 import Papa from 'papaparse';
 import CrownLogo from './CrownLogo';
@@ -184,6 +185,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
     const [sortPersonal, setSortPersonal] = useState<{ key: string; dir: 'asc' | 'desc' | null }>({ key: '', dir: null });
     const [sortAudit, setSortAudit] = useState<{ key: string; dir: 'asc' | 'desc' | null }>({ key: 'name', dir: 'asc' });
     const [auditFilter, setAuditFilter] = useState<'pending' | 'completed' | 'all'>('pending');
+    const [navigationOrigin, setNavigationOrigin] = useState<'audit' | null>(null);
 
     const toggleSort = (setter: React.Dispatch<React.SetStateAction<{ key: string; dir: 'asc' | 'desc' | null }>>, key: string) => {
         setter(prev => {
@@ -2033,7 +2035,31 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                 backdropFilter: 'blur(20px)',
                                 borderBottom: '1px solid rgba(255,255,255,0.05)'
                             }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                    {navigationOrigin === 'audit' && (
+                                        <button
+                                            onClick={() => { setActiveTab('audit'); setNavigationOrigin(null); }}
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 8,
+                                                padding: '8px 16px',
+                                                borderRadius: 10,
+                                                border: '1px solid rgba(34,211,238,0.4)',
+                                                background: 'rgba(34,211,238,0.15)',
+                                                color: 'var(--brand-400)',
+                                                fontSize: '0.85rem',
+                                                fontWeight: 800,
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
+                                            }}
+                                            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(34,211,238,0.28)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                                            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(34,211,238,0.15)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                                        >
+                                            <ArrowLeft size={16} /> Volver a Auditoría
+                                        </button>
+                                    )}
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                         <div style={{ 
                                             display: 'flex', 
@@ -2375,6 +2401,30 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                 borderBottom: '1px solid rgba(255,255,255,0.05)'
                             }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                    {navigationOrigin === 'audit' && (
+                                        <button
+                                            onClick={() => { setActiveTab('audit'); setNavigationOrigin(null); }}
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 8,
+                                                padding: '8px 16px',
+                                                borderRadius: 10,
+                                                border: '1px solid rgba(34,211,238,0.4)',
+                                                background: 'rgba(34,211,238,0.15)',
+                                                color: 'var(--brand-400)',
+                                                fontSize: '0.85rem',
+                                                fontWeight: 800,
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
+                                            }}
+                                            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(34,211,238,0.28)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                                            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(34,211,238,0.15)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                                        >
+                                            <ArrowLeft size={16} /> Volver a Auditoría
+                                        </button>
+                                    )}
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                         <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ver/Editar:</span>
                                         <select
@@ -2818,14 +2868,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                             <td style={{ ...tdStyle, textAlign: 'right', paddingRight: 32 }}>
                                                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                                                     <button 
-                                                        onClick={() => { setSelectedTeacherId(res.id); setActiveTab('personal_schedule'); setViewModePersonal('grid'); }}
+                                                        onClick={() => { setSelectedTeacherId(res.id); setActiveTab('personal_schedule'); setViewModePersonal('grid'); setNavigationOrigin('audit'); }}
                                                         className="btn btn-ghost" 
                                                         style={{ fontSize: '0.7rem', padding: '0 12px', height: 32, borderRadius: 8, fontWeight: 700 }}
                                                     >
                                                         {res.missing_personal ? 'Rellenar Lectivo' : 'Ver Lectivo'}
                                                     </button>
                                                     <button 
-                                                        onClick={() => { setSelectedTeacherId(res.id); setActiveTab('schedules'); setViewModeSchedules('grid'); }}
+                                                        onClick={() => { setSelectedTeacherId(res.id); setActiveTab('schedules'); setViewModeSchedules('grid'); setNavigationOrigin('audit'); }}
                                                         className="btn btn-ghost" 
                                                         style={{ fontSize: '0.7rem', padding: '0 12px', height: 32, borderRadius: 8, fontWeight: 700 }}
                                                     >
