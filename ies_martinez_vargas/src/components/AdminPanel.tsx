@@ -183,6 +183,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
     const [sortSchedules, setSortSchedules] = useState<{ key: string; dir: 'asc' | 'desc' | null }>({ key: '', dir: null });
     const [sortPersonal, setSortPersonal] = useState<{ key: string; dir: 'asc' | 'desc' | null }>({ key: '', dir: null });
     const [sortAudit, setSortAudit] = useState<{ key: string; dir: 'asc' | 'desc' | null }>({ key: 'name', dir: 'asc' });
+    const [auditFilter, setAuditFilter] = useState<'pending' | 'completed' | 'all'>('pending');
 
     const toggleSort = (setter: React.Dispatch<React.SetStateAction<{ key: string; dir: 'asc' | 'desc' | null }>>, key: string) => {
         setter(prev => {
@@ -352,7 +353,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
         g.type !== GuardType.RECREO
     );
 
-    const auditResults = teachers
+    const allAuditedTeachers = teachers
         .filter(t => {
             const isActive = t.active !== false;
             // Exclude management team from audit as they might not have regular schedules
@@ -373,10 +374,20 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                 email: t.email,
                 missing_personal: !hasPersonal,
                 missing_guards: !hasGuards,
+                is_complete: hasPersonal && hasGuards,
                 teacher: t
             };
+        });
+
+    const pendingAuditCount = allAuditedTeachers.filter(r => r.missing_personal || r.missing_guards).length;
+    const completedAuditCount = allAuditedTeachers.filter(r => !r.missing_personal && !r.missing_guards).length;
+
+    const auditResults = allAuditedTeachers
+        .filter(r => {
+            if (auditFilter === 'pending') return r.missing_personal || r.missing_guards;
+            if (auditFilter === 'completed') return !r.missing_personal && !r.missing_guards;
+            return true;
         })
-        .filter(r => r.missing_personal || r.missing_guards)
         .sort((a, b) => {
             if (!sortAudit.key || !sortAudit.dir) return 0;
             let va = '', vb = '';
@@ -2678,16 +2689,82 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
 
                 {activeTab === 'audit' && (
                     <div style={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column', position: 'relative', background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border-subtle)', overflow: 'hidden' }}>
-                        <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border-subtle)', background: 'rgba(15,23,42,0.3)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ padding: '20px 32px', borderBottom: '1px solid var(--border-subtle)', background: 'rgba(15,23,42,0.3)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
                                 <div>
                                     <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>Auditoría de Documentación</h2>
                                     <p style={{ fontSize: '0.875rem', color: 'var(--text-tertiary)', marginTop: 4 }}>
-                                        Listado de profesores activos que aún no tienen su horario completo.
+                                        Control del estado de horarios (Lectivo y Guardias) del claustro docente.
                                     </p>
                                 </div>
-                                <div style={{ background: 'rgba(34,211,238,0.1)', color: 'var(--brand-400)', padding: '8px 16px', borderRadius: 12, fontSize: '0.85rem', fontWeight: 700, border: '1px solid rgba(34,211,238,0.2)' }}>
-                                    {loadingAudit ? 'CARGANDO...' : `${auditResults.length} PROFESORES PENDIENTES`}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                                    {/* Filter Segmented Control */}
+                                    <div style={{ display: 'flex', background: 'var(--bg-panel)', padding: 4, borderRadius: 10, border: '1px solid var(--border-subtle)', gap: 4 }}>
+                                        <button
+                                            type="button"
+                                            onClick={() => setAuditFilter('pending')}
+                                            style={{
+                                                padding: '6px 14px',
+                                                borderRadius: 8,
+                                                fontSize: '0.8rem',
+                                                fontWeight: 700,
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s ease',
+                                                background: auditFilter === 'pending' ? 'rgba(239,68,68,0.2)' : 'transparent',
+                                                color: auditFilter === 'pending' ? 'var(--red-400)' : 'var(--text-secondary)'
+                                            }}
+                                        >
+                                            Pendientes ({pendingAuditCount})
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setAuditFilter('completed')}
+                                            style={{
+                                                padding: '6px 14px',
+                                                borderRadius: 8,
+                                                fontSize: '0.8rem',
+                                                fontWeight: 700,
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s ease',
+                                                background: auditFilter === 'completed' ? 'rgba(34,197,94,0.2)' : 'transparent',
+                                                color: auditFilter === 'completed' ? 'var(--green-400)' : 'var(--text-secondary)'
+                                            }}
+                                        >
+                                            Completados ({completedAuditCount})
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setAuditFilter('all')}
+                                            style={{
+                                                padding: '6px 14px',
+                                                borderRadius: 8,
+                                                fontSize: '0.8rem',
+                                                fontWeight: 700,
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s ease',
+                                                background: auditFilter === 'all' ? 'rgba(34,211,238,0.2)' : 'transparent',
+                                                color: auditFilter === 'all' ? 'var(--brand-400)' : 'var(--text-secondary)'
+                                            }}
+                                        >
+                                            Todos ({allAuditedTeachers.length})
+                                        </button>
+                                    </div>
+
+                                    <div style={{ 
+                                        background: auditFilter === 'completed' ? 'rgba(34,197,94,0.1)' : auditFilter === 'pending' ? 'rgba(239,68,68,0.1)' : 'rgba(34,211,238,0.1)', 
+                                        color: auditFilter === 'completed' ? 'var(--green-400)' : auditFilter === 'pending' ? 'var(--red-400)' : 'var(--brand-400)', 
+                                        padding: '8px 16px', borderRadius: 12, fontSize: '0.85rem', fontWeight: 700, 
+                                        border: `1px solid ${auditFilter === 'completed' ? 'rgba(34,197,94,0.2)' : auditFilter === 'pending' ? 'rgba(239,68,68,0.2)' : 'rgba(34,211,238,0.2)'}` 
+                                    }}>
+                                        {loadingAudit ? 'CARGANDO...' : (
+                                            auditFilter === 'pending' ? `${pendingAuditCount} PROFESORES PENDIENTES` :
+                                            auditFilter === 'completed' ? `${completedAuditCount} PROFESORES AL DÍA` :
+                                            `${allAuditedTeachers.length} PROFESORES EN TOTAL`
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2745,14 +2822,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                                         className="btn btn-ghost" 
                                                         style={{ fontSize: '0.7rem', padding: '0 12px', height: 32, borderRadius: 8, fontWeight: 700 }}
                                                     >
-                                                        Rellenar Lectivo
+                                                        {res.missing_personal ? 'Rellenar Lectivo' : 'Ver Lectivo'}
                                                     </button>
                                                     <button 
                                                         onClick={() => { setSelectedTeacherId(res.id); setActiveTab('schedules'); setViewModeSchedules('grid'); }}
                                                         className="btn btn-ghost" 
                                                         style={{ fontSize: '0.7rem', padding: '0 12px', height: 32, borderRadius: 8, fontWeight: 700 }}
                                                     >
-                                                        Rellenar Guardias
+                                                        {res.missing_guards ? 'Rellenar Guardias' : 'Ver Guardias'}
                                                     </button>
                                                 </div>
                                             </td>
@@ -2761,9 +2838,23 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                     {auditResults.length === 0 && (
                                         <tr>
                                             <td colSpan={3} style={{ padding: 60, textAlign: 'center' }}>
-                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, opacity: 0.5 }}>
-                                                    <ShieldCheck size={48} color="var(--green-400)" />
-                                                    <p style={{ fontWeight: 700 }}>¡Todo al día! No hay profesores con documentación pendiente.</p>
+                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, opacity: 0.7 }}>
+                                                    {auditFilter === 'pending' ? (
+                                                        <>
+                                                            <ShieldCheck size={48} color="var(--green-400)" />
+                                                            <p style={{ fontWeight: 700, color: 'var(--green-400)' }}>¡Todo al día! No hay profesores con documentación pendiente.</p>
+                                                        </>
+                                                    ) : auditFilter === 'completed' ? (
+                                                        <>
+                                                            <Clock size={48} color="var(--text-tertiary)" />
+                                                            <p style={{ fontWeight: 700 }}>Ningún profesor tiene todavía ambos horarios completados.</p>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <ShieldCheck size={48} color="var(--text-tertiary)" />
+                                                            <p style={{ fontWeight: 700 }}>No se han encontrado profesores activos.</p>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
