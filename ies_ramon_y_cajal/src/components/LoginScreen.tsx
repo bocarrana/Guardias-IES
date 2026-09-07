@@ -7,6 +7,7 @@ import { LOGO_DARK_URL, LOGO_LIGHT_URL } from '../config/supabase';
 import { useTheme } from '../context/ThemeContext';
 import ThemeToggle from './ThemeToggle';
 import PrivacyModal from './PrivacyModal';
+import CrownLogo from './CrownLogo';
 
 interface LoginScreenProps {
     loading: boolean;
@@ -104,12 +105,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ loading }) => {
                         justifyContent: 'center',
                         overflow: 'hidden',
                     }}>
-                        <img
-                            src={theme === 'dark' ? LOGO_DARK_URL : LOGO_LIGHT_URL}
-                            alt="Logo IES"
-                            style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 8 }}
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                        />
+                        <CrownLogo size={56} />
                     </div>
                 </motion.div>
 

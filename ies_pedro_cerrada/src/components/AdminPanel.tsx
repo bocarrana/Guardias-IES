@@ -36,6 +36,7 @@ import {
     Coffee
 } from 'lucide-react';
 import Papa from 'papaparse';
+import CrownLogo from './CrownLogo';
 import { MonthDayPicker } from './MonthDayPicker';
 import {
     updateTeacher,
@@ -1606,14 +1607,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                     display: 'flex', 
                                     justifyContent: 'center', 
                                     alignItems: 'center',
-                                    opacity: 0.5,
+                                    opacity: 0.8,
                                     marginRight: 8
                                 }}>
-                                    <img 
-                                        src={theme === 'dark' ? LOGO_DARK_URL : LOGO_LIGHT_URL} 
-                                        alt="IES" 
-                                        style={{ width: 24, height: 24, objectFit: 'contain' }} 
-                                    />
+                                    <CrownLogo size={22} />
                                 </div>
                                 <input placeholder="Nombre y Apellidos..." className="input" value={newTeacherForm.name} onChange={e => setNewTeacherForm({ ...newTeacherForm, name: e.target.value })} style={{ ...smallInput, flex: 2, height: 36 }} />
                                 <input placeholder="Email institucional..." className="input" value={newTeacherForm.email} onChange={e => setNewTeacherForm({ ...newTeacherForm, email: e.target.value })} style={{ ...smallInput, flex: 1.5, height: 36, fontSize: '0.8rem', opacity: 0.8 }} />

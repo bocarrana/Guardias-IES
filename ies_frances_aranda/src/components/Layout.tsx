@@ -10,6 +10,7 @@ import { useTheme } from '../context/ThemeContext';
 import ThemeToggle from './ThemeToggle';
 import AboutInfo from './AboutInfo';
 import PrivacyModal from './PrivacyModal';
+import CrownLogo from './CrownLogo';
 import { canAccessAdminPanel, canAccessMySchedule, canAccessDashboard, canAccessFreeClassrooms, isAdministracionRole, isPantallaRole, getRoleDisplayName } from '../utils/roles';
 
 
@@ -111,9 +112,7 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, view, onViewChange, onCrea
                     justifyContent: 'center',
                     overflow: 'hidden',
                 }}>
-                    <img src={theme === 'dark' ? LOGO_DARK_URL : LOGO_LIGHT_URL} alt="Logo" style={{
-                        width: '100%', height: '100%', objectFit: 'contain', padding: 4,
-                    }} onError={(e) => { (e.target as HTMLImageElement).style.opacity = '0'; }} />
+                    <CrownLogo size={24} />
                 </div>
                 {!collapsed && (
                     <h1 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--heading-color)', letterSpacing: '0.01em', margin: 0 }}>
