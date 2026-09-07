@@ -10,7 +10,8 @@ const CENTERS_FILE = path.join(ROOT_DIR, 'centers.json');
 const PROTECTED_FILES = [
   '.env',
   '.env.local',
-  'public/logo.png', // Añade aquí más rutas si hay más archivos personalizados por centro
+  'public/logo.png',
+  'public/logo1.png',
 ];
 
 // Archivos/Carpetas que nunca se copian de la base
