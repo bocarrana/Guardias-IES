@@ -13,8 +13,17 @@ Cada vez que una funcionalidad, corrección o mejora requiera cambios en la base
 - Buckets de Supabase Storage o políticas de acceso.
 - Funciones SQL, triggers o vistas.
 
-### El Asistente DEBE automáticamente:
-1. **Detectar proactivamente el impacto en la base de datos** sin esperar a que el usuario lo solicite.
-2. **Crear el script SQL de migración idempotente** (usando `CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, `CREATE POLICY IF NOT EXISTS`, etc.) en la carpeta `scripts/migrations/`.
-3. **Ejecutar o sincronizar la migración en las bases de datos activas** de los centros utilizando los scripts correspondientes.
-4. **Garantizar retrocompatibilidad en el frontend**: El código de la aplicación en React/TypeScript debe manejar de forma elegante (`try/catch` o valores por defecto opcionales) cualquier desfase temporal hasta que la migración esté completada en todos los centros.
+### 1. Cambios Particulares (Específicos de un solo centro)
+- Si el cambio es exclusivo para un instituto (ej: una tabla especial, logos, o campo específico de *IES Reyes Católicos*, *IES Sierra de San Quílez*, etc.):
+  - Se aplica **únicamente en la base de datos de ese centro específico**.
+  - Se protege y aísla en su respectiva carpeta `ies_*` para que los scripts globales (`sync_clones.js`) no lo borren ni lo sobreescriban en otros centros.
+
+### 2. Cambios Globales (Para toda la red de institutos)
+- Si la funcionalidad es general para todos los centros:
+  - Se genera el script de migración SQL idempotente en `scripts/migrations/`.
+  - Se ejecuta en lote para todas las bases de datos activas de los centros.
+  - Se sincroniza la base de código (`_plantilla_base` -> `sync_clones.js` -> `git push` -> Vercel).
+
+### 3. Principio de Autodetección y Retrocompatibilidad
+- El asistente **detecta proactivamente** si el cambio es particular o global sin necesidad de que el usuario lo recuerde.
+- El frontend en React siempre maneja de forma segura las consultas para evitar errores si una tabla o campo opcional no existe en algún centro.
