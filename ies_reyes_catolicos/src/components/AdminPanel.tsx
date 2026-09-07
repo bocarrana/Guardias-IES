@@ -126,6 +126,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
     const [activeTab, setActiveTab] = useState<Tab>('teachers');
     const [search, setSearch] = useState('');
 
+    const availableDepartments = React.useMemo(() => {
+        const fromMeta = (meta?.subjects || []).filter(s => !s.padre_id).map(s => s.name.trim()).filter(Boolean);
+        const fromTeachers = (teachers || []).map(t => (t.department || '').trim()).filter(Boolean);
+        const set = new Set([...fromMeta, ...fromTeachers]);
+        if (set.size === 0) {
+            DEPARTMENTS.forEach(d => set.add(d));
+        }
+        return Array.from(set).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+    }, [meta.subjects, teachers]);
+
     // Common Form State
     const [isAdding, setIsAdding] = useState(false);
 
@@ -1833,7 +1843,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                     style={{ ...smallInput, flex: 1, height: 36 }}
                                 >
                                     <option value="">Dpto...</option>
-                                    {DEPARTMENTS.map(dept => (
+                                    {availableDepartments.map(dept => (
                                         <option key={dept} value={dept}>{dept}</option>
                                     ))}
                                 </select>
@@ -1931,7 +1941,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                                             style={smallInput}
                                                         >
                                                             <option value="">Dpto...</option>
-                                                            {DEPARTMENTS.map(dept => (
+                                                            {availableDepartments.map(dept => (
                                                                 <option key={dept} value={dept}>{dept}</option>
                                                             ))}
                                                         </select>
