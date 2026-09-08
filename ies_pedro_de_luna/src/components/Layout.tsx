@@ -464,8 +464,8 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, view, onViewChange, onCrea
                             style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
                             onClick={() => setIsAboutOpen(true)}
                         >
-                            <div style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid var(--brand-500)', overflow: 'hidden', background: 'var(--bg-main)' }}>
-                                <img src={theme === 'dark' ? LOGO_DARK_URL : LOGO_LIGHT_URL} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 3 }} />
+                            <div style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid var(--brand-500)', overflow: 'hidden', background: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <CrownLogo size={24} />
                             </div>
                             <span style={{ fontWeight: 800, color: 'var(--heading-color)', fontSize: '1rem' }}>Guardias IES</span>
                         </div>

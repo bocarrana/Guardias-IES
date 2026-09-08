@@ -13,7 +13,7 @@ import ClassroomMapModal from './ClassroomMapModal';
 import { toast } from 'sonner';
 import { canAccessAdminPanel, isAdministracionRole, isPantallaRole, isAdminRole, isJefaturaRole } from '../utils/roles';
 import { rankTeachers } from '../utils/guardAssignment';
-import { LOGO_DARK_URL } from '../config/supabase';
+import CrownLogo from './CrownLogo';
 
 interface ScrollableAvatarsProps {
     children: React.ReactNode;
@@ -1111,8 +1111,7 @@ const GuardList: React.FC<GuardListProps> = ({
                                                              alignItems: 'center',
                                                              justifyContent: 'center',
                                                              cursor: 'pointer',
-                                                             border: '2px solid transparent',
-                                                             backgroundImage: slotMode === 'recommended'
+                                                                                     backgroundImage: slotMode === 'recommended'
                                                                  ? 'linear-gradient(#0f172a, #0f172a), linear-gradient(45deg, #ef4444, #f97316, #eab308, #22c55e, #3b82f6, #a855f7)'
                                                                  : 'linear-gradient(#0f172a, #0f172a), linear-gradient(45deg, #06b6d4, #3b82f6)',
                                                              backgroundOrigin: 'border-box',
@@ -1135,15 +1134,7 @@ const GuardList: React.FC<GuardListProps> = ({
                                                                  justifyContent: 'center',
                                                                  overflow: 'hidden'
                                                              }}>
-                                                                 <img 
-                                                                     src={LOGO_DARK_URL} 
-                                                                     alt="IES Logo" 
-                                                                     style={{ 
-                                                                         width: '100%', 
-                                                                         height: '100%', 
-                                                                         objectFit: 'contain'
-                                                                     }} 
-                                                                 />
+                                                                 <CrownLogo size={14} />
                                                              </div>
                                                          )}
                                                      </motion.div>
