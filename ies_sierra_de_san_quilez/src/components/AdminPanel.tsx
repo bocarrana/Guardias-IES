@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Teacher, Guard, MetaOptions, GuardType } from '../types';
-import { isAdminRole, getRoleDisplayName, getRoleStyle, canEditTeacherProfile, getAssignableRoles } from '../utils/roles';
+import { isAdminRole, getRoleDisplayName, getRoleStyle, canEditTeacherProfile, getAssignableRoles, isPantallaRole } from '../utils/roles';
 import {
     Users,
     ShieldAlert,
@@ -128,7 +128,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
 
     const availableDepartments = React.useMemo(() => {
         const fromMeta = (meta?.subjects || []).filter(s => !s.padre_id).map(s => s.name.trim()).filter(Boolean);
-        const fromTeachers = (teachers || []).map(t => (t.department || '').trim()).filter(Boolean);
+        const fromTeachers = (teachers || []).filter(t => !isPantallaRole(t.role)).map(t => (t.department || '').trim()).filter(Boolean);
         const set = new Set([...fromMeta, ...fromTeachers]);
         if (set.size === 0) {
             DEPARTMENTS.forEach(d => set.add(d));
@@ -349,6 +349,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
 
     // Filtered data
     const filteredTeachers = teachers.filter(t => {
+        if (isPantallaRole(t.role)) return false;
         const matchesSearch = t.name.toLowerCase().includes(search.toLowerCase()) ||
             (t.department || '').toLowerCase().includes(search.toLowerCase()) ||
             (t.role || '').toLowerCase().includes(search.toLowerCase());
@@ -371,6 +372,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
 
     const allAuditedTeachers = teachers
         .filter(t => {
+            if (isPantallaRole(t.role)) return false;
             const isActive = t.active !== false;
             // Exclude management team from audit as they might not have regular schedules
             const isNotDirectivo = t.guard_group !== 'Equipo Directivo';

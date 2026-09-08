@@ -8,7 +8,7 @@ import {
 } from '../services/supabaseClient';
 import { toast } from 'sonner';
 import TeacherAvatar from './TeacherAvatar';
-import { canAccessAdminPanel, isAdminRole, isJefaturaRole } from '../utils/roles';
+import { canAccessAdminPanel, isAdminRole, isJefaturaRole, isPantallaRole } from '../utils/roles';
 
 interface GuardGroupsProps {
     teachers: Teacher[];
@@ -382,7 +382,7 @@ const GuardGroups: React.FC<GuardGroupsProps> = ({
                                                 >
                                                     <option value="" disabled>Buscar profesor...</option>
                                                     {teachers
-                                                        .filter(t => !modalTeachers.some(mt => mt.profesor_id === t.id))
+                                                        .filter(t => !isPantallaRole(t.role) && !modalTeachers.some(mt => mt.profesor_id === t.id))
                                                         .sort((a,b) => a.name.localeCompare(b.name))
                                                         .map(t => (
                                                             <option key={t.id} value={t.id}>{t.name} ({t.department})</option>

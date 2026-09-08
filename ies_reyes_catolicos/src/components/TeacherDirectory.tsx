@@ -5,7 +5,7 @@ import { Search, User, Briefcase, CheckCircle, Clock, FilePlus, Mail, Award, Use
 import { getStorageUrl } from '../services/supabaseClient';
 import TeacherAvatar from './TeacherAvatar';
 import TeacherScheduleViewer from './TeacherScheduleViewer';
-import { canEditTeacherProfile, isJefaturaRole, getRoleStyle, getRoleDisplayName } from '../utils/roles';
+import { canEditTeacherProfile, isJefaturaRole, getRoleStyle, getRoleDisplayName, isPantallaRole } from '../utils/roles';
 
 interface TeacherDirectoryProps {
     teachers: Teacher[];
@@ -50,12 +50,13 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, guards, m
     const [viewingTeacher, setViewingTeacher] = useState<Teacher | null>(null);
 
     const departments = useMemo(() => {
-        const deps = new Set(teachers.map(t => t.department).filter(Boolean));
+        const deps = new Set(teachers.filter(t => !isPantallaRole(t.role)).map(t => t.department).filter(Boolean));
         return Array.from(deps).sort();
     }, [teachers]);
 
     const filtered = useMemo(() => {
         const visibleTeachers = teachers.filter(t => {
+            if (isPantallaRole(t.role)) return false;
             const matchesSearch = !searchQuery || 
                 t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 (t.department || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
