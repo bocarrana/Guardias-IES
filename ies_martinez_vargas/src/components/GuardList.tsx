@@ -9,6 +9,7 @@ import {
 import { getStorageUrl, getTaskFileUrl } from '../services/supabaseClient';
 import { Download } from 'lucide-react';
 import TeacherAvatar from './TeacherAvatar';
+import CrownLogo from './CrownLogo';
 import ClassroomMapModal from './ClassroomMapModal';
 import { toast } from 'sonner';
 import { canAccessAdminPanel, isAdministracionRole, isPantallaRole, isAdminRole, isJefaturaRole } from '../utils/roles';
@@ -205,15 +206,16 @@ const GuardList: React.FC<GuardListProps> = ({
     const [activeTeacherTooltip, setActiveTeacherTooltip] = useState<{
         teacher: Teacher;
         isAbsent?: boolean;
+        coveredGuards?: Guard[];
         slotId: string;
     } | null>(null);
     const teacherTooltipTimerRef = useRef<any>(null);
 
-    const handleAvatarTouch = (teacher: Teacher, isAbsent: boolean, slotId: string) => {
+    const handleAvatarTouch = (teacher: Teacher, isAbsent: boolean, slotId: string, coveredGuards: Guard[] = []) => {
         if (teacherTooltipTimerRef.current) {
             clearTimeout(teacherTooltipTimerRef.current);
         }
-        setActiveTeacherTooltip({ teacher, isAbsent, slotId });
+        setActiveTeacherTooltip({ teacher, isAbsent, coveredGuards, slotId });
         teacherTooltipTimerRef.current = setTimeout(() => {
             setActiveTeacherTooltip(null);
         }, 3000);
@@ -1210,15 +1212,7 @@ const GuardList: React.FC<GuardListProps> = ({
                                                                  justifyContent: 'center',
                                                                  overflow: 'hidden'
                                                              }}>
-                                                                 <img 
-                                                                     src={LOGO_DARK_URL} 
-                                                                     alt="IES Logo" 
-                                                                     style={{ 
-                                                                         width: '100%', 
-                                                                         height: '100%', 
-                                                                         objectFit: 'contain'
-                                                                     }} 
-                                                                 />
+                                                                 <CrownLogo size={14} />
                                                              </div>
                                                          )}
                                                      </motion.div>
@@ -1293,13 +1287,20 @@ const GuardList: React.FC<GuardListProps> = ({
                                                                 ? `hsl(${hue}, 85%, 55%)`
                                                                 : undefined;
       
+                                                            const teacherCoveredGuards = guards.filter(g =>
+                                                                g.date === date &&
+                                                                g.time_slot_id === slot.id &&
+                                                                g.covering_teacher_id === t.id &&
+                                                                g.status !== GuardStatus.AVAILABLE
+                                                            );
+
                                                             return (
                                                                 <div 
                                                                     key={s.id}
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         if (isPantallaRole(currentUser?.role)) {
-                                                                            handleAvatarTouch(t, isAbsent, slot.id);
+                                                                            handleAvatarTouch(t, isAbsent, slot.id, teacherCoveredGuards);
                                                                         }
                                                                     }}
                                                                     onTouchStart={(e) => e.stopPropagation()}
@@ -1307,7 +1308,7 @@ const GuardList: React.FC<GuardListProps> = ({
                                                                     onTouchEnd={(e) => {
                                                                         e.stopPropagation();
                                                                         if (isPantallaRole(currentUser?.role)) {
-                                                                            handleAvatarTouch(t, isAbsent, slot.id);
+                                                                            handleAvatarTouch(t, isAbsent, slot.id, teacherCoveredGuards);
                                                                         }
                                                                     }}
                                                                     style={{ 
@@ -1393,6 +1394,46 @@ const GuardList: React.FC<GuardListProps> = ({
                                                             }}>
                                                                 {activeTeacherTooltip.teacher.department || 'Sin departamento'}
                                                             </span>
+                                                            {activeTeacherTooltip.coveredGuards && activeTeacherTooltip.coveredGuards.length > 0 && (
+                                                                <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                                    {activeTeacherTooltip.coveredGuards.map(cg => {
+                                                                        const groupInfo = cg.type === GuardType.COEXISTENCE
+                                                                            ? 'Convivencia'
+                                                                            : (cg.group?.name ? cg.group.name : (cg.subject?.name || 'Guardia'));
+                                                                        const classroomInfo = cg.classroom?.name ? ` · ${cg.classroom.name}` : '';
+                                                                        return (
+                                                                            <span 
+                                                                                key={cg.id}
+                                                                                style={{
+                                                                                    fontSize: '0.75rem',
+                                                                                    fontWeight: 700,
+                                                                                    color: '#34d399',
+                                                                                    display: 'flex',
+                                                                                    alignItems: 'center',
+                                                                                    gap: 4,
+                                                                                    whiteSpace: 'nowrap',
+                                                                                    overflow: 'hidden',
+                                                                                    textOverflow: 'ellipsis'
+                                                                                }}
+                                                                            >
+                                                                                <span style={{ 
+                                                                                    background: 'rgba(52, 211, 153, 0.2)', 
+                                                                                    padding: '1px 5px', 
+                                                                                    borderRadius: 4, 
+                                                                                    border: '1px solid rgba(52, 211, 153, 0.4)',
+                                                                                    fontSize: '0.68rem',
+                                                                                    flexShrink: 0
+                                                                                }}>
+                                                                                    Cubriendo
+                                                                                </span>
+                                                                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                                                    {groupInfo}{classroomInfo}
+                                                                                </span>
+                                                                            </span>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            )}
                                                             {activeTeacherTooltip.isAbsent && (
                                                                 <span style={{
                                                                     fontSize: '0.72rem',
