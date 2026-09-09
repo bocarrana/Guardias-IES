@@ -144,24 +144,47 @@ const ClassroomMapModal: React.FC<ClassroomMapModalProps> = ({ roomId, meta, tea
     return createPortal(
         <AnimatePresence>
             <motion.div
-                className="fixed inset-0 w-screen h-screen z-[9999] flex items-center justify-center p-4 md:p-8"
+                style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    zIndex: 99999,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 24,
+                    background: 'rgba(2, 6, 23, 0.92)',
+                    backdropFilter: 'blur(12px)',
+                }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
             >
                 {/* Backdrop overlay */}
                 <div 
-                    className="absolute inset-0 w-full h-full bg-slate-950/95" 
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
                     onClick={onClose}
                 />
 
                 <motion.div
-                    className="relative flex flex-col rounded-[2.5rem] overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] border border-white/10 bg-[#0b1628]"
                     style={{
+                        position: 'relative',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        borderRadius: 24,
+                        overflow: 'hidden',
+                        boxShadow: '0 25px 60px -15px rgba(0,0,0,0.7)',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        background: '#0b1628',
                         width: '90vw',
                         maxWidth: '1200px',
                         height: '80vh',
-                        maxHeight: '85vh'
+                        maxHeight: '85vh',
+                        zIndex: 10,
                     }}
                     initial={{ scale: 0.95, y: 30, opacity: 0 }}
                     animate={{ scale: 1, y: 0, opacity: 1 }}
@@ -233,7 +256,7 @@ const ClassroomMapModal: React.FC<ClassroomMapModalProps> = ({ roomId, meta, tea
                     </div>
 
                     {/* Map Content */}
-                    <div className="flex-1 relative bg-[#0b1628]">
+                    <div style={{ flex: 1, position: 'relative', background: '#0b1628', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                         <InteractiveFloorMap
                             floorLabel="" 
                             highlightedRoomId={roomId}

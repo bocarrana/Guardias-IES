@@ -651,9 +651,12 @@ button,
 /* --- Kiosk Mode (Pantalla Role) --- */
 .kiosk-mode {
   overflow: hidden !important;
-  width: 100%;
-  height: 100vh;
-  zoom: 0.78; /* Scale down the TV layout so it fits like a desktop screen */
+  width: 100vw !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
 }
 
 .kiosk-mode .container-wide,
@@ -662,35 +665,53 @@ button,
   padding: 0 !important;
   margin: 0 !important;
   overflow: hidden !important;
+  height: 100% !important;
 }
 
-/* Hide scrollbars globally in kiosk mode */
-.kiosk-mode * {
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
+/* Touch scroll utility for kiosk mode lists */
+.kiosk-mode .custom-touch-scroll {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(6, 182, 212, 0.3) transparent !important;
 }
 
-.kiosk-mode *::-webkit-scrollbar {
-  display: none !important;
+.kiosk-mode .custom-touch-scroll::-webkit-scrollbar {
+  width: 5px !important;
+  display: block !important;
+}
+
+.kiosk-mode .custom-touch-scroll::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.kiosk-mode .custom-touch-scroll::-webkit-scrollbar-thumb {
+  background: rgba(6, 182, 212, 0.3) !important;
+  border-radius: 4px !important;
+}
+
+.kiosk-mode .custom-touch-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 182, 212, 0.6) !important;
 }
 
 /* Specific scaling for the timeline cards */
 .kiosk-mode .timeline-card {
-  padding: 24px !important;
+  padding: 20px !important;
 }
 
 .kiosk-mode h2 {
-  font-size: 1.8rem !important;
+  font-size: 1.6rem !important;
 }
 
 .kiosk-mode .badge {
-  font-size: 0.8rem !important;
-  padding: 4px 12px !important;
+  font-size: 0.75rem !important;
+  padding: 3px 10px !important;
 }
 
 .kiosk-mode .teacher-avatar {
-  width: 32px !important;
-  height: 32px !important;
+  width: 36px !important;
+  height: 36px !important;
 }
 
 /* --- Premium Tooltips --- */

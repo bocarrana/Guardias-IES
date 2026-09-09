@@ -30,6 +30,7 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
         has_task: editingGuard?.has_task || TaskStatus.NO,
         observations: editingGuard?.observations || '',
         requesting_teacher_id: editingGuard?.requesting_teacher_id || currentUser?.id || '',
+        covering_teacher_id: editingGuard?.covering_teacher_id || '',
         task_file_url: editingGuard?.task_file_url || '',
     });
     const [personalSchedule, setPersonalSchedule] = useState<PersonalScheduleEntry[]>([]);
@@ -163,15 +164,19 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
                         has_task: uploadedFileUrl ? TaskStatus.YES : formData.has_task,
                         observations: formData.observations,
                         requesting_teacher_id: formData.requesting_teacher_id || currentUser?.id || '',
+                        covering_teacher_id: formData.covering_teacher_id || null,
                         task_file_url: uploadedFileUrl || formData.task_file_url,
                     };
                 });
                 await onSubmit(payloads);
             } else {
-                let finalFormData = { ...formData };
+                let finalFormData: any = { ...formData };
                 if (uploadedFileUrl) {
                     finalFormData.task_file_url = uploadedFileUrl;
                     finalFormData.has_task = TaskStatus.YES;
+                }
+                if (!finalFormData.covering_teacher_id) {
+                    finalFormData.covering_teacher_id = null;
                 }
                 await onSubmit(finalFormData);
             }
@@ -292,6 +297,31 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
                             </select>
                             <p style={{ fontSize: '0.65rem', color: 'var(--slate-500)', marginTop: 4 }}>
                                 Como administrador, puedes crear guardias para cualquier docente.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Admin Covering Teacher (Profesor que cubre / a posteriori) */}
+                    {isAdmin && (
+                        <div>
+                            <label className="label">Profesor que realiza/cubre la guardia (Opcional - a posteriori)</label>
+                            <select
+                                className="select"
+                                value={formData.covering_teacher_id}
+                                onChange={(e) => setFormData({ ...formData, covering_teacher_id: e.target.value })}
+                                style={{ borderColor: 'var(--brand-400)', color: 'var(--text-primary)' }}
+                            >
+                                <option value="">Sin asignar (Pendiente)</option>
+                                {teachers
+                                    .sort((a, b) => a.name.localeCompare(b.name))
+                                    .map((t) => (
+                                        <option key={t.id} value={t.id}>
+                                            {t.name} ({t.department})
+                                        </option>
+                                    ))}
+                            </select>
+                            <p style={{ fontSize: '0.65rem', color: 'var(--slate-500)', marginTop: 4 }}>
+                                Si seleccionas a la persona que la realizó, la guardia se le asignará y contabilizará directamente.
                             </p>
                         </div>
                     )}

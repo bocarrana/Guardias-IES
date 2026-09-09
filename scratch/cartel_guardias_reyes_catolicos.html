@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía de Guardias - Sala de Profesores IES Reyes Católicos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0284c7;
+            --primary-dark: #0369a1;
+            --navy: #0f172a;
+            --navy-card: #1e293b;
+            --accent: #06b6d4;
+            --orange: #f97316;
+            --orange-dark: #ea580c;
+            --green: #10b981;
+            --bg-page: #f1f5f9;
+            --border-light: #e2e8f0;
+            --text-dark: #0f172a;
+            --text-muted: #475569;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #cbd5e1;
+            color: var(--text-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .poster-container {
+            width: 800px;
+            min-height: 1130px;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            padding: 32px 36px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            border: 1px solid #cbd5e1;
+        }
+
+        /* Top Header */
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #e0f2fe;
+            padding-bottom: 18px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .header-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #0284c7, #06b6d4);
+            color: #ffffff;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 12px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            padding: 6px 18px;
+            border-radius: 30px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+        }
+
+        .header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 32px;
+            font-weight: 900;
+            color: var(--navy);
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+        }
+
+        .header .subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        /* Content Sections */
+        .sections-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex: 1;
+        }
+
+        .card {
+            border-radius: 16px;
+            padding: 20px 22px;
+            border: 2px solid var(--border-light);
+            background: #ffffff;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.03);
+            position: relative;
+        }
+
+        .card.section-one {
+            border-color: #bae6fd;
+            background: linear-gradient(180deg, #f0f9ff 0%, #ffffff 100%);
+        }
+
+        .card.section-two {
+            border-color: #fed7aa;
+            background: linear-gradient(180deg, #fff7ed 0%, #ffffff 100%);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+
+        .card-icon-badge {
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .section-one .card-icon-badge {
+            background: #0284c7;
+            color: #ffffff;
+        }
+
+        .section-two .card-icon-badge {
+            background: #ea580c;
+            color: #ffffff;
+        }
+
+        .card-title h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--navy);
+        }
+
+        .card-title p {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Steps Row */
+        .steps-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+        }
+
+        .step-item {
+            background: #ffffff;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px 12px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .step-circle {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 900;
+            font-family: 'Outfit', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+
+        .section-one .step-circle {
+            background: #0284c7;
+        }
+
+        .section-two .step-circle {
+            background: #ea580c;
+        }
+
+        .step-item h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 13.5px;
+            font-weight: 800;
+            color: var(--navy);
+            margin-bottom: 4px;
+        }
+
+        .step-item p {
+            font-size: 11.5px;
+            color: #475569;
+            line-height: 1.4;
+            font-weight: 500;
+        }
+
+        .pend-btn-preview {
+            background: #0284c7;
+            color: #ffffff;
+            font-weight: 900;
+            font-family: 'Outfit', sans-serif;
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 6px;
+            display: inline-block;
+            box-shadow: 0 2px 6px rgba(2, 132, 199, 0.4);
+            margin: 2px 0;
+            letter-spacing: 0.05em;
+        }
+
+        /* Modes Card */
+        .modes-box {
+            background: #ffffff;
+            border: 2px solid #fdba74;
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-top: 14px;
+        }
+
+        .modes-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--navy);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .modes-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .mode-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .mode-icon {
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+
+        .mode-info h4 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 12.5px;
+            font-weight: 800;
+            color: var(--navy);
+            margin-bottom: 2px;
+        }
+
+        .mode-info p {
+            font-size: 11px;
+            color: #475569;
+            line-height: 1.35;
+            font-weight: 500;
+        }
+
+        /* Callout Tips */
+        .callout-bar {
+            background: #f1f5f9;
+            border-radius: 10px;
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 12px;
+            border-left: 5px solid #0284c7;
+            font-weight: 500;
+            color: var(--navy);
+        }
+
+        /* Footer */
+        .footer {
+            border-top: 2px solid #e2e8f0;
+            padding-top: 14px;
+            margin-top: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .url-box {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .url-box span {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .url-tag {
+            font-family: 'Outfit', monospace;
+            font-weight: 900;
+            color: #0369a1;
+            font-size: 15px;
+            background: #e0f2fe;
+            padding: 4px 12px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+
+        .contact-box {
+            text-align: right;
+            font-size: 11.5px;
+            color: var(--text-muted);
+        }
+
+        .contact-box strong {
+            color: var(--navy);
+            font-size: 13px;
+        }
+
+        @media print {
+            body {
+                background: none;
+                padding: 0;
+            }
+            .poster-container {
+                box-shadow: none;
+                border: none;
+                width: 100%;
+                min-height: 100vh;
+                border-radius: 0;
+                padding: 10mm 12mm;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+
+        .print-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #0f172a;
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            font-weight: 800;
+            font-family: 'Outfit', sans-serif;
+            border-radius: 40px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+            z-index: 999;
+        }
+        .print-btn:hover {
+            transform: scale(1.05);
+            background: #1e293b;
+        }
+    </style>
+</head>
+<body>
+
+    <button class="print-btn no-print" onclick="window.print()">
+        🖨️ Imprimir Cartel (A4 / A3)
+    </button>
+
+    <div class="poster-container" id="poster">
+        <!-- HEADER -->
+        <div class="header">
+            <div class="header-pill">🏛️ App de Guardias • IES Reyes Católicos</div>
+            <h1>GUÍA RÁPIDA DE GUARDIAS</h1>
+            <div class="subtitle">Instrucciones prácticas para todo el claustro docente</div>
+        </div>
+
+        <!-- SECTIONS -->
+        <div class="sections-wrapper">
+            
+            <!-- BLOQUE 1: COMUNICAR AUSENCIA -->
+            <div class="card section-one">
+                <div class="card-header">
+                    <div class="card-icon-badge">📝</div>
+                    <div class="card-title">
+                        <h2>1. ¿Vas a faltar? Crea tu guardia con antelación</h2>
+                        <p>Realízalo desde cualquier dispositivo (móvil, tablet u ordenador de clase)</p>
+                    </div>
+                </div>
+                <div class="steps-row">
+                    <div class="step-item">
+                        <div class="step-circle">1</div>
+                        <h3>Entra en la App</h3>
+                        <p>Inicia sesión con tu cuenta de Google de <strong>@iesreyescatolicos.com</strong>.</p>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">2</div>
+                        <h3>Selecciona Datos</h3>
+                        <p>Pulsa en <em>"Nueva Guardia"</em> y <strong>selecciona día, hora y grupo a solicitar</strong>.</p>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">3</div>
+                        <h3>Deja la Tarea</h3>
+                        <p>Escribe las indicaciones o adjunta enlaces/materiales para los alumnos.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BLOQUE 2: RECOGER GUARDIA DESDE LA PANTALLA -->
+            <div class="card section-two">
+                <div class="card-header">
+                    <div class="card-icon-badge">🖥️</div>
+                    <div class="card-title">
+                        <h2>2. ¿Estás de guardia? Recoge desde la pantalla</h2>
+                        <p>En el panel táctil interactivo instalado en la Sala de Profesores</p>
+                    </div>
+                </div>
+                <div class="steps-row">
+                    <div class="step-item">
+                        <div class="step-circle">1</div>
+                        <h3>Toca botón <span class="pend-btn-preview">PEND</span></h3>
+                        <p>En la fila de la guardia pendiente de cubrir, toca el botón azul <strong>"Pend"</strong>.</p>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">2</div>
+                        <h3>Elige el Modo</h3>
+                        <p>Selecciona método <strong>Recomendado</strong> (equidad) o <strong>Aleatorio</strong> (sorteo).</p>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">3</div>
+                        <h3>Recoge la Guardia</h3>
+                        <p>Toca tu nombre, pulsa <strong>"Recoger Guardia"</strong> y consulta aula y tarea.</p>
+                    </div>
+                </div>
+
+                <!-- MODOS DE SELECCIÓN -->
+                <div class="modes-box">
+                    <div class="modes-title">
+                        ⚙️ Modos de selección de profesor de guardia disponibles en la pantalla:
+                    </div>
+                    <div class="modes-grid">
+                        <div class="mode-card">
+                            <div class="mode-icon">🛡️</div>
+                            <div class="mode-info">
+                                <h4>Modo Recomendado (Equidad)</h4>
+                                <p>Propone al compañero disponible que lleva <strong>menos guardias acumuladas</strong> en el curso para un reparto justo y equilibrado.</p>
+                            </div>
+                        </div>
+                        <div class="mode-card">
+                            <div class="mode-icon">🎲</div>
+                            <div class="mode-info">
+                                <h4>Modo Aleatorio (Dados)</h4>
+                                <p>Efectúa un <strong>sorteo al azar</strong> entre todos los profesores que tienen asignada guardia oficial en esa franja horaria.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- FOOTER -->
+        <div class="footer">
+            <div class="url-box">
+                <span>Acceso directo desde cualquier navegador:</span>
+                <strong class="url-tag">guardias.iesreyescatolicos.com</strong>
+            </div>
+            <div class="contact-box">
+                <span>Soporte técnico y dudas del centro:</span><br>
+                <strong>Alberto Planas</strong> (<code>alplanast@iesreyescatolicos.com</code>)
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

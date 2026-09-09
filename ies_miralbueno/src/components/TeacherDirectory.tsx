@@ -1,14 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Guard, GuardStatus, GuardType, MetaOptions, Teacher } from '../types';
-import { 
-    Search, User, Briefcase, CheckCircle, Clock, FilePlus, Mail, Award, 
-    Users, CalendarDays, SlidersHorizontal, Trophy, ArrowDownAZ, Building2, X, Check 
-} from 'lucide-react';
+import { Search, User, Briefcase, CheckCircle, Clock, FilePlus, Mail, Award, Users, CalendarDays } from 'lucide-react';
 import { getStorageUrl } from '../services/supabaseClient';
 import TeacherAvatar from './TeacherAvatar';
 import TeacherScheduleViewer from './TeacherScheduleViewer';
-import { canEditTeacherProfile, isJefaturaRole, getRoleStyle, getRoleDisplayName, isPantallaRole } from '../utils/roles';
+import { canEditTeacherProfile, isJefaturaRole, getRoleStyle, getRoleDisplayName } from '../utils/roles';
 
 interface TeacherDirectoryProps {
     teachers: Teacher[];
@@ -18,8 +15,6 @@ interface TeacherDirectoryProps {
     onRefresh?: () => void;
     initialSearchQuery?: string;
 }
-
-export type TeacherViewMode = 'ranking' | 'name' | 'department';
 
 const RankMedal = ({ rank }: { rank: number }) => {
     const colors = [
@@ -53,38 +48,14 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, guards, m
     const [searchQuery, setSearchQuery] = useState(initialSearchQuery || '');
     const [selectedDepartment, setSelectedDepartment] = useState<string>('');
     const [viewingTeacher, setViewingTeacher] = useState<Teacher | null>(null);
-    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-    
-    // Persistent View Mode ('ranking' | 'name' | 'department')
-    const [viewMode, setViewMode] = useState<TeacherViewMode>(() => {
-        try {
-            const saved = localStorage.getItem('teacher_directory_view_mode');
-            if (saved === 'ranking' || saved === 'name' || saved === 'department') {
-                return saved;
-            }
-        } catch {
-            // fallback
-        }
-        return 'ranking';
-    });
-
-    const handleSelectViewMode = (mode: TeacherViewMode) => {
-        setViewMode(mode);
-        try {
-            localStorage.setItem('teacher_directory_view_mode', mode);
-        } catch {
-            // ignore
-        }
-    };
 
     const departments = useMemo(() => {
-        const deps = new Set(teachers.filter(t => !isPantallaRole(t.role)).map(t => t.department).filter(Boolean));
-        return Array.from(deps).sort((a, b) => (a as string).localeCompare(b as string, 'es', { sensitivity: 'base' }));
+        const deps = new Set(teachers.map(t => t.department).filter(Boolean));
+        return Array.from(deps).sort();
     }, [teachers]);
 
     const filtered = useMemo(() => {
         const visibleTeachers = teachers.filter(t => {
-            if (isPantallaRole(t.role)) return false;
             const matchesSearch = !searchQuery || 
                 t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 (t.department || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -95,7 +66,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, guards, m
             return matchesSearch && matchesDept;
         });
 
-        const mapped = visibleTeachers.map((t) => {
+        return visibleTeachers.map((t) => {
             const myGuards = guards.filter(
                 (g) => g.covering_teacher_id === t.id || g.requesting_teacher_id === t.id
             );
@@ -108,47 +79,13 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, guards, m
             const requested = myGuards.filter((g) => g.requesting_teacher_id === t.id).length;
 
             return { ...t, ordinary, coexistence, requested, total: ordinary + coexistence };
-        });
-
-        if (viewMode === 'name') {
-            // 2. Por Nombre (A-Z) teniendo en cuenta el nombre primero
-            return mapped.sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
-        } else if (viewMode === 'department') {
-            // 3. Por Departamento
-            return mapped.sort((a, b) => {
-                const deptA = a.department || 'Sin Departamento';
-                const deptB = b.department || 'Sin Departamento';
-                const deptDiff = deptA.localeCompare(deptB, 'es', { sensitivity: 'base' });
-                if (deptDiff !== 0) return deptDiff;
-                return a.name.localeCompare(b.name, 'es', { sensitivity: 'base' });
-            });
-        } else {
-            // 1. Por Ranking (Guardias ordinarias descendente)
-            return mapped.sort((a, b) => {
-                if (b.ordinary !== a.ordinary) return b.ordinary - a.ordinary;
-                return a.name.localeCompare(b.name, 'es', { sensitivity: 'base' });
-            });
-        }
-    }, [teachers, guards, searchQuery, selectedDepartment, viewMode]);
-
-    const getViewModeLabel = () => {
-        if (viewMode === 'ranking') return { label: 'Por Ranking', icon: Trophy, color: '#fbbf24' };
-        if (viewMode === 'name') return { label: 'Por Nombre (A-Z)', icon: ArrowDownAZ, color: 'var(--brand-400)' };
-        return { 
-            label: selectedDepartment ? `Dpto: ${selectedDepartment}` : 'Por Departamento', 
-            icon: Building2, 
-            color: '#a855f7' 
-        };
-    };
-
-    const currentModeInfo = getViewModeLabel();
-    const CurrentModeIcon = currentModeInfo.icon;
+        }).sort((a, b) => b.ordinary - a.ordinary);
+    }, [teachers, guards, searchQuery, selectedDepartment]);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            {/* Search & Actions Bar */}
+            {/* Search & Filters */}
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                {/* Search Input */}
                 <div style={{ position: 'relative', minWidth: 260, flex: 1 }}>
                     <Search style={{
                         position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
@@ -156,496 +93,42 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, guards, m
                     }} />
                     <input
                         type="text"
-                        placeholder="Buscar profesorado por nombre, departamento..."
+                        placeholder="Buscar profesorado..."
                         className="input"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         style={{ paddingLeft: 38, width: '100%' }}
                     />
-                    {searchQuery && (
-                        <button
-                            onClick={() => setSearchQuery('')}
-                            style={{
-                                position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-                                background: 'transparent', border: 'none', color: 'var(--text-muted)',
-                                cursor: 'pointer', display: 'flex', alignItems: 'center'
-                            }}
-                        >
-                            <X size={14} />
-                        </button>
-                    )}
                 </div>
 
-                {/* View Options Modal Trigger Button */}
-                <button
-                    onClick={() => setIsViewModalOpen(true)}
-                    className="btn btn-secondary"
-                    style={{
-                        height: '42px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 10,
-                        padding: '0 16px',
-                        borderRadius: 10,
-                        border: '1px solid var(--border-subtle)',
-                        background: 'var(--bg-card)',
-                        color: 'var(--text-primary)',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                    }}
-                >
-                    <SlidersHorizontal size={16} style={{ color: 'var(--brand-400)' }} />
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Vista:</span>
-                    <span style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        fontSize: '0.8rem',
-                        fontWeight: 700,
-                        color: currentModeInfo.color,
-                        background: 'rgba(255,255,255,0.05)',
-                        padding: '3px 8px',
-                        borderRadius: 6,
-                    }}>
-                        <CurrentModeIcon size={14} />
-                        {currentModeInfo.label}
-                    </span>
-                </button>
-
-                {/* Department quick filter if in department mode or if filtered */}
-                {viewMode === 'department' && (
-                    <div style={{ minWidth: 200 }}>
-                        <select
-                            className="select"
-                            value={selectedDepartment}
-                            onChange={(e) => setSelectedDepartment(e.target.value)}
-                            style={{ width: '100%', height: '42px', color: 'var(--text-primary)' }}
-                        >
-                            <option value="">Todos los departamentos</option>
-                            {departments.map((dept) => (
-                                <option key={dept as string} value={dept as string}>{dept as string}</option>
-                            ))}
-                        </select>
-                    </div>
-                )}
+                <div style={{ minWidth: 200 }}>
+                    <select
+                        className="select"
+                        value={selectedDepartment}
+                        onChange={(e) => setSelectedDepartment(e.target.value)}
+                        style={{ width: '100%', height: '42px', color: 'var(--text-primary)' }}
+                    >
+                        <option value="">Todos los departamentos</option>
+                        {departments.map((dept) => (
+                            <option key={dept} value={dept}>{dept}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
-            {/* Summary & Active Filters */}
+            {/* Summary */}
             <div style={{
-                display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center',
+                display: 'flex', gap: 12, flexWrap: 'wrap',
                 borderBottom: '1px solid var(--border-subtle)',
                 paddingBottom: 16,
             }}>
                 <span style={{
-                    fontSize: '0.72rem', fontFamily: 'var(--font-mono)',
+                    fontSize: '0.7rem', fontFamily: 'var(--font-mono)',
                     color: 'var(--text-muted)', letterSpacing: '0.08em',
                 }}>
-                    DOCENTES: <span style={{ color: 'var(--brand-400)', fontWeight: 800 }}>{filtered.length}</span>
+                    REGISTROS: <span style={{ color: 'var(--brand-400)', fontWeight: 700 }}>{filtered.length}</span>
                 </span>
-
-                <div style={{ width: 1, height: 14, background: 'var(--border-subtle)' }} />
-
-                <span style={{
-                    fontSize: '0.72rem', fontFamily: 'var(--font-mono)',
-                    color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6
-                }}>
-                    MODO: 
-                    <span style={{ 
-                        color: currentModeInfo.color, 
-                        fontWeight: 700,
-                        background: 'rgba(255,255,255,0.04)',
-                        padding: '2px 8px',
-                        borderRadius: 4,
-                        border: '1px solid var(--border-subtle)',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 5
-                    }}>
-                        <CurrentModeIcon size={12} />
-                        {viewMode === 'ranking' && 'RANKING DE GUARDIAS'}
-                        {viewMode === 'name' && 'ORDEN ALFABÉTICO (A-Z)'}
-                        {viewMode === 'department' && (selectedDepartment ? `DPTO: ${selectedDepartment.toUpperCase()}` : 'TODOS LOS DEPARTAMENTOS')}
-                    </span>
-                </span>
-
-                {selectedDepartment && (
-                    <button
-                        onClick={() => setSelectedDepartment('')}
-                        style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 4,
-                            padding: '2px 8px',
-                            borderRadius: 4,
-                            background: 'rgba(239, 68, 68, 0.1)',
-                            border: '1px solid rgba(239, 68, 68, 0.2)',
-                            color: '#f87171',
-                            fontSize: '0.68rem',
-                            cursor: 'pointer',
-                            fontFamily: 'var(--font-mono)'
-                        }}
-                    >
-                        Quitar filtro dpto <X size={11} />
-                    </button>
-                )}
             </div>
-
-            {/* Unified View Options Modal */}
-            <AnimatePresence>
-                {isViewModalOpen && (
-                    <div
-                        style={{
-                            position: 'fixed',
-                            inset: 0,
-                            zIndex: 1000,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: 16,
-                            background: 'rgba(0, 0, 0, 0.75)',
-                            backdropFilter: 'blur(8px)',
-                        }}
-                        onClick={() => setIsViewModalOpen(false)}
-                    >
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: 15 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 15 }}
-                            transition={{ duration: 0.2 }}
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                                width: '100%',
-                                maxWidth: 540,
-                                background: 'var(--bg-card)',
-                                border: '1px solid var(--border-subtle)',
-                                borderRadius: 16,
-                                overflow: 'hidden',
-                                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)',
-                                display: 'flex',
-                                flexDirection: 'column',
-                            }}
-                        >
-                            {/* Modal Header */}
-                            <div style={{
-                                padding: '20px 24px',
-                                borderBottom: '1px solid var(--border-subtle)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                background: 'rgba(255,255,255,0.02)'
-                            }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                    <div style={{
-                                        width: 38,
-                                        height: 38,
-                                        borderRadius: 10,
-                                        background: 'var(--brand-900-subtle)',
-                                        border: '1px solid var(--brand-500)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        color: 'var(--brand-400)'
-                                    }}>
-                                        <SlidersHorizontal size={20} />
-                                    </div>
-                                    <div>
-                                        <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--heading-color)', margin: 0 }}>
-                                            Opciones de Vista del Profesorado
-                                        </h3>
-                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>
-                                            Selecciona cómo deseas organizar las tarjetas
-                                        </p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setIsViewModalOpen(false)}
-                                    style={{
-                                        background: 'transparent',
-                                        border: 'none',
-                                        color: 'var(--text-muted)',
-                                        cursor: 'pointer',
-                                        padding: 6,
-                                        borderRadius: 8,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                    }}
-                                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-                                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
-                                >
-                                    <X size={20} />
-                                </button>
-                            </div>
-
-                            {/* Modal Body: 3 View Options */}
-                            <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
-                                {/* 1. Por Ranking */}
-                                <div
-                                    onClick={() => handleSelectViewMode('ranking')}
-                                    style={{
-                                        padding: 16,
-                                        borderRadius: 12,
-                                        border: `2px solid ${viewMode === 'ranking' ? '#fbbf24' : 'var(--border-subtle)'}`,
-                                        background: viewMode === 'ranking' ? 'rgba(251, 191, 36, 0.08)' : 'rgba(255,255,255,0.02)',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'flex-start',
-                                        gap: 14,
-                                        transition: 'all 0.2s',
-                                    }}
-                                >
-                                    <div style={{
-                                        width: 40,
-                                        height: 40,
-                                        borderRadius: 10,
-                                        background: 'rgba(251, 191, 36, 0.15)',
-                                        border: '1px solid rgba(251, 191, 36, 0.3)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        color: '#fbbf24',
-                                        flexShrink: 0,
-                                        marginTop: 2
-                                    }}>
-                                        <Trophy size={20} />
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--heading-color)' }}>
-                                                    1. Por Ranking de Guardias
-                                                </span>
-                                                <span style={{
-                                                    fontSize: '0.65rem',
-                                                    fontWeight: 700,
-                                                    fontFamily: 'var(--font-mono)',
-                                                    padding: '2px 6px',
-                                                    borderRadius: 4,
-                                                    background: 'rgba(251, 191, 36, 0.2)',
-                                                    color: '#fbbf24',
-                                                    letterSpacing: '0.04em'
-                                                }}>
-                                                    PODIO 🥇🥈🥉
-                                                </span>
-                                            </div>
-                                            {viewMode === 'ranking' && (
-                                                <div style={{
-                                                    width: 20, height: 20, borderRadius: '50%',
-                                                    background: '#fbbf24', color: '#000',
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                                }}>
-                                                    <Check size={14} strokeWidth={3} />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '6px 0 0', lineHeight: 1.4 }}>
-                                            Ordena al profesorado por mayor número de guardias ordinarias cubiertas. Muestra medallas de podio en los 3 primeros puestos.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* 2. Por Nombre */}
-                                <div
-                                    onClick={() => handleSelectViewMode('name')}
-                                    style={{
-                                        padding: 16,
-                                        borderRadius: 12,
-                                        border: `2px solid ${viewMode === 'name' ? 'var(--brand-500)' : 'var(--border-subtle)'}`,
-                                        background: viewMode === 'name' ? 'var(--brand-900-subtle)' : 'rgba(255,255,255,0.02)',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'flex-start',
-                                        gap: 14,
-                                        transition: 'all 0.2s',
-                                    }}
-                                >
-                                    <div style={{
-                                        width: 40,
-                                        height: 40,
-                                        borderRadius: 10,
-                                        background: 'var(--brand-900-subtle)',
-                                        border: '1px solid var(--brand-500)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        color: 'var(--brand-400)',
-                                        flexShrink: 0,
-                                        marginTop: 2
-                                    }}>
-                                        <ArrowDownAZ size={20} />
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--heading-color)' }}>
-                                                    2. Por Nombre (Orden Alfabético)
-                                                </span>
-                                                <span style={{
-                                                    fontSize: '0.65rem',
-                                                    fontWeight: 700,
-                                                    fontFamily: 'var(--font-mono)',
-                                                    padding: '2px 6px',
-                                                    borderRadius: 4,
-                                                    background: 'var(--brand-900-subtle)',
-                                                    color: 'var(--brand-400)',
-                                                    letterSpacing: '0.04em'
-                                                }}>
-                                                    A &rarr; Z
-                                                </span>
-                                            </div>
-                                            {viewMode === 'name' && (
-                                                <div style={{
-                                                    width: 20, height: 20, borderRadius: '50%',
-                                                    background: 'var(--brand-400)', color: '#000',
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                                }}>
-                                                    <Check size={14} strokeWidth={3} />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '6px 0 0', lineHeight: 1.4 }}>
-                                            Ordena de la A a la Z según el nombre de pila. Directorio limpio para localizar a cualquier compañero rápidamente.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* 3. Por Departamento */}
-                                <div
-                                    onClick={() => handleSelectViewMode('department')}
-                                    style={{
-                                        padding: 16,
-                                        borderRadius: 12,
-                                        border: `2px solid ${viewMode === 'department' ? '#a855f7' : 'var(--border-subtle)'}`,
-                                        background: viewMode === 'department' ? 'rgba(168, 85, 247, 0.08)' : 'rgba(255,255,255,0.02)',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: 12,
-                                        transition: 'all 0.2s',
-                                    }}
-                                >
-                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-                                        <div style={{
-                                            width: 40,
-                                            height: 40,
-                                            borderRadius: 10,
-                                            background: 'rgba(168, 85, 247, 0.15)',
-                                            border: '1px solid rgba(168, 85, 247, 0.3)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            color: '#a855f7',
-                                            flexShrink: 0,
-                                            marginTop: 2
-                                        }}>
-                                            <Building2 size={20} />
-                                        </div>
-                                        <div style={{ flex: 1 }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                    <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--heading-color)' }}>
-                                                        3. Por Departamento
-                                                    </span>
-                                                    <span style={{
-                                                        fontSize: '0.65rem',
-                                                        fontWeight: 700,
-                                                        fontFamily: 'var(--font-mono)',
-                                                        padding: '2px 6px',
-                                                        borderRadius: 4,
-                                                        background: 'rgba(168, 85, 247, 0.2)',
-                                                        color: '#c084fc',
-                                                        letterSpacing: '0.04em'
-                                                    }}>
-                                                        DEPARTAMENTOS
-                                                    </span>
-                                                </div>
-                                                {viewMode === 'department' && (
-                                                    <div style={{
-                                                        width: 20, height: 20, borderRadius: '50%',
-                                                        background: '#a855f7', color: '#fff',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                                    }}>
-                                                        <Check size={14} strokeWidth={3} />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '6px 0 0', lineHeight: 1.4 }}>
-                                                Agrupa o filtra al profesorado por departamentos didácticos y áreas de especialidad.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Sub-selector for Department */}
-                                    {viewMode === 'department' && (
-                                        <div 
-                                            onClick={(e) => e.stopPropagation()}
-                                            style={{
-                                                marginTop: 4,
-                                                paddingTop: 12,
-                                                borderTop: '1px dashed rgba(168, 85, 247, 0.25)',
-                                            }}
-                                        >
-                                            <label style={{
-                                                display: 'block',
-                                                fontSize: '0.72rem',
-                                                fontWeight: 700,
-                                                color: '#c084fc',
-                                                marginBottom: 6,
-                                                fontFamily: 'var(--font-mono)',
-                                                textTransform: 'uppercase'
-                                            }}>
-                                                Filtrar por departamento específico:
-                                            </label>
-                                            <select
-                                                className="select"
-                                                value={selectedDepartment}
-                                                onChange={(e) => setSelectedDepartment(e.target.value)}
-                                                style={{
-                                                    width: '100%',
-                                                    height: '38px',
-                                                    fontSize: '0.85rem',
-                                                    color: 'var(--text-primary)',
-                                                    background: 'var(--bg-main)',
-                                                    borderColor: 'rgba(168, 85, 247, 0.4)'
-                                                }}
-                                            >
-                                                <option value="">Todos los departamentos ({departments.length})</option>
-                                                {departments.map((dept) => (
-                                                    <option key={dept as string} value={dept as string}>{dept as string}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Modal Footer */}
-                            <div style={{
-                                padding: '16px 24px',
-                                borderTop: '1px solid var(--border-subtle)',
-                                background: 'rgba(255,255,255,0.02)',
-                                display: 'flex',
-                                justifyContent: 'flex-end',
-                                gap: 10
-                            }}>
-                                <button
-                                    onClick={() => setIsViewModalOpen(false)}
-                                    className="btn btn-primary"
-                                    style={{
-                                        padding: '8px 20px',
-                                        fontSize: '0.85rem',
-                                        fontWeight: 700,
-                                        borderRadius: 8,
-                                    }}
-                                >
-                                    Aplicar y Ver
-                                </button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
 
             {/* Teacher Grid */}
             <div style={{
@@ -659,8 +142,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, guards, m
                             ? getStorageUrl(teacher.avatar_url, 'Fotos')
                             : `https://ui-avatars.com/api/?name=${encodeURIComponent(teacher.name)}&background=0f172a&color=22d3ee&size=80`;
 
-                        // Only show podium medals when in ranking mode and not filtered by department/search
-                        const rankMedal = (viewMode === 'ranking' && idx < 3 && !selectedDepartment && !searchQuery) ? (
+                        const rankMedal = idx < 3 ? (
                             <RankMedal rank={idx} />
                         ) : null;
 

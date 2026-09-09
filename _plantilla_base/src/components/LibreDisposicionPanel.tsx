@@ -15,7 +15,7 @@ import {
     getMaxLdPerTeacher, setMaxLdPerTeacher,
 } from '../services/supabaseClient';
 import { getTeachers } from '../services/supabaseClient';
-import { canManageLibreDisposicion, isPantallaRole } from '../utils/roles';
+import { canManageLibreDisposicion } from '../utils/roles';
 import { CalendarDay } from '../types';
 import { toast } from 'sonner';
 import { exportLdPDF, exportLdExcel, ExportGrouping, ExportFormat } from '../utils/ldExport';
@@ -144,7 +144,7 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
             setMaxLdPerTeacherState(maxLd);
             setNewMaxLd(maxLd);
             setCalendarDays(days);
-            setTeachers((tchrs as Teacher[]).filter(t => !isPantallaRole(t.role)));
+            setTeachers(tchrs as Teacher[]);
         } catch (err) {
             console.error('Error loading LD panel:', err);
             toast.error('Error al cargar los datos');

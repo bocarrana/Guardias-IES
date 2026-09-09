@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Teacher, Guard, MetaOptions, GuardType } from '../types';
-import { isAdminRole, getRoleDisplayName, getRoleStyle, canEditTeacherProfile, getAssignableRoles, isPantallaRole } from '../utils/roles';
+import { isAdminRole, getRoleDisplayName, getRoleStyle, canEditTeacherProfile, getAssignableRoles } from '../utils/roles';
 import {
     Users,
     ShieldAlert,
@@ -34,8 +34,7 @@ import {
     UserMinus,
     Shield,
     Coffee,
-    Image as ImageIcon,
-    ArrowLeft
+    Image as ImageIcon
 } from 'lucide-react';
 import Papa from 'papaparse';
 import CrownLogo from './CrownLogo';
@@ -126,16 +125,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
     const [activeTab, setActiveTab] = useState<Tab>('teachers');
     const [search, setSearch] = useState('');
 
-    const availableDepartments = React.useMemo(() => {
-        const fromMeta = (meta?.subjects || []).filter(s => !s.padre_id).map(s => s.name.trim()).filter(Boolean);
-        const fromTeachers = (teachers || []).filter(t => !isPantallaRole(t.role)).map(t => (t.department || '').trim()).filter(Boolean);
-        const set = new Set([...fromMeta, ...fromTeachers]);
-        if (set.size === 0) {
-            DEPARTMENTS.forEach(d => set.add(d));
-        }
-        return Array.from(set).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
-    }, [meta.subjects, teachers]);
-
     // Common Form State
     const [isAdding, setIsAdding] = useState(false);
 
@@ -184,10 +173,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
         label: '', start_time: '', end_time: ''
     });
 
-    // Infra filter and search state
-    const [infraCategoryFilter, setInfraCategoryFilter] = useState<'all' | 'franja' | 'aula' | 'grupo' | 'materia'>('all');
-    const [infraSearch, setInfraSearch] = useState('');
-
     const [viewModeSchedules, setViewModeSchedules] = useState<'list' | 'grid'>('list');
     const [viewModePersonal, setViewModePersonal] = useState<'list' | 'grid'>('list');
     const [filterDayPersonal, setFilterDayPersonal] = useState<string>('');
@@ -198,8 +183,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
     const [sortSchedules, setSortSchedules] = useState<{ key: string; dir: 'asc' | 'desc' | null }>({ key: '', dir: null });
     const [sortPersonal, setSortPersonal] = useState<{ key: string; dir: 'asc' | 'desc' | null }>({ key: '', dir: null });
     const [sortAudit, setSortAudit] = useState<{ key: string; dir: 'asc' | 'desc' | null }>({ key: 'name', dir: 'asc' });
-    const [auditFilter, setAuditFilter] = useState<'pending' | 'completed' | 'all'>('pending');
-    const [navigationOrigin, setNavigationOrigin] = useState<'audit' | null>(null);
 
     const toggleSort = (setter: React.Dispatch<React.SetStateAction<{ key: string; dir: 'asc' | 'desc' | null }>>, key: string) => {
         setter(prev => {
@@ -349,7 +332,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
 
     // Filtered data
     const filteredTeachers = teachers.filter(t => {
-        if (isPantallaRole(t.role)) return false;
         const matchesSearch = t.name.toLowerCase().includes(search.toLowerCase()) ||
             (t.department || '').toLowerCase().includes(search.toLowerCase()) ||
             (t.role || '').toLowerCase().includes(search.toLowerCase());
@@ -370,9 +352,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
         g.type !== GuardType.RECREO
     );
 
-    const allAuditedTeachers = teachers
+    const auditResults = teachers
         .filter(t => {
-            if (isPantallaRole(t.role)) return false;
             const isActive = t.active !== false;
             // Exclude management team from audit as they might not have regular schedules
             const isNotDirectivo = t.guard_group !== 'Equipo Directivo';
@@ -392,20 +373,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                 email: t.email,
                 missing_personal: !hasPersonal,
                 missing_guards: !hasGuards,
-                is_complete: hasPersonal && hasGuards,
                 teacher: t
             };
-        });
-
-    const pendingAuditCount = allAuditedTeachers.filter(r => r.missing_personal || r.missing_guards).length;
-    const completedAuditCount = allAuditedTeachers.filter(r => !r.missing_personal && !r.missing_guards).length;
-
-    const auditResults = allAuditedTeachers
-        .filter(r => {
-            if (auditFilter === 'pending') return r.missing_personal || r.missing_guards;
-            if (auditFilter === 'completed') return !r.missing_personal && !r.missing_guards;
-            return true;
         })
+        .filter(r => r.missing_personal || r.missing_guards)
         .sort((a, b) => {
             if (!sortAudit.key || !sortAudit.dir) return 0;
             let va = '', vb = '';
@@ -1370,166 +1341,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                             </div>
                         )}
 
-                        {activeTab === 'infra' && (
-                            <div style={{
-                                display: 'flex',
-                                flexWrap: 'wrap',
-                                gap: 12,
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                marginBottom: 16,
-                                padding: '12px 16px',
-                                background: 'var(--bg-card)',
-                                borderRadius: 16,
-                                border: '1px solid var(--border-subtle)',
-                                boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
-                            }}>
-                                {/* Category Filter Pills */}
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-                                    <button
-                                        onClick={() => setInfraCategoryFilter('all')}
-                                        style={{
-                                            padding: '6px 14px',
-                                            borderRadius: 20,
-                                            fontSize: '0.8rem',
-                                            fontWeight: 700,
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 6,
-                                            border: infraCategoryFilter === 'all' ? '1px solid var(--brand-500)' : '1px solid var(--border-subtle)',
-                                            background: infraCategoryFilter === 'all' ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
-                                            color: infraCategoryFilter === 'all' ? 'var(--brand-400)' : 'var(--text-secondary)',
-                                            transition: 'all 0.2s'
-                                        }}
-                                    >
-                                        <span>Todos</span>
-                                        <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: 10, background: infraCategoryFilter === 'all' ? 'var(--brand-500)' : 'var(--bg-elevated)', color: infraCategoryFilter === 'all' ? '#0f172a' : 'var(--text-muted)', fontWeight: 800 }}>
-                                            {meta.slots.length + meta.classrooms.length + meta.groups.length + meta.subjects.filter(s => !s.padre_id).length}
-                                        </span>
-                                    </button>
-
-                                    <button
-                                        onClick={() => setInfraCategoryFilter('franja')}
-                                        style={{
-                                            padding: '6px 14px',
-                                            borderRadius: 20,
-                                            fontSize: '0.8rem',
-                                            fontWeight: 700,
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 6,
-                                            border: infraCategoryFilter === 'franja' ? '1px solid var(--brand-500)' : '1px solid var(--border-subtle)',
-                                            background: infraCategoryFilter === 'franja' ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
-                                            color: infraCategoryFilter === 'franja' ? 'var(--brand-400)' : 'var(--text-secondary)',
-                                            transition: 'all 0.2s'
-                                        }}
-                                    >
-                                        <Clock size={14} />
-                                        <span>Franjas Horarias</span>
-                                        <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: 10, background: infraCategoryFilter === 'franja' ? 'var(--brand-500)' : 'var(--bg-elevated)', color: infraCategoryFilter === 'franja' ? '#0f172a' : 'var(--text-muted)', fontWeight: 800 }}>
-                                            {meta.slots.length}
-                                        </span>
-                                    </button>
-
-                                    <button
-                                        onClick={() => setInfraCategoryFilter('aula')}
-                                        style={{
-                                            padding: '6px 14px',
-                                            borderRadius: 20,
-                                            fontSize: '0.8rem',
-                                            fontWeight: 700,
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 6,
-                                            border: infraCategoryFilter === 'aula' ? '1px solid var(--brand-500)' : '1px solid var(--border-subtle)',
-                                            background: infraCategoryFilter === 'aula' ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
-                                            color: infraCategoryFilter === 'aula' ? 'var(--brand-400)' : 'var(--text-secondary)',
-                                            transition: 'all 0.2s'
-                                        }}
-                                    >
-                                        <Building2 size={14} />
-                                        <span>Aulas / Espacios</span>
-                                        <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: 10, background: infraCategoryFilter === 'aula' ? 'var(--brand-500)' : 'var(--bg-elevated)', color: infraCategoryFilter === 'aula' ? '#0f172a' : 'var(--text-muted)', fontWeight: 800 }}>
-                                            {meta.classrooms.length}
-                                        </span>
-                                    </button>
-
-                                    <button
-                                        onClick={() => setInfraCategoryFilter('grupo')}
-                                        style={{
-                                            padding: '6px 14px',
-                                            borderRadius: 20,
-                                            fontSize: '0.8rem',
-                                            fontWeight: 700,
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 6,
-                                            border: infraCategoryFilter === 'grupo' ? '1px solid var(--brand-500)' : '1px solid var(--border-subtle)',
-                                            background: infraCategoryFilter === 'grupo' ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
-                                            color: infraCategoryFilter === 'grupo' ? 'var(--brand-400)' : 'var(--text-secondary)',
-                                            transition: 'all 0.2s'
-                                        }}
-                                    >
-                                        <GraduationCap size={14} />
-                                        <span>Grupos</span>
-                                        <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: 10, background: infraCategoryFilter === 'grupo' ? 'var(--brand-500)' : 'var(--bg-elevated)', color: infraCategoryFilter === 'grupo' ? '#0f172a' : 'var(--text-muted)', fontWeight: 800 }}>
-                                            {meta.groups.length}
-                                        </span>
-                                    </button>
-
-                                    <button
-                                        onClick={() => setInfraCategoryFilter('materia')}
-                                        style={{
-                                            padding: '6px 14px',
-                                            borderRadius: 20,
-                                            fontSize: '0.8rem',
-                                            fontWeight: 700,
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 6,
-                                            border: infraCategoryFilter === 'materia' ? '1px solid var(--brand-500)' : '1px solid var(--border-subtle)',
-                                            background: infraCategoryFilter === 'materia' ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
-                                            color: infraCategoryFilter === 'materia' ? 'var(--brand-400)' : 'var(--text-secondary)',
-                                            transition: 'all 0.2s'
-                                        }}
-                                    >
-                                        <BookOpen size={14} />
-                                        <span>Departamentos</span>
-                                        <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: 10, background: infraCategoryFilter === 'materia' ? 'var(--brand-500)' : 'var(--bg-elevated)', color: infraCategoryFilter === 'materia' ? '#0f172a' : 'var(--text-muted)', fontWeight: 800 }}>
-                                            {meta.subjects.filter(s => !s.padre_id).length}
-                                        </span>
-                                    </button>
-                                </div>
-
-                                {/* Search Bar */}
-                                <div style={{ position: 'relative', minWidth: 220 }}>
-                                    <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                    <input
-                                        type="text"
-                                        placeholder="Buscar recurso..."
-                                        value={infraSearch}
-                                        onChange={e => setInfraSearch(e.target.value)}
-                                        className="input"
-                                        style={{ ...smallInput, paddingLeft: 30, paddingRight: infraSearch ? 26 : 10, width: '100%' }}
-                                    />
-                                    {infraSearch && (
-                                        <button
-                                            onClick={() => setInfraSearch('')}
-                                            style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' }}
-                                            title="Limpiar búsqueda"
-                                        >
-                                            <X size={12} />
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
                         {['guards', 'infra'].includes(activeTab) && (
                             <div style={{ 
                                 overflow: 'auto', 
@@ -1569,26 +1380,22 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                             <th style={thStyle}>Nombre / Valor</th>
                                             <th style={{ ...thStyle, textAlign: 'right' }}>
                                                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
-                                                    {(infraCategoryFilter === 'all' || infraCategoryFilter === 'materia') && (
-                                                        <>
-                                                            <button 
-                                                                onClick={() => setExpandedSubjects(new Set(meta.subjects.filter(s => !s.padre_id).map(s => s.id)))}
-                                                                className="btn btn-ghost" 
-                                                                style={{ ...iconBtnStyle, width: 'auto', padding: '0 8px', fontSize: '11px', color: 'var(--brand-400)' }}
-                                                                title="Expandir todo"
-                                                            >
-                                                                <Maximize2 size={12} style={{ marginRight: 4 }} /> Todo
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => setExpandedSubjects(new Set())}
-                                                                className="btn btn-ghost" 
-                                                                style={{ ...iconBtnStyle, width: 'auto', padding: '0 8px', fontSize: '11px', color: 'var(--text-muted)' }}
-                                                                title="Colapsar todo"
-                                                            >
-                                                                <Minimize2 size={12} style={{ marginRight: 4 }} /> Nada
-                                                            </button>
-                                                        </>
-                                                    )}
+                                                    <button 
+                                                        onClick={() => setExpandedSubjects(new Set(meta.subjects.filter(s => !s.padre_id).map(s => s.id)))}
+                                                        className="btn btn-ghost" 
+                                                        style={{ ...iconBtnStyle, width: 'auto', padding: '0 8px', fontSize: '11px', color: 'var(--brand-400)' }}
+                                                        title="Expandir todo"
+                                                    >
+                                                        <Maximize2 size={12} style={{ marginRight: 4 }} /> Todo
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => setExpandedSubjects(new Set())}
+                                                        className="btn btn-ghost" 
+                                                        style={{ ...iconBtnStyle, width: 'auto', padding: '0 8px', fontSize: '11px', color: 'var(--text-muted)' }}
+                                                        title="Colapsar todo"
+                                                    >
+                                                        <Minimize2 size={12} style={{ marginRight: 4 }} /> Nada
+                                                    </button>
                                                     <span>Acciones</span>
                                                 </div>
                                             </th>
@@ -1598,95 +1405,64 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                 </tr>
                                 {activeTab === 'infra' && (
                                     <>
-                                        {/* FORMULARIO DE AÑADIR AULA / GRUPO / DEPARTAMENTO */}
-                                        {(infraCategoryFilter === 'all' || infraCategoryFilter === 'aula' || infraCategoryFilter === 'grupo' || infraCategoryFilter === 'materia') && (
-                                            <tr style={{ background: 'var(--brand-950-subtle)', borderBottom: '2px solid var(--brand-500)' }}>
-                                                <td style={{ ...tdStyle, verticalAlign: 'middle' }}>
-                                                    <div style={{ fontWeight: 700, color: 'var(--brand-400)', fontSize: '0.7rem' }}>
-                                                        {infraCategoryFilter === 'aula' && 'AÑADIR AULA / ESPACIO'}
-                                                        {infraCategoryFilter === 'grupo' && 'AÑADIR GRUPO'}
-                                                        {infraCategoryFilter === 'materia' && 'AÑADIR DEPARTAMENTO'}
-                                                        {infraCategoryFilter === 'all' && 'AÑADIR CATEGORÍA'}
-                                                    </div>
-                                                    <div style={{ fontSize: '0.65rem', opacity: 0.7 }}>
-                                                        {infraCategoryFilter === 'all' ? 'Escribe el nombre y elige tipo:' : 'Escribe el nombre y pulsa añadir:'}
-                                                    </div>
-                                                </td>
-                                                <td style={tdStyle}>
-                                                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                                                        <input
-                                                            placeholder={
-                                                                infraCategoryFilter === 'aula' ? 'Nombre del aula (ej: Aula 201, Taller Tecnología...)' :
-                                                                infraCategoryFilter === 'grupo' ? 'Nombre del grupo (ej: 1º ESO A, 2º Bach C...)' :
-                                                                infraCategoryFilter === 'materia' ? 'Nombre del departamento (ej: Matemáticas, Lengua...)' :
-                                                                'Nombre (ej: Aula 201, 1º ESO A, Matemáticas...)'
-                                                            }
-                                                            className="input"
-                                                            value={newMetaName}
-                                                            onChange={e => setNewMetaName(e.target.value)}
-                                                            onKeyDown={e => {
-                                                                if (e.key === 'Enter') {
-                                                                    if (infraCategoryFilter === 'aula') handleCreateMeta('aula');
-                                                                    else if (infraCategoryFilter === 'grupo') handleCreateMeta('grupo');
-                                                                    else if (infraCategoryFilter === 'materia') handleCreateMeta('materia');
-                                                                }
-                                                            }}
-                                                            style={{ ...smallInput, flex: 1 }}
-                                                        />
-                                                        <div style={{ display: 'flex', gap: 8 }}>
-                                                            {(infraCategoryFilter === 'all' || infraCategoryFilter === 'aula') && (
-                                                                <button onClick={() => handleCreateMeta('aula')} className="btn btn-primary" style={metaBtnStyle} title="Añadir como Aula/Espacio">
-                                                                    <Building2 size={16} strokeWidth={2} />
-                                                                    <span>Aula</span>
-                                                                </button>
-                                                            )}
-                                                            {(infraCategoryFilter === 'all' || infraCategoryFilter === 'grupo') && (
-                                                                <button onClick={() => handleCreateMeta('grupo')} className="btn btn-primary" style={metaBtnStyle} title="Añadir como Grupo de alumnos">
-                                                                    <GraduationCap size={16} strokeWidth={2} />
-                                                                    <span>Grupo</span>
-                                                                </button>
-                                                            )}
-                                                            {(infraCategoryFilter === 'all' || infraCategoryFilter === 'materia') && (
-                                                                <button onClick={() => handleCreateMeta('materia')} className="btn btn-primary" style={metaBtnStyle} title="Añadir como Departamento">
-                                                                    <BookOpen size={16} strokeWidth={2} />
-                                                                    <span>Departamento</span>
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td />
-                                            </tr>
-                                        )}
-
-                                        {/* FORMULARIO DE NUEVA FRANJA HORARIA */}
-                                        {(infraCategoryFilter === 'all' || infraCategoryFilter === 'franja') && (
-                                            <tr style={{ background: 'var(--bg-sidebar)', borderBottom: '1px solid var(--brand-500)' }}>
-                                                <td style={tdStyle}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                        <Clock size={14} />
-                                                        <span style={{ fontWeight: 700, color: 'var(--brand-400)', fontSize: '0.7rem' }}>NUEVA FRANJA HORARIA</span>
-                                                    </div>
-                                                </td>
-                                                <td style={tdStyle}>
-                                                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                                                        <input placeholder="Ej: 1ª Hora" className="input" value={newSlotForm.label} onChange={e => setNewSlotForm({ ...newSlotForm, label: e.target.value })} style={{ ...smallInput, flex: 2 }} />
-                                                        <input type="time" className="input" value={newSlotForm.start_time} onChange={e => setNewSlotForm({ ...newSlotForm, start_time: e.target.value })} style={{ ...smallInput, flex: 1 }} />
-                                                        <input type="time" className="input" value={newSlotForm.end_time} onChange={e => setNewSlotForm({ ...newSlotForm, end_time: e.target.value })} style={{ ...smallInput, flex: 1 }} />
-                                                        <button
-                                                            onClick={() => handleCreateMeta('franja')}
-                                                            className="btn btn-primary"
-                                                            style={{ ...metaBtnStyle, background: 'var(--brand-500)', boxShadow: '0 0 15px var(--brand-500-40)' }}
-                                                            title="Añadir nueva franja horaria"
-                                                        >
-                                                            <Plus size={18} strokeWidth={2.5} />
-                                                            <span>Franja</span>
+                                        {/* FORMULARIOS DE CREACIÓN RÁPIDA */}
+                                        <tr style={{ background: 'var(--brand-950-subtle)', borderBottom: '2px solid var(--brand-500)' }}>
+                                            <td style={{ ...tdStyle, verticalAlign: 'middle' }}>
+                                                <div style={{ fontWeight: 700, color: 'var(--brand-400)', fontSize: '0.7rem' }}>AÑADIR CATEGORÍA</div>
+                                                <div style={{ fontSize: '0.65rem', opacity: 0.7 }}>Escribe el nombre y elige tipo:</div>
+                                            </td>
+                                            <td style={tdStyle}>
+                                                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                                                    <input
+                                                        placeholder="Nombre (ej: Aula 201, 1º ESO A, Matemáticas...)"
+                                                        className="input"
+                                                        value={newMetaName}
+                                                        onChange={e => setNewMetaName(e.target.value)}
+                                                        style={{ ...smallInput, flex: 1 }}
+                                                    />
+                                                    <div style={{ display: 'flex', gap: 8 }}>
+                                                        <button onClick={() => handleCreateMeta('aula')} className="btn btn-primary" style={metaBtnStyle} title="Añadir como Aula/Espacio">
+                                                            <Building2 size={16} strokeWidth={2} />
+                                                            <span>Aula</span>
+                                                        </button>
+                                                        <button onClick={() => handleCreateMeta('grupo')} className="btn btn-primary" style={metaBtnStyle} title="Añadir como Grupo de alumnos">
+                                                            <GraduationCap size={16} strokeWidth={2} />
+                                                            <span>Grupo</span>
+                                                        </button>
+                                                        <button onClick={() => handleCreateMeta('materia')} className="btn btn-primary" style={metaBtnStyle} title="Añadir como Departamento">
+                                                            <BookOpen size={16} strokeWidth={2} />
+                                                            <span>Departamento</span>
                                                         </button>
                                                     </div>
-                                                </td>
-                                                <td />
-                                            </tr>
-                                        )}
+                                                </div>
+                                            </td>
+                                            <td />
+                                        </tr>
+                                        <tr style={{ background: 'var(--bg-sidebar)', borderBottom: '1px solid var(--brand-500)' }}>
+                                            <td style={tdStyle}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    <Clock size={14} />
+                                                    <span style={{ fontWeight: 700, color: 'var(--brand-400)', fontSize: '0.7rem' }}>NUEVA FRANJA HORARIA</span>
+                                                </div>
+                                            </td>
+                                            <td style={tdStyle}>
+                                                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                                                    <input placeholder="Ej: 1ª Hora" className="input" value={newSlotForm.label} onChange={e => setNewSlotForm({ ...newSlotForm, label: e.target.value })} style={{ ...smallInput, flex: 2 }} />
+                                                    <input type="time" className="input" value={newSlotForm.start_time} onChange={e => setNewSlotForm({ ...newSlotForm, start_time: e.target.value })} style={{ ...smallInput, flex: 1 }} />
+                                                    <input type="time" className="input" value={newSlotForm.end_time} onChange={e => setNewSlotForm({ ...newSlotForm, end_time: e.target.value })} style={{ ...smallInput, flex: 1 }} />
+                                                    <button
+                                                        onClick={() => handleCreateMeta('franja')}
+                                                        className="btn btn-primary"
+                                                        style={{ ...metaBtnStyle, background: 'var(--brand-500)', boxShadow: '0 0 15px var(--brand-500-40)' }}
+                                                        title="Añadir nueva franja horaria"
+                                                    >
+                                                        <Plus size={18} strokeWidth={2.5} />
+                                                        <span>Franja</span>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                            <td />
+                                        </tr>
                                     </>
                                 )}
                             </thead>
@@ -1784,212 +1560,177 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                         })
                                     )}
 
-                                    {activeTab === 'infra' && (() => {
-                                        const q = infraSearch.toLowerCase().trim();
-                                        const filteredSlots = meta.slots.filter(s => !q || (s.label || '').toLowerCase().includes(q) || (s.start_time || '').includes(q) || (s.end_time || '').includes(q));
-                                        const filteredClassrooms = meta.classrooms.filter(c => !q || (c.name || '').toLowerCase().includes(q));
-                                        const filteredGroups = meta.groups.filter(g => !q || (g.name || '').toLowerCase().includes(q));
-                                        const filteredSubjects = meta.subjects.filter(s => !s.padre_id).filter(s => {
-                                            if (!q) return true;
-                                            const matchesParent = (s.name || '').toLowerCase().includes(q);
-                                            const matchesChild = meta.subjects.some(child => child.padre_id === s.id && (child.name || '').toLowerCase().includes(q));
-                                            return matchesParent || matchesChild;
-                                        });
-
-                                        const showSlots = (infraCategoryFilter === 'all' || infraCategoryFilter === 'franja') && filteredSlots.length > 0;
-                                        const showClassrooms = (infraCategoryFilter === 'all' || infraCategoryFilter === 'aula') && filteredClassrooms.length > 0;
-                                        const showGroups = (infraCategoryFilter === 'all' || infraCategoryFilter === 'grupo') && filteredGroups.length > 0;
-                                        const showSubjects = (infraCategoryFilter === 'all' || infraCategoryFilter === 'materia') && filteredSubjects.length > 0;
-
-                                        const hasAnyItem = showSlots || showClassrooms || showGroups || showSubjects;
-
-                                        if (!hasAnyItem) {
-                                            return (
-                                                <tr>
-                                                    <td colSpan={3} style={{ ...tdStyle, textAlign: 'center', padding: '40px 16px', color: 'var(--text-muted)' }}>
-                                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-                                                            <Search size={28} style={{ opacity: 0.3 }} />
-                                                            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>No se encontraron recursos</span>
-                                                            <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>Prueba con otro término de búsqueda o selecciona otra categoría</span>
-                                                        </div>
+                                    {activeTab === 'infra' && (
+                                        <>
+                                            {/* Franjas Horarias */}
+                                            {meta.slots.map(s => (
+                                                <tr key={s.id} style={{ borderBottom: '1px solid var(--slate-800)' }}>
+                                                    <td style={tdStyle}><Clock size={14} style={{ marginRight: 8, verticalAlign: 'middle' }} /> Franja</td>
+                                                    <td style={tdStyle}>
+                                                        {editingMetaId === s.id ? (
+                                                            <div style={{ display: 'flex', gap: 4 }}>
+                                                                <input className="input" value={editSlotForm.label} onChange={e => setEditSlotForm({ ...editSlotForm, label: e.target.value })} style={smallInput} />
+                                                                <input type="time" className="input" value={editSlotForm.start_time} onChange={e => setEditSlotForm({ ...editSlotForm, start_time: e.target.value })} style={smallInput} />
+                                                                <input type="time" className="input" value={editSlotForm.end_time} onChange={e => setEditSlotForm({ ...editSlotForm, end_time: e.target.value })} style={smallInput} />
+                                                            </div>
+                                                        ) : `${s.label} (${s.start_time} - ${s.end_time})`}
+                                                    </td>
+                                                    <td style={{ ...tdStyle, textAlign: 'right' }}>
+                                                        {editingMetaId === s.id ? (
+                                                            <><button onClick={() => handleUpdateMeta('franja', s.id)} className="btn btn-success" style={iconBtnStyle}><Check size={14} /></button>
+                                                                <button onClick={() => setEditingMetaId(null)} className="btn btn-ghost" style={iconBtnStyle}><X size={14} /></button></>
+                                                        ) : (
+                                                            <><button onClick={() => { setEditingMetaId(s.id); setEditSlotForm(s); }} className="btn btn-ghost" style={iconBtnStyle}><Edit2 size={14} /></button>
+                                                                <button onClick={() => handleDeleteMeta('franja', s.id)} className="btn btn-danger-subtle" style={iconBtnStyle}><Trash2 size={14} /></button></>
+                                                        )}
                                                     </td>
                                                 </tr>
-                                            );
-                                        }
+                                            ))}
 
-                                        return (
-                                            <>
-                                                {/* Franjas Horarias */}
-                                                {(infraCategoryFilter === 'all' || infraCategoryFilter === 'franja') && filteredSlots.map(s => (
-                                                    <tr key={s.id} style={{ borderBottom: '1px solid var(--slate-800)' }}>
-                                                        <td style={tdStyle}><Clock size={14} style={{ marginRight: 8, verticalAlign: 'middle', color: 'var(--brand-400)' }} /> Franja</td>
+                                            {/* Aulas */}
+                                            {meta.classrooms.map(c => (
+                                                <tr key={c.id} style={{ borderBottom: '1px solid var(--slate-800)' }}>
+                                                    <td style={tdStyle}><Building2 size={14} style={{ marginRight: 8, verticalAlign: 'middle' }} /> Aula</td>
+                                                    <td style={tdStyle}>
+                                                        {editingMetaId === c.id ? <input className="input" value={editMetaValue} onChange={e => setEditMetaValue(e.target.value)} style={smallInput} /> : c.name}
+                                                    </td>
+                                                    <td style={{ ...tdStyle, textAlign: 'right' }}>
+                                                        {editingMetaId === c.id ? (
+                                                            <><button onClick={() => handleUpdateMeta('aula', c.id)} className="btn btn-success" style={iconBtnStyle}><Check size={14} /></button>
+                                                                <button onClick={() => setEditingMetaId(null)} className="btn btn-ghost" style={iconBtnStyle}><X size={14} /></button></>
+                                                        ) : (
+                                                            <><button onClick={() => { setEditingMetaId(c.id); setEditMetaValue(c.name); }} className="btn btn-ghost" style={iconBtnStyle}><Edit2 size={14} /></button>
+                                                                <button onClick={() => handleDeleteMeta('aula', c.id)} className="btn btn-danger-subtle" style={iconBtnStyle}><Trash2 size={14} /></button></>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {/* Grupos */}
+                                            {meta.groups.map(g => (
+                                                <tr key={g.id} style={{ borderBottom: '1px solid var(--slate-800)' }}>
+                                                    <td style={tdStyle}><GraduationCap size={14} style={{ marginRight: 8, verticalAlign: 'middle' }} /> Grupo</td>
+                                                    <td style={tdStyle}>
+                                                        {editingMetaId === g.id ? <input className="input" value={editMetaValue} onChange={e => setEditMetaValue(e.target.value)} style={smallInput} /> : g.name}
+                                                    </td>
+                                                    <td style={{ ...tdStyle, textAlign: 'right' }}>
+                                                        {editingMetaId === g.id ? (
+                                                            <><button onClick={() => handleUpdateMeta('grupo', g.id)} className="btn btn-success" style={iconBtnStyle}><Check size={14} /></button>
+                                                                <button onClick={() => setEditingMetaId(null)} className="btn btn-ghost" style={iconBtnStyle}><X size={14} /></button></>
+                                                        ) : (
+                                                            <><button onClick={() => { setEditingMetaId(g.id); setEditMetaValue(g.name); }} className="btn btn-ghost" style={iconBtnStyle}><Edit2 size={14} /></button>
+                                                                <button onClick={() => handleDeleteMeta('grupo', g.id)} className="btn btn-danger-subtle" style={iconBtnStyle}><Trash2 size={14} /></button></>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {/* Materias */}
+                                            {/* Materias e Hijos */}
+                                            {meta.subjects.filter(s => !s.padre_id).map(s => (
+                                                <React.Fragment key={s.id}>
+                                                    <tr style={{ 
+                                                        borderBottom: '1px solid var(--border-subtle)',
+                                                        background: expandedSubjects.has(s.id) ? 'rgba(34,211,238,0.02)' : 'transparent'
+                                                    }}>
                                                         <td style={tdStyle}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                                <button 
+                                                                    onClick={() => toggleSubject(s.id)}
+                                                                    className="btn btn-ghost"
+                                                                    style={{ padding: 4, width: 24, height: 24, minHeight: 'auto', color: 'var(--brand-400)' }}
+                                                                >
+                                                                    {expandedSubjects.has(s.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                                                </button>
+                                                                <BookOpen size={14} />
+                                                                <span>Departamento</span>
+                                                            </div>
+                                                        </td>
+                                                        <td onClick={() => toggleSubject(s.id)} style={{ ...tdStyle, cursor: 'pointer' }}>
                                                             {editingMetaId === s.id ? (
-                                                                <div style={{ display: 'flex', gap: 4 }}>
-                                                                    <input className="input" value={editSlotForm.label} onChange={e => setEditSlotForm({ ...editSlotForm, label: e.target.value })} style={smallInput} />
-                                                                    <input type="time" className="input" value={editSlotForm.start_time} onChange={e => setEditSlotForm({ ...editSlotForm, start_time: e.target.value })} style={smallInput} />
-                                                                    <input type="time" className="input" value={editSlotForm.end_time} onChange={e => setEditSlotForm({ ...editSlotForm, end_time: e.target.value })} style={smallInput} />
+                                                                <input 
+                                                                    className="input" 
+                                                                    value={editMetaValue} 
+                                                                    onClick={e => e.stopPropagation()} 
+                                                                    onChange={e => setEditMetaValue(e.target.value)} 
+                                                                    style={smallInput} 
+                                                                />
+                                                            ) : (
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                                    <span style={{ fontWeight: 600 }}>{s.name}</span>
+                                                                    {meta.subjects.some(child => child.padre_id === s.id) && (
+                                                                        <span style={{ 
+                                                                            fontSize: '0.65rem', 
+                                                                            padding: '2px 6px', 
+                                                                            borderRadius: 6, 
+                                                                            background: 'var(--brand-950)', 
+                                                                            color: 'var(--brand-400)',
+                                                                            border: '1px solid var(--brand-500-20)'
+                                                                        }}>
+                                                                            {meta.subjects.filter(child => child.padre_id === s.id).length} materias
+                                                                        </span>
+                                                                    )}
                                                                 </div>
-                                                            ) : `${s.label} (${s.start_time} - ${s.end_time})`}
+                                                            )}
                                                         </td>
                                                         <td style={{ ...tdStyle, textAlign: 'right' }}>
                                                             {editingMetaId === s.id ? (
-                                                                <><button onClick={() => handleUpdateMeta('franja', s.id)} className="btn btn-success" style={iconBtnStyle}><Check size={14} /></button>
-                                                                    <button onClick={() => setEditingMetaId(null)} className="btn btn-ghost" style={iconBtnStyle}><X size={14} /></button></>
+                                                                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                                                                    <button onClick={() => handleUpdateMeta('materia', s.id)} className="btn btn-success" style={iconBtnStyle}><Check size={14} /></button>
+                                                                    <button onClick={() => setEditingMetaId(null)} className="btn btn-ghost" style={iconBtnStyle}><X size={14} /></button>
+                                                                </div>
                                                             ) : (
-                                                                <><button onClick={() => { setEditingMetaId(s.id); setEditSlotForm(s); }} className="btn btn-ghost" style={iconBtnStyle}><Edit2 size={14} /></button>
-                                                                    <button onClick={() => handleDeleteMeta('franja', s.id)} className="btn btn-danger-subtle" style={iconBtnStyle}><Trash2 size={14} /></button></>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-
-                                                {/* Aulas */}
-                                                {(infraCategoryFilter === 'all' || infraCategoryFilter === 'aula') && filteredClassrooms.map(c => (
-                                                    <tr key={c.id} style={{ borderBottom: '1px solid var(--slate-800)' }}>
-                                                        <td style={tdStyle}><Building2 size={14} style={{ marginRight: 8, verticalAlign: 'middle', color: 'var(--purple-400)' }} /> Aula</td>
-                                                        <td style={tdStyle}>
-                                                            {editingMetaId === c.id ? <input className="input" value={editMetaValue} onChange={e => setEditMetaValue(e.target.value)} style={smallInput} /> : c.name}
-                                                        </td>
-                                                        <td style={{ ...tdStyle, textAlign: 'right' }}>
-                                                            {editingMetaId === c.id ? (
-                                                                <><button onClick={() => handleUpdateMeta('aula', c.id)} className="btn btn-success" style={iconBtnStyle}><Check size={14} /></button>
-                                                                    <button onClick={() => setEditingMetaId(null)} className="btn btn-ghost" style={iconBtnStyle}><X size={14} /></button></>
-                                                            ) : (
-                                                                <><button onClick={() => { setEditingMetaId(c.id); setEditMetaValue(c.name); }} className="btn btn-ghost" style={iconBtnStyle}><Edit2 size={14} /></button>
-                                                                    <button onClick={() => handleDeleteMeta('aula', c.id)} className="btn btn-danger-subtle" style={iconBtnStyle}><Trash2 size={14} /></button></>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-
-                                                {/* Grupos */}
-                                                {(infraCategoryFilter === 'all' || infraCategoryFilter === 'grupo') && filteredGroups.map(g => (
-                                                    <tr key={g.id} style={{ borderBottom: '1px solid var(--slate-800)' }}>
-                                                        <td style={tdStyle}><GraduationCap size={14} style={{ marginRight: 8, verticalAlign: 'middle', color: 'var(--emerald-400)' }} /> Grupo</td>
-                                                        <td style={tdStyle}>
-                                                            {editingMetaId === g.id ? <input className="input" value={editMetaValue} onChange={e => setEditMetaValue(e.target.value)} style={smallInput} /> : g.name}
-                                                        </td>
-                                                        <td style={{ ...tdStyle, textAlign: 'right' }}>
-                                                            {editingMetaId === g.id ? (
-                                                                <><button onClick={() => handleUpdateMeta('grupo', g.id)} className="btn btn-success" style={iconBtnStyle}><Check size={14} /></button>
-                                                                    <button onClick={() => setEditingMetaId(null)} className="btn btn-ghost" style={iconBtnStyle}><X size={14} /></button></>
-                                                            ) : (
-                                                                <><button onClick={() => { setEditingMetaId(g.id); setEditMetaValue(g.name); }} className="btn btn-ghost" style={iconBtnStyle}><Edit2 size={14} /></button>
-                                                                    <button onClick={() => handleDeleteMeta('grupo', g.id)} className="btn btn-danger-subtle" style={iconBtnStyle}><Trash2 size={14} /></button></>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-
-                                                {/* Materias e Hijos */}
-                                                {(infraCategoryFilter === 'all' || infraCategoryFilter === 'materia') && filteredSubjects.map(s => (
-                                                    <React.Fragment key={s.id}>
-                                                        <tr style={{ 
-                                                            borderBottom: '1px solid var(--border-subtle)',
-                                                            background: expandedSubjects.has(s.id) ? 'rgba(34,211,238,0.02)' : 'transparent'
-                                                        }}>
-                                                            <td style={tdStyle}>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                                    <button 
-                                                                        onClick={() => toggleSubject(s.id)}
-                                                                        className="btn btn-ghost" 
-                                                                        style={{ padding: 4, width: 24, height: 24, minHeight: 'auto', color: 'var(--brand-400)' }}
-                                                                    >
-                                                                        {expandedSubjects.has(s.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                                                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                                                                    <button onClick={() => { setAddingSubmateriaTo(addingSubmateriaTo === s.id ? null : s.id); setNewMetaName(''); }} className={`btn ${addingSubmateriaTo === s.id ? 'btn-danger-subtle' : 'btn-primary'}`} style={{ ...iconBtnStyle, width: 'auto', padding: '0 8px', fontSize: '12px' }}>
+                                                                        {addingSubmateriaTo === s.id ? <><X size={14} /> Cancelar</> : <><Plus size={14} /> Materia</>}
                                                                     </button>
-                                                                    <BookOpen size={14} style={{ color: 'var(--amber-400)' }} />
-                                                                    <span>Departamento</span>
+                                                                    <button onClick={() => { setEditingMetaId(s.id); setEditMetaValue(s.name); }} className="btn btn-ghost" style={iconBtnStyle}><Edit2 size={14} /></button>
+                                                                    <button onClick={() => handleDeleteMeta('materia', s.id)} className="btn btn-danger-subtle" style={iconBtnStyle}><Trash2 size={14} /></button>
                                                                 </div>
-                                                            </td>
-                                                            <td onClick={() => toggleSubject(s.id)} style={{ ...tdStyle, cursor: 'pointer' }}>
-                                                                {editingMetaId === s.id ? (
-                                                                    <input 
-                                                                        className="input" 
-                                                                        value={editMetaValue} 
-                                                                        onClick={e => e.stopPropagation()} 
-                                                                        onChange={e => setEditMetaValue(e.target.value)} 
-                                                                        style={smallInput} 
-                                                                    />
-                                                                ) : (
-                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                                        <span style={{ fontWeight: 600 }}>{s.name}</span>
-                                                                        {meta.subjects.some(child => child.padre_id === s.id) && (
-                                                                            <span style={{ 
-                                                                                fontSize: '0.65rem', 
-                                                                                padding: '2px 6px', 
-                                                                                borderRadius: 6, 
-                                                                                background: 'var(--brand-950)', 
-                                                                                color: 'var(--brand-400)',
-                                                                                border: '1px solid var(--brand-500-20)'
-                                                                            }}>
-                                                                                {meta.subjects.filter(child => child.padre_id === s.id).length} materias
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                )}
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                    {addingSubmateriaTo === s.id && (
+                                                         <tr style={{ background: 'var(--brand-950-subtle)', borderBottom: '1px solid var(--border-subtle)' }}>
+                                                            <td style={{ ...tdStyle, paddingLeft: 40 }}><span style={{ opacity: 0.5 }}>↳</span> Nueva Materia</td>
+                                                            <td style={tdStyle}>
+                                                                <input autoFocus className="input" placeholder="Nombre... (ej: Módulo 1)" value={newMetaName} onChange={e => setNewMetaName(e.target.value)} style={smallInput} />
                                                             </td>
                                                             <td style={{ ...tdStyle, textAlign: 'right' }}>
-                                                                {editingMetaId === s.id ? (
+                                                                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                                                                    <button onClick={() => handleCreateMeta('materia', s.id)} className="btn btn-success" style={iconBtnStyle}><Check size={14} /></button>
+                                                                </div>
+                                                            </td>
+                                                         </tr>
+                                                    )}
+                                                     {expandedSubjects.has(s.id) && meta.subjects.filter(child => child.padre_id === s.id).map(child => (
+                                                        <motion.tr 
+                                                            key={child.id} 
+                                                            initial={{ opacity: 0, y: -4 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)' }}
+                                                        >
+                                                            <td style={{ ...tdStyle, paddingLeft: 40 }}><span style={{ opacity: 0.5 }}>↳</span> Materia</td>
+                                                            <td style={tdStyle}>
+                                                                {editingMetaId === child.id ? <input className="input" value={editMetaValue} onChange={e => setEditMetaValue(e.target.value)} style={smallInput} /> : child.name}
+                                                            </td>
+                                                            <td style={{ ...tdStyle, textAlign: 'right' }}>
+                                                                {editingMetaId === child.id ? (
                                                                     <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                                                                        <button onClick={() => handleUpdateMeta('materia', s.id)} className="btn btn-success" style={iconBtnStyle}><Check size={14} /></button>
+                                                                        <button onClick={() => handleUpdateMeta('materia', child.id)} className="btn btn-success" style={iconBtnStyle}><Check size={14} /></button>
                                                                         <button onClick={() => setEditingMetaId(null)} className="btn btn-ghost" style={iconBtnStyle}><X size={14} /></button>
                                                                     </div>
                                                                 ) : (
                                                                     <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                                                                        <button onClick={() => { setAddingSubmateriaTo(addingSubmateriaTo === s.id ? null : s.id); setNewMetaName(''); }} className={`btn ${addingSubmateriaTo === s.id ? 'btn-danger-subtle' : 'btn-primary'}`} style={{ ...iconBtnStyle, width: 'auto', padding: '0 8px', fontSize: '12px' }}>
-                                                                            {addingSubmateriaTo === s.id ? <><X size={14} /> Cancelar</> : <><Plus size={14} /> Materia</>}
-                                                                        </button>
-                                                                        <button onClick={() => { setEditingMetaId(s.id); setEditMetaValue(s.name); }} className="btn btn-ghost" style={iconBtnStyle}><Edit2 size={14} /></button>
-                                                                        <button onClick={() => handleDeleteMeta('materia', s.id)} className="btn btn-danger-subtle" style={iconBtnStyle}><Trash2 size={14} /></button>
+                                                                        <button onClick={() => { setEditingMetaId(child.id); setEditMetaValue(child.name); }} className="btn btn-ghost" style={iconBtnStyle}><Edit2 size={14} /></button>
+                                                                        <button onClick={() => handleDeleteMeta('materia', child.id)} className="btn btn-danger-subtle" style={iconBtnStyle}><Trash2 size={14} /></button>
                                                                     </div>
                                                                 )}
                                                             </td>
-                                                        </tr>
-                                                        {addingSubmateriaTo === s.id && (
-                                                             <tr style={{ background: 'var(--brand-950-subtle)', borderBottom: '1px solid var(--border-subtle)' }}>
-                                                                <td style={{ ...tdStyle, paddingLeft: 40 }}><span style={{ opacity: 0.5 }}>↳</span> Nueva Materia</td>
-                                                                <td style={tdStyle}>
-                                                                    <input autoFocus className="input" placeholder="Nombre... (ej: Módulo 1)" value={newMetaName} onChange={e => setNewMetaName(e.target.value)} style={smallInput} />
-                                                                </td>
-                                                                <td style={{ ...tdStyle, textAlign: 'right' }}>
-                                                                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                                                                        <button onClick={() => handleCreateMeta('materia', s.id)} className="btn btn-success" style={iconBtnStyle}><Check size={14} /></button>
-                                                                    </div>
-                                                                </td>
-                                                             </tr>
-                                                        )}
-                                                         {expandedSubjects.has(s.id) && meta.subjects.filter(child => child.padre_id === s.id).map(child => (
-                                                            <motion.tr 
-                                                                key={child.id} 
-                                                                initial={{ opacity: 0, y: -4 }}
-                                                                animate={{ opacity: 1, y: 0 }}
-                                                                style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)' }}
-                                                            >
-                                                                <td style={{ ...tdStyle, paddingLeft: 40 }}><span style={{ opacity: 0.5 }}>↳</span> Materia</td>
-                                                                <td style={tdStyle}>
-                                                                    {editingMetaId === child.id ? <input className="input" value={editMetaValue} onChange={e => setEditMetaValue(e.target.value)} style={smallInput} /> : child.name}
-                                                                </td>
-                                                                <td style={{ ...tdStyle, textAlign: 'right' }}>
-                                                                    {editingMetaId === child.id ? (
-                                                                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                                                                            <button onClick={() => handleUpdateMeta('materia', child.id)} className="btn btn-success" style={iconBtnStyle}><Check size={14} /></button>
-                                                                            <button onClick={() => setEditingMetaId(null)} className="btn btn-ghost" style={iconBtnStyle}><X size={14} /></button>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                                                                            <button onClick={() => { setEditingMetaId(child.id); setEditMetaValue(child.name); }} className="btn btn-ghost" style={iconBtnStyle}><Edit2 size={14} /></button>
-                                                                            <button onClick={() => handleDeleteMeta('materia', child.id)} className="btn btn-danger-subtle" style={iconBtnStyle}><Trash2 size={14} /></button>
-                                                                        </div>
-                                                                    )}
-                                                                </td>
-                                                            </motion.tr>
-                                                        ))}
-                                                    </React.Fragment>
-                                                ))}
-                                            </>
-                                        );
-                                    })()}
+                                                        </motion.tr>
+                                                    ))}
+                                                </React.Fragment>
+                                            ))}
+                                        </>
+                                    )}
                                 </AnimatePresence>
                             </tbody>
                         </table>
@@ -2079,7 +1820,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                     style={{ ...smallInput, flex: 1, height: 36 }}
                                 >
                                     <option value="">Dpto...</option>
-                                    {availableDepartments.map(dept => (
+                                    {DEPARTMENTS.map(dept => (
                                         <option key={dept} value={dept}>{dept}</option>
                                     ))}
                                 </select>
@@ -2177,7 +1918,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                                             style={smallInput}
                                                         >
                                                             <option value="">Dpto...</option>
-                                                            {availableDepartments.map(dept => (
+                                                            {DEPARTMENTS.map(dept => (
                                                                 <option key={dept} value={dept}>{dept}</option>
                                                             ))}
                                                         </select>
@@ -2281,31 +2022,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                 backdropFilter: 'blur(20px)',
                                 borderBottom: '1px solid rgba(255,255,255,0.05)'
                             }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                                    {navigationOrigin === 'audit' && (
-                                        <button
-                                            onClick={() => { setActiveTab('audit'); setNavigationOrigin(null); }}
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: 8,
-                                                padding: '8px 16px',
-                                                borderRadius: 10,
-                                                border: '1px solid rgba(34,211,238,0.4)',
-                                                background: 'rgba(34,211,238,0.15)',
-                                                color: 'var(--brand-400)',
-                                                fontSize: '0.85rem',
-                                                fontWeight: 800,
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s',
-                                                boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
-                                            }}
-                                            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(34,211,238,0.28)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                                            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(34,211,238,0.15)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-                                        >
-                                            <ArrowLeft size={16} /> Volver a Auditoría
-                                        </button>
-                                    )}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                         <div style={{ 
                                             display: 'flex', 
@@ -2647,30 +2364,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                 borderBottom: '1px solid rgba(255,255,255,0.05)'
                             }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                                    {navigationOrigin === 'audit' && (
-                                        <button
-                                            onClick={() => { setActiveTab('audit'); setNavigationOrigin(null); }}
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: 8,
-                                                padding: '8px 16px',
-                                                borderRadius: 10,
-                                                border: '1px solid rgba(34,211,238,0.4)',
-                                                background: 'rgba(34,211,238,0.15)',
-                                                color: 'var(--brand-400)',
-                                                fontSize: '0.85rem',
-                                                fontWeight: 800,
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s',
-                                                boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
-                                            }}
-                                            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(34,211,238,0.28)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                                            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(34,211,238,0.15)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-                                        >
-                                            <ArrowLeft size={16} /> Volver a Auditoría
-                                        </button>
-                                    )}
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                         <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ver/Editar:</span>
                                         <select
@@ -2985,82 +2678,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
 
                 {activeTab === 'audit' && (
                     <div style={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column', position: 'relative', background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border-subtle)', overflow: 'hidden' }}>
-                        <div style={{ padding: '20px 32px', borderBottom: '1px solid var(--border-subtle)', background: 'rgba(15,23,42,0.3)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+                        <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border-subtle)', background: 'rgba(15,23,42,0.3)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div>
                                     <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>Auditoría de Documentación</h2>
                                     <p style={{ fontSize: '0.875rem', color: 'var(--text-tertiary)', marginTop: 4 }}>
-                                        Control del estado de horarios (Lectivo y Guardias) del claustro docente.
+                                        Listado de profesores activos que aún no tienen su horario completo.
                                     </p>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                                    {/* Filter Segmented Control */}
-                                    <div style={{ display: 'flex', background: 'var(--bg-panel)', padding: 4, borderRadius: 10, border: '1px solid var(--border-subtle)', gap: 4 }}>
-                                        <button
-                                            type="button"
-                                            onClick={() => setAuditFilter('pending')}
-                                            style={{
-                                                padding: '6px 14px',
-                                                borderRadius: 8,
-                                                fontSize: '0.8rem',
-                                                fontWeight: 700,
-                                                border: 'none',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s ease',
-                                                background: auditFilter === 'pending' ? 'rgba(239,68,68,0.2)' : 'transparent',
-                                                color: auditFilter === 'pending' ? 'var(--red-400)' : 'var(--text-secondary)'
-                                            }}
-                                        >
-                                            Pendientes ({pendingAuditCount})
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setAuditFilter('completed')}
-                                            style={{
-                                                padding: '6px 14px',
-                                                borderRadius: 8,
-                                                fontSize: '0.8rem',
-                                                fontWeight: 700,
-                                                border: 'none',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s ease',
-                                                background: auditFilter === 'completed' ? 'rgba(34,197,94,0.2)' : 'transparent',
-                                                color: auditFilter === 'completed' ? 'var(--green-400)' : 'var(--text-secondary)'
-                                            }}
-                                        >
-                                            Completados ({completedAuditCount})
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setAuditFilter('all')}
-                                            style={{
-                                                padding: '6px 14px',
-                                                borderRadius: 8,
-                                                fontSize: '0.8rem',
-                                                fontWeight: 700,
-                                                border: 'none',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s ease',
-                                                background: auditFilter === 'all' ? 'rgba(34,211,238,0.2)' : 'transparent',
-                                                color: auditFilter === 'all' ? 'var(--brand-400)' : 'var(--text-secondary)'
-                                            }}
-                                        >
-                                            Todos ({allAuditedTeachers.length})
-                                        </button>
-                                    </div>
-
-                                    <div style={{ 
-                                        background: auditFilter === 'completed' ? 'rgba(34,197,94,0.1)' : auditFilter === 'pending' ? 'rgba(239,68,68,0.1)' : 'rgba(34,211,238,0.1)', 
-                                        color: auditFilter === 'completed' ? 'var(--green-400)' : auditFilter === 'pending' ? 'var(--red-400)' : 'var(--brand-400)', 
-                                        padding: '8px 16px', borderRadius: 12, fontSize: '0.85rem', fontWeight: 700, 
-                                        border: `1px solid ${auditFilter === 'completed' ? 'rgba(34,197,94,0.2)' : auditFilter === 'pending' ? 'rgba(239,68,68,0.2)' : 'rgba(34,211,238,0.2)'}` 
-                                    }}>
-                                        {loadingAudit ? 'CARGANDO...' : (
-                                            auditFilter === 'pending' ? `${pendingAuditCount} PROFESORES PENDIENTES` :
-                                            auditFilter === 'completed' ? `${completedAuditCount} PROFESORES AL DÍA` :
-                                            `${allAuditedTeachers.length} PROFESORES EN TOTAL`
-                                        )}
-                                    </div>
+                                <div style={{ background: 'rgba(34,211,238,0.1)', color: 'var(--brand-400)', padding: '8px 16px', borderRadius: 12, fontSize: '0.85rem', fontWeight: 700, border: '1px solid rgba(34,211,238,0.2)' }}>
+                                    {loadingAudit ? 'CARGANDO...' : `${auditResults.length} PROFESORES PENDIENTES`}
                                 </div>
                             </div>
                         </div>
@@ -3114,18 +2741,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                             <td style={{ ...tdStyle, textAlign: 'right', paddingRight: 32 }}>
                                                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                                                     <button 
-                                                        onClick={() => { setSelectedTeacherId(res.id); setActiveTab('personal_schedule'); setViewModePersonal('grid'); setNavigationOrigin('audit'); }}
+                                                        onClick={() => { setSelectedTeacherId(res.id); setActiveTab('personal_schedule'); setViewModePersonal('grid'); }}
                                                         className="btn btn-ghost" 
                                                         style={{ fontSize: '0.7rem', padding: '0 12px', height: 32, borderRadius: 8, fontWeight: 700 }}
                                                     >
-                                                        {res.missing_personal ? 'Rellenar Lectivo' : 'Ver Lectivo'}
+                                                        Rellenar Lectivo
                                                     </button>
                                                     <button 
-                                                        onClick={() => { setSelectedTeacherId(res.id); setActiveTab('schedules'); setViewModeSchedules('grid'); setNavigationOrigin('audit'); }}
+                                                        onClick={() => { setSelectedTeacherId(res.id); setActiveTab('schedules'); setViewModeSchedules('grid'); }}
                                                         className="btn btn-ghost" 
                                                         style={{ fontSize: '0.7rem', padding: '0 12px', height: 32, borderRadius: 8, fontWeight: 700 }}
                                                     >
-                                                        {res.missing_guards ? 'Rellenar Guardias' : 'Ver Guardias'}
+                                                        Rellenar Guardias
                                                     </button>
                                                 </div>
                                             </td>
@@ -3134,23 +2761,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                     {auditResults.length === 0 && (
                                         <tr>
                                             <td colSpan={3} style={{ padding: 60, textAlign: 'center' }}>
-                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, opacity: 0.7 }}>
-                                                    {auditFilter === 'pending' ? (
-                                                        <>
-                                                            <ShieldCheck size={48} color="var(--green-400)" />
-                                                            <p style={{ fontWeight: 700, color: 'var(--green-400)' }}>¡Todo al día! No hay profesores con documentación pendiente.</p>
-                                                        </>
-                                                    ) : auditFilter === 'completed' ? (
-                                                        <>
-                                                            <Clock size={48} color="var(--text-tertiary)" />
-                                                            <p style={{ fontWeight: 700 }}>Ningún profesor tiene todavía ambos horarios completados.</p>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <ShieldCheck size={48} color="var(--text-tertiary)" />
-                                                            <p style={{ fontWeight: 700 }}>No se han encontrado profesores activos.</p>
-                                                        </>
-                                                    )}
+                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, opacity: 0.5 }}>
+                                                    <ShieldCheck size={48} color="var(--green-400)" />
+                                                    <p style={{ fontWeight: 700 }}>¡Todo al día! No hay profesores con documentación pendiente.</p>
                                                 </div>
                                             </td>
                                         </tr>

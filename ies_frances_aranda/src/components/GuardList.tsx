@@ -13,7 +13,7 @@ import ClassroomMapModal from './ClassroomMapModal';
 import { toast } from 'sonner';
 import { canAccessAdminPanel, isAdministracionRole, isPantallaRole, isAdminRole, isJefaturaRole } from '../utils/roles';
 import { rankTeachers } from '../utils/guardAssignment';
-import CrownLogo from './CrownLogo';
+import { LOGO_DARK_URL } from '../config/supabase';
 
 interface ScrollableAvatarsProps {
     children: React.ReactNode;
@@ -162,7 +162,7 @@ const getFormattedDateParts = (dateStr: string, todayDateStr: string) => {
     };
 };
 
-const isGuardPassed = (guard: Guard, now: Date) => {
+export const isGuardPassed = (guard: Guard, now: Date) => {
     if (!guard.time_slot?.start_time) return false;
     try {
         const [year, month, day] = guard.date.split('-').map(Number);
@@ -339,25 +339,37 @@ const GuardList: React.FC<GuardListProps> = ({
         return 0;
     }, [carouselItems, meta.slots, currentTimeStr, todayDateStr]);
 
-    useEffect(() => {
-        if (carouselItems.length > 0 && !hasInitializedCarousel.current) {
-            setCarouselStartIndex(defaultCarouselStart);
-            hasInitializedCarousel.current = true;
-        }
-    }, [carouselItems, defaultCarouselStart]);
-
-    // Retorno automático a la vista principal tras 10s de inactividad
+    // Retorno automático a la vista principal y reseteo de scroll tras 10s de inactividad
     useEffect(() => {
         if (carouselItems.length === 0 || !hasInitializedCarousel.current) return;
-        
-        if (carouselStartIndex === defaultCarouselStart) return;
 
-        const timer = setTimeout(() => {
+        let timer: NodeJS.Timeout;
+
+        const resetToDefaultView = () => {
             setCarouselStartIndex(defaultCarouselStart);
-        }, 10000);
+            const scrollContainers = document.querySelectorAll('.custom-touch-scroll');
+            scrollContainers.forEach(el => {
+                el.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        };
 
-        return () => clearTimeout(timer);
-    }, [carouselStartIndex, defaultCarouselStart, carouselItems.length]);
+        const resetInactivityTimer = () => {
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(resetToDefaultView, 10000);
+        };
+
+        // Iniciar temporizador inicial
+        resetInactivityTimer();
+
+        // Detectar cualquier interacción del usuario (táctil, ratón, scroll, teclado)
+        const events = ['touchstart', 'touchmove', 'scroll', 'mousedown', 'mousemove', 'keydown', 'click'];
+        events.forEach(evt => window.addEventListener(evt, resetInactivityTimer, { passive: true }));
+
+        return () => {
+            if (timer) clearTimeout(timer);
+            events.forEach(evt => window.removeEventListener(evt, resetInactivityTimer));
+        };
+    }, [carouselItems.length, defaultCarouselStart]);
 
     const activeStartIndex = Math.max(0, Math.min(carouselStartIndex, Math.max(0, carouselItems.length - 3)));
     const visibleItems = useMemo(() => {
@@ -365,30 +377,42 @@ const GuardList: React.FC<GuardListProps> = ({
     }, [carouselItems, activeStartIndex]);
 
     const touchStartX = useRef<number | null>(null);
+    const touchStartY = useRef<number | null>(null);
     const touchEndX = useRef<number | null>(null);
+    const touchEndY = useRef<number | null>(null);
 
     const handleTouchStart = (e: React.TouchEvent) => {
         touchStartX.current = e.targetTouches[0].clientX;
+        touchStartY.current = e.targetTouches[0].clientY;
     };
 
     const handleTouchMove = (e: React.TouchEvent) => {
         touchEndX.current = e.targetTouches[0].clientX;
+        touchEndY.current = e.targetTouches[0].clientY;
     };
 
     const handleTouchEnd = () => {
-        if (touchStartX.current === null || touchEndX.current === null) return;
+        if (touchStartX.current === null || touchEndX.current === null ||
+            touchStartY.current === null || touchEndY.current === null) return;
         const diffX = touchStartX.current - touchEndX.current;
+        const diffY = touchStartY.current - touchEndY.current;
         const swipeThreshold = 50; // pixels
-        if (diffX > swipeThreshold) {
-            // Swiped left -> next items
-            setCarouselStartIndex(prev => Math.min(carouselItems.length - 3, prev + 1));
-        } else if (diffX < -swipeThreshold) {
-            // Swiped right -> previous items
-            setCarouselStartIndex(prev => Math.max(0, prev - 1));
+
+        // Solo cambiar de franja si el gesto horizontal es dominante sobre el vertical
+        if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > swipeThreshold) {
+            if (diffX > 0) {
+                // Swiped left -> avanzar franja
+                setCarouselStartIndex(prev => Math.min(carouselItems.length - 3, prev + 1));
+            } else {
+                // Swiped right -> retroceder franja
+                setCarouselStartIndex(prev => Math.max(0, prev - 1));
+            }
         }
         // Reset
         touchStartX.current = null;
+        touchStartY.current = null;
         touchEndX.current = null;
+        touchEndY.current = null;
     };
 
     const sortScore = (s: GuardStatus) =>
@@ -649,7 +673,7 @@ const GuardList: React.FC<GuardListProps> = ({
             {carouselItems.length > 0 && (
                 <div className={isPantallaRole(currentUser?.role) ? "" : "card glass"} style={{ 
                     borderLeft: isPantallaRole(currentUser?.role) ? 'none' : '4px solid var(--brand-500)', 
-                    padding: isPantallaRole(currentUser?.role) ? '40px' : 24,
+                    padding: isPantallaRole(currentUser?.role) ? '16px 20px' : 24,
                     flex: isPantallaRole(currentUser?.role) ? 1 : 'none',
                     borderRadius: isPantallaRole(currentUser?.role) ? 0 : 'var(--radius-lg)',
                     margin: 0,
@@ -658,10 +682,12 @@ const GuardList: React.FC<GuardListProps> = ({
                     background: isPantallaRole(currentUser?.role) ? 'transparent' : undefined,
                     border: isPantallaRole(currentUser?.role) ? 'none' : undefined,
                     boxShadow: isPantallaRole(currentUser?.role) ? 'none' : undefined,
+                    height: isPantallaRole(currentUser?.role) ? '100%' : 'auto',
+                    overflow: 'hidden',
                 }}>
-                    <div style={{ marginBottom: isPantallaRole(currentUser?.role) ? 24 : 20 }}>
+                    <div style={{ marginBottom: isPantallaRole(currentUser?.role) ? 14 : 20 }}>
                         <h2 style={{ 
-                            fontSize: isPantallaRole(currentUser?.role) ? '1.8rem' : '1.2rem', 
+                            fontSize: isPantallaRole(currentUser?.role) ? '1.5rem' : '1.2rem', 
                             fontWeight: 800, 
                             margin: 0, 
                             display: 'flex', 
@@ -670,7 +696,7 @@ const GuardList: React.FC<GuardListProps> = ({
                             justifyContent: 'space-between' 
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <Zap size={isPantallaRole(currentUser?.role) ? 28 : 20} className="text-glow-brand" style={{ color: 'var(--brand-500)' }} />
+                                <Zap size={isPantallaRole(currentUser?.role) ? 24 : 20} className="text-glow-brand" style={{ color: 'var(--brand-500)' }} />
                                 {currentSlot ? `Entorno de Guardias — ${currentDay}` : 'Entorno próximas guardias'}
                             </div>
 
@@ -678,21 +704,21 @@ const GuardList: React.FC<GuardListProps> = ({
                             <div style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 12,
-                                padding: isPantallaRole(currentUser?.role) ? '10px 20px' : '6px 14px',
+                                gap: 10,
+                                padding: isPantallaRole(currentUser?.role) ? '8px 16px' : '6px 14px',
                                 background: 'rgba(6, 182, 212, 0.05)',
                                 borderRadius: 'var(--radius-full)',
                                 border: '1px solid rgba(6, 182, 212, 0.15)',
                                 backdropFilter: 'blur(4px)'
                             }}>
-                                <Clock size={isPantallaRole(currentUser?.role) ? 18 : 14} style={{ color: 'var(--brand-400)' }} />
+                                <Clock size={isPantallaRole(currentUser?.role) ? 16 : 14} style={{ color: 'var(--brand-400)' }} />
                                 <span style={{
                                     fontFamily: 'var(--font-mono)',
-                                    fontSize: isPantallaRole(currentUser?.role) ? '1.2rem' : '0.95rem',
+                                    fontSize: isPantallaRole(currentUser?.role) ? '1.1rem' : '0.95rem',
                                     fontWeight: 700,
                                     color: 'var(--text-primary)',
                                     letterSpacing: '0.05em',
-                                    minWidth: isPantallaRole(currentUser?.role) ? '110px' : '85px',
+                                    minWidth: isPantallaRole(currentUser?.role) ? '100px' : '85px',
                                     textAlign: 'center',
                                     textShadow: '0 0 10px rgba(6, 182, 212, 0.3)'
                                 }}>
@@ -709,19 +735,19 @@ const GuardList: React.FC<GuardListProps> = ({
                         flexDirection: 'column',
                         flex: isPantallaRole(currentUser?.role) ? 1 : 'none',
                         minHeight: 0,
-                        padding: (!isPantallaRole(currentUser?.role) && carouselItems.length > 3) ? '0 32px' : '0'
+                        padding: carouselItems.length > 3 ? '0 32px' : '0'
                     }}>
                         {/* Left Chevron Button */}
-                        {!isPantallaRole(currentUser?.role) && carouselItems.length > 3 && activeStartIndex > 0 && (
+                        {carouselItems.length > 3 && activeStartIndex > 0 && (
                             <button
                                 onClick={() => setCarouselStartIndex(prev => Math.max(0, prev - 1))}
                                 style={{
                                     position: 'absolute',
-                                    left: '4px',
+                                    left: '2px',
                                     top: '50%',
                                     transform: 'translateY(-50%)',
                                     zIndex: 10,
-                                    width: 24,
+                                    width: 26,
                                     height: 64,
                                     borderRadius: 'var(--radius-full)',
                                     background: 'rgba(15, 23, 42, 0.85)',
@@ -761,7 +787,7 @@ const GuardList: React.FC<GuardListProps> = ({
                             style={{
                                 display: 'grid',
                                 gridTemplateColumns: `repeat(${Math.min(visibleItems.length, 3)}, 1fr)`,
-                                gap: isPantallaRole(currentUser?.role) ? 24 : 16,
+                                gap: isPantallaRole(currentUser?.role) ? 20 : 16,
                                 flex: isPantallaRole(currentUser?.role) ? 1 : 'none',
                                 minHeight: 0,
                                 width: '100%',
@@ -801,7 +827,7 @@ const GuardList: React.FC<GuardListProps> = ({
                                         exit={{ opacity: 0, x: -20 }}
                                         transition={{ duration: 0.2 }}
                                         style={{
-                                            padding: isPantallaRole(currentUser?.role) ? 24 : 16,
+                                            padding: isPantallaRole(currentUser?.role) ? 16 : 16,
                                             background: isCurrent ? 'rgba(6, 182, 212, 0.08)' : 'var(--bg-card)',
                                             borderRadius: 'var(--radius-md)',
                                             border: isCurrent ? '2px solid var(--brand-500)' : '1px solid var(--border-subtle)',
@@ -810,11 +836,11 @@ const GuardList: React.FC<GuardListProps> = ({
                                             display: 'flex',
                                             flexDirection: 'column',
                                             justifyContent: 'space-between',
-                                            overflow: isPantallaRole(currentUser?.role) ? 'hidden' : 'visible',
+                                            overflow: 'hidden',
                                         }}
                                     >
-                                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexShrink: 0 }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                                     <Clock size={isPantallaRole(currentUser?.role) ? 18 : 14} style={{ color: isCurrent ? 'var(--brand-400)' : 'var(--text-muted)' }} />
                                                     <span style={{
@@ -853,39 +879,45 @@ const GuardList: React.FC<GuardListProps> = ({
                                                 fontSize: isPantallaRole(currentUser?.role) ? '0.85rem' : '0.65rem', 
                                                 color: 'var(--brand-500)', 
                                                 fontWeight: 700, 
-                                                marginBottom: 12, 
-                                                opacity: 0.8 
+                                                marginBottom: 10, 
+                                                opacity: 0.8,
+                                                flexShrink: 0
                                             }}>
                                                 {day}, {new Date(date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
                                             </div>
 
                                             {/* Ausencias en esta franja */}
                                             <div style={{ 
-                                                marginBottom: isPantallaRole(currentUser?.role) ? 8 : 16,
                                                 display: 'flex',
                                                 flexDirection: 'column',
                                                 flex: 1,
-                                                minHeight: 0
+                                                minHeight: 0,
+                                                overflow: 'hidden'
                                             }}>
                                                 <p style={{ 
-                                                    fontSize: isPantallaRole(currentUser?.role) ? '0.8rem' : '0.65rem', 
+                                                    fontSize: isPantallaRole(currentUser?.role) ? '0.75rem' : '0.65rem', 
                                                     fontWeight: 700, 
                                                     textTransform: 'uppercase', 
                                                     color: 'var(--text-muted)', 
-                                                    marginBottom: 10 
+                                                    marginBottom: 8,
+                                                    flexShrink: 0
                                                 }}>
                                                     Ausencias
                                                 </p>
-                                                <div style={{ 
-                                                    display: 'flex', 
-                                                    flexDirection: 'column', 
-                                                    gap: 6,
-                                                    flex: 1,
-                                                    overflowY: isPantallaRole(currentUser?.role) ? 'auto' : 'visible',
-                                                    WebkitOverflowScrolling: isPantallaRole(currentUser?.role) ? 'touch' : 'auto',
-                                                    minHeight: 0,
-                                                    paddingRight: isPantallaRole(currentUser?.role) ? 4 : 0
-                                                }}>
+                                                <div 
+                                                    className="custom-touch-scroll"
+                                                    style={{ 
+                                                        display: 'flex', 
+                                                        flexDirection: 'column', 
+                                                        gap: 6,
+                                                        flex: 1,
+                                                        overflowY: 'auto',
+                                                        WebkitOverflowScrolling: 'touch',
+                                                        touchAction: 'pan-y',
+                                                        minHeight: 0,
+                                                        paddingRight: isPantallaRole(currentUser?.role) ? 4 : 0
+                                                    }}
+                                                >
                                                     {slotGuards.length === 0 ? (
                                                         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>Sin ausencias</span>
                                                     ) : slotGuards.map(g => (
@@ -902,8 +934,8 @@ const GuardList: React.FC<GuardListProps> = ({
                                                             <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                                                     {(() => {
-                                                                        const isSelectable = g.status === GuardStatus.AVAILABLE && currentUser && !isAdministracionRole(currentUser?.role);
-                                                                        console.log("GUARDIA DEBUG:", g.id, "status:", g.status, "currentUser:", currentUser ? currentUser.id : "null", "role:", currentUser?.role, "isSelectable:", isSelectable);
+                                                                        const isAdmin = isAdminRole(currentUser?.role) || isJefaturaRole(currentUser?.role);
+                                                                        const isSelectable = (g.status === GuardStatus.AVAILABLE && currentUser && !isAdministracionRole(currentUser?.role)) || isAdmin;
                                                                         const badgeText = g.status === GuardStatus.AVAILABLE 
                                                                              ? 'PEND' 
                                                                              : g.status === GuardStatus.COMPLETED && !g.covering_teacher
@@ -918,7 +950,7 @@ const GuardList: React.FC<GuardListProps> = ({
                                                                                     onClick={(e) => { e.stopPropagation(); onPickup(g.id); }}
                                                                                     onTouchStart={(e) => e.stopPropagation()}
                                                                                     onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onPickup(g.id); }}
-                                                                                    title="Hacer clic para recoger esta guardia"
+                                                                                    title={isAdmin ? "Hacer clic para asignar o cambiar profesor de guardia" : "Hacer clic para recoger esta guardia"}
                                                                                     className={`badge ${getStatusBadgeClass(g.status)}`} 
                                                                                     style={{ 
                                                                                         fontSize: '0.55rem', 
@@ -1066,7 +1098,12 @@ const GuardList: React.FC<GuardListProps> = ({
                                             </div>
                                         </div>
                                         {/* Guardia disponible */}
-                                        <div style={{ marginTop: 16 }}>
+                                        <div style={{ 
+                                            marginTop: 'auto',
+                                            paddingTop: isPantallaRole(currentUser?.role) ? 10 : 8,
+                                            borderTop: '1px solid var(--border-subtle)',
+                                            flexShrink: 0
+                                        }}>
                                             <div style={{ 
                                                  display: 'flex', 
                                                  alignItems: 'center', 
@@ -1111,7 +1148,8 @@ const GuardList: React.FC<GuardListProps> = ({
                                                              alignItems: 'center',
                                                              justifyContent: 'center',
                                                              cursor: 'pointer',
-                                                                                     backgroundImage: slotMode === 'recommended'
+                                                             border: '2px solid transparent',
+                                                             backgroundImage: slotMode === 'recommended'
                                                                  ? 'linear-gradient(#0f172a, #0f172a), linear-gradient(45deg, #ef4444, #f97316, #eab308, #22c55e, #3b82f6, #a855f7)'
                                                                  : 'linear-gradient(#0f172a, #0f172a), linear-gradient(45deg, #06b6d4, #3b82f6)',
                                                              backgroundOrigin: 'border-box',
@@ -1134,7 +1172,15 @@ const GuardList: React.FC<GuardListProps> = ({
                                                                  justifyContent: 'center',
                                                                  overflow: 'hidden'
                                                              }}>
-                                                                 <CrownLogo size={14} />
+                                                                 <img 
+                                                                     src={LOGO_DARK_URL} 
+                                                                     alt="IES Logo" 
+                                                                     style={{ 
+                                                                         width: '100%', 
+                                                                         height: '100%', 
+                                                                         objectFit: 'contain'
+                                                                     }} 
+                                                                 />
                                                              </div>
                                                          )}
                                                      </motion.div>
@@ -1239,16 +1285,16 @@ const GuardList: React.FC<GuardListProps> = ({
                         </div>
 
                         {/* Right Chevron Button */}
-                        {!isPantallaRole(currentUser?.role) && carouselItems.length > 3 && activeStartIndex < carouselItems.length - 3 && (
+                        {carouselItems.length > 3 && activeStartIndex < carouselItems.length - 3 && (
                             <button
                                 onClick={() => setCarouselStartIndex(prev => Math.min(carouselItems.length - 3, prev + 1))}
                                 style={{
                                     position: 'absolute',
-                                    right: '4px',
+                                    right: '2px',
                                     top: '50%',
                                     transform: 'translateY(-50%)',
                                     zIndex: 10,
-                                    width: 24,
+                                    width: 26,
                                     height: 64,
                                     borderRadius: 'var(--radius-full)',
                                     background: 'rgba(15, 23, 42, 0.85)',
@@ -2033,15 +2079,26 @@ const GuardList: React.FC<GuardListProps> = ({
                                                         className="btn btn-primary"
                                                     >
                                                         <Zap style={{ width: 16, height: 16, fill: 'white' }} />
-                                                        RECOGER GUARDIA
+                                                        {isAdmin ? 'ASIGNAR DOCENTE' : 'RECOGER GUARDIA'}
                                                     </motion.button>
                                                 )}
 
                                             {guard.status === GuardStatus.ASSIGNED &&
                                                 currentUser &&
                                                 !isAdministracionRole(currentUser?.role) &&
-                                                (guard.covering_teacher_id === currentUser.id || isPantallaRole(currentUser?.role)) && (
+                                                (guard.covering_teacher_id === currentUser.id || isAdmin || isPantallaRole(currentUser?.role)) && (
                                                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                                        {isAdmin && (
+                                                            <motion.button
+                                                                whileHover={{ scale: 1.03 }}
+                                                                whileTap={{ scale: 0.96 }}
+                                                                onClick={() => onPickup(guard.id)}
+                                                                className="btn btn-primary"
+                                                            >
+                                                                <Zap style={{ width: 16, height: 16, fill: 'white' }} />
+                                                                CAMBIAR DOCENTE
+                                                            </motion.button>
+                                                        )}
                                                         <motion.button
                                                             whileHover={{ scale: 1.03 }}
                                                             whileTap={{ scale: 0.96 }}
@@ -2063,12 +2120,23 @@ const GuardList: React.FC<GuardListProps> = ({
                                                     </div>
                                                 )}
 
-                                            {/* REVERSAL FOR COMPLETED */}
+                                            {/* REVERSAL AND ASSIGNMENT FOR COMPLETED */}
                                             {guard.status === GuardStatus.COMPLETED &&
                                                 currentUser &&
                                                 !isAdministracionRole(currentUser?.role) &&
                                                 (guard.covering_teacher_id === currentUser.id || isAdmin || isPantallaRole(currentUser?.role)) && (
                                                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                                        {isAdmin && (
+                                                            <motion.button
+                                                                whileHover={{ scale: 1.03 }}
+                                                                whileTap={{ scale: 0.96 }}
+                                                                onClick={() => onPickup(guard.id)}
+                                                                className="btn btn-primary"
+                                                            >
+                                                                <Zap style={{ width: 16, height: 16, fill: 'white' }} />
+                                                                {guard.covering_teacher ? 'CAMBIAR DOCENTE' : 'ASIGNAR DOCENTE'}
+                                                            </motion.button>
+                                                        )}
                                                         {(() => {
                                                             const now = new Date();
                                                             let canRevert = true;

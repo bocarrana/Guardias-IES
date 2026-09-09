@@ -5,11 +5,11 @@ import { useGuards } from './hooks/useGuards';
 import TeacherSelectionModal from './components/TeacherSelectionModal';
 import { Teacher, Guard, GuardStatus, MetaOptions, GuardGroupSchedule, GuardType, ViewType } from './types';
 import { toast } from 'sonner';
-import { canAccessAdminPanel, canAccessMySchedule, canAccessDashboard, canAccessFreeClassrooms, isAdministracionRole, isPantallaRole } from './utils/roles';
+import { canAccessAdminPanel, canAccessMySchedule, canAccessDashboard, canAccessFreeClassrooms, isAdministracionRole, isPantallaRole, isAdminRole, isJefaturaRole } from './utils/roles';
 
 import LoginScreen from './components/LoginScreen';
 import Layout from './components/Layout';
-import GuardList from './components/GuardList';
+import GuardList, { isGuardPassed } from './components/GuardList';
 import GuardModal from './components/GuardModal';
 import Dashboard from './components/Dashboard';
 import TeacherDirectory from './components/TeacherDirectory';
@@ -241,8 +241,8 @@ const App: React.FC = () => {
         const targetGuard = allGuards.find(g => g.id === guardId);
         if (!targetGuard) return;
 
-        // Si es Modo TV, abrir el modal de selección de profesor
-        if (isPantallaRole(currentUser.role)) {
+        // Si es Modo TV o Administrador/Jefatura, abrir el modal de selección de profesor
+        if (isPantallaRole(currentUser.role) || isAdminRole(currentUser.role) || isJefaturaRole(currentUser.role)) {
             setPendingAction({ type: 'pickup', guardId });
             setIsTeacherModalOpen(true);
             return;
@@ -383,9 +383,10 @@ const App: React.FC = () => {
         }
 
         try {
-            // Revert back to ASSIGNED if already COMPLETED
+            // Revert back to AVAILABLE (or ASSIGNED if it had a covering teacher)
             if (targetGuard.status === GuardStatus.COMPLETED) {
-                await updateGuardStatus(guardId, GuardStatus.ASSIGNED, targetGuard.covering_teacher_id || undefined, currentUser?.id, true);
+                const newStatus = targetGuard.covering_teacher_id ? GuardStatus.ASSIGNED : GuardStatus.AVAILABLE;
+                await updateGuardStatus(guardId, newStatus, targetGuard.covering_teacher_id || undefined, currentUser?.id, true);
                 toast.info('Estado revertido', { description: 'La guardia vuelve a estar pendiente.' });
             } else {
                 await updateGuardStatus(guardId, GuardStatus.COMPLETED, undefined, currentUser?.id);
@@ -397,7 +398,7 @@ const App: React.FC = () => {
         }
     };
 
-    // Ejecuta la acción pendiente en Modo TV una vez seleccionado el profesor
+    // Ejecuta la acción pendiente una vez seleccionado el profesor (Modo TV o Admin)
     const handleTeacherSelected = async (selectedTeacher: Teacher) => {
         if (!pendingAction) return;
         const { type, guardId } = pendingAction;
@@ -410,26 +411,35 @@ const App: React.FC = () => {
         const previousGuards = [...guards];
 
         if (type === 'pickup') {
-            // --- VALIDATION: Check if it's within the teacher's assigned schedule ---
-            const DAYS_ES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-            const [year, month, day] = targetGuard.date.split('-').map(Number);
-            const dateObj = new Date(year, month - 1, day);
-            const targetDayName = DAYS_ES[dateObj.getDay()];
+            const isRecreo = targetGuard.type === GuardType.RECREO || 
+                             targetGuard.time_slot?.type?.toLowerCase() === 'recreo' || 
+                             targetGuard.time_slot?.label?.toLowerCase().includes('recreo');
 
-            const isAssigned = guardGroupSchedules.some(
-                gs => gs.profesor_id === selectedTeacher.id && 
-                      gs.dia_semana === targetDayName && 
-                      gs.franja_id === targetGuard.time_slot_id
-            );
+            // En modo no-admin, validar franja asignada
+            if (!isRecreo && !isAdminRole(currentUser?.role) && !isJefaturaRole(currentUser?.role)) {
+                const DAYS_ES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+                const [year, month, day] = targetGuard.date.split('-').map(Number);
+                const dateObj = new Date(year, month - 1, day);
+                const targetDayName = DAYS_ES[dateObj.getDay()];
 
-            if (!isAssigned) {
-                const confirmed = window.confirm(`Estás recogiendo una guardia para ${selectedTeacher.name} fuera de su horario asignado.\n\n¿Deseas continuar?`);
-                if (!confirmed) {
-                    return;
+                const isAssigned = guardGroupSchedules.some(
+                    gs => gs.profesor_id === selectedTeacher.id && 
+                          gs.dia_semana === targetDayName && 
+                          gs.franja_id === targetGuard.time_slot_id
+                );
+
+                if (!isAssigned) {
+                    const confirmed = window.confirm(`Estás asignando una guardia a ${selectedTeacher.name} fuera de su horario asignado.\n\n¿Deseas continuar?`);
+                    if (!confirmed) {
+                        return;
+                    }
                 }
             }
 
             try {
+                const isPast = targetGuard.status === GuardStatus.COMPLETED || isGuardPassed(targetGuard, new Date());
+                const targetStatus = isPast ? GuardStatus.COMPLETED : GuardStatus.ASSIGNED;
+
                 if ((targetGuard as any).isVirtual) {
                     const realClassroom = meta.classrooms.find(c => c.name.toLowerCase().includes('convivencia'));
                     const payload: Partial<Guard> = {
@@ -437,7 +447,7 @@ const App: React.FC = () => {
                         time_slot_id: targetGuard.time_slot_id,
                         requesting_teacher_id: null as unknown as string,
                         covering_teacher_id: selectedTeacher.id,
-                        status: GuardStatus.ASSIGNED,
+                        status: targetStatus,
                         type: GuardType.COEXISTENCE,
                         observations: targetGuard.observations,
                         has_task: 'NO'
@@ -445,7 +455,7 @@ const App: React.FC = () => {
                     if (realClassroom) payload.classroom_id = realClassroom.id;
 
                     await createGuard(payload);
-                    toast.success(`¡Guardia de Convivencia iniciada para ${selectedTeacher.name}!`);
+                    toast.success(`¡Guardia de Convivencia asignada a ${selectedTeacher.name}!`);
                     await refetch();
                     return;
                 }
@@ -453,11 +463,11 @@ const App: React.FC = () => {
                 // Optimistic Update
                 setGuards(prev => prev.map(g => 
                     g.id === guardId 
-                        ? { ...g, status: GuardStatus.ASSIGNED, covering_teacher_id: selectedTeacher.id, covering_teacher: selectedTeacher as any } 
+                        ? { ...g, status: targetStatus, covering_teacher_id: selectedTeacher.id, covering_teacher: selectedTeacher as any } 
                         : g
                 ));
 
-                const result = await updateGuardStatus(guardId, GuardStatus.ASSIGNED, selectedTeacher.id, selectedTeacher.id);
+                const result = await updateGuardStatus(guardId, targetStatus, selectedTeacher.id, currentUser?.id || selectedTeacher.id, true);
                 if (result.success) {
                     toast.success(`¡Guardia asignada a ${selectedTeacher.name}!`);
                 } else {
@@ -505,7 +515,8 @@ const App: React.FC = () => {
             }
         } else if (type === 'revert') {
             try {
-                await updateGuardStatus(guardId, GuardStatus.ASSIGNED, targetGuard.covering_teacher_id || undefined, selectedTeacher.id, true);
+                const newStatus = targetGuard.covering_teacher_id ? GuardStatus.ASSIGNED : GuardStatus.AVAILABLE;
+                await updateGuardStatus(guardId, newStatus, targetGuard.covering_teacher_id || undefined, selectedTeacher.id, true);
                 toast.info(`Guardia revertida por ${selectedTeacher.name}`);
                 await refetch();
             } catch {
@@ -538,21 +549,43 @@ const App: React.FC = () => {
         if (!currentUser) return;
         try {
             if (editingGuard) {
-                await updateGuardDetails(editingGuard.id, formData);
+                const slot = meta.slots.find(s => s.id === formData.time_slot_id);
+                const isPast = isGuardPassed({ ...formData, time_slot: slot } as any, new Date());
+                let finalStatus = formData.status;
+                if (formData.covering_teacher_id && (!finalStatus || finalStatus === GuardStatus.AVAILABLE)) {
+                    finalStatus = isPast ? GuardStatus.COMPLETED : GuardStatus.ASSIGNED;
+                }
+                await updateGuardDetails(editingGuard.id, { ...formData, status: finalStatus });
                 toast.success('Cambios guardados');
             } else {
                 if (Array.isArray(formData)) {
                     for (const item of formData) {
+                        const slot = meta.slots.find(s => s.id === item.time_slot_id);
+                        const isPast = isGuardPassed({ ...item, time_slot: slot } as any, new Date());
+                        const initialStatus = item.covering_teacher_id 
+                            ? (isPast ? GuardStatus.COMPLETED : GuardStatus.ASSIGNED)
+                            : (item.status || GuardStatus.AVAILABLE);
+
                         await createGuard({
                             ...item,
+                            status: initialStatus,
                             requesting_teacher_id: item.requesting_teacher_id || currentUser.id,
+                            covering_teacher_id: item.covering_teacher_id || undefined,
                         });
                     }
                     toast.success(`¡${formData.length} guardias creadas!`, { description: `Nuevas guardias creadas correctamente.` });
                 } else {
+                    const slot = meta.slots.find(s => s.id === formData.time_slot_id);
+                    const isPast = isGuardPassed({ ...formData, time_slot: slot } as any, new Date());
+                    const initialStatus = formData.covering_teacher_id 
+                        ? (isPast ? GuardStatus.COMPLETED : GuardStatus.ASSIGNED)
+                        : (formData.status || GuardStatus.AVAILABLE);
+
                     await createGuard({
                         ...formData,
+                        status: initialStatus,
                         requesting_teacher_id: formData.requesting_teacher_id || currentUser.id,
+                        covering_teacher_id: formData.covering_teacher_id || undefined,
                     });
                     toast.success('¡Guardia creada!', { description: `Nueva guardia para ${formData.date}` });
                 }

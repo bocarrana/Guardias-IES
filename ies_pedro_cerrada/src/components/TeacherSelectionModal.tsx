@@ -5,7 +5,6 @@ import { X, Search, Zap, Dices, RefreshCw } from 'lucide-react';
 import TeacherAvatar from './TeacherAvatar';
 import { rankTeachers } from '../utils/guardAssignment';
 import { getStorageUrl } from '../services/supabaseClient';
-import { isPantallaRole } from '../utils/roles';
 
 interface TeacherSelectionModalProps {
     isOpen: boolean;
@@ -54,10 +53,9 @@ const TeacherSelectionModal: React.FC<TeacherSelectionModalProps> = ({
 
     // Filtrar profesores por búsqueda
     const filteredTeachers = useMemo(() => {
-        const validTeachers = teachers.filter(t => !isPantallaRole(t.role));
         const query = searchQuery.toLowerCase().trim();
-        if (!query) return validTeachers;
-        return validTeachers.filter(t => 
+        if (!query) return teachers;
+        return teachers.filter(t => 
             t.name.toLowerCase().includes(query) || 
             (t.department && t.department.toLowerCase().includes(query))
         );
