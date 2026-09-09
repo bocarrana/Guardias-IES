@@ -201,6 +201,32 @@ const GuardList: React.FC<GuardListProps> = ({
     const [onlyCompatible, setOnlyCompatible] = useState(false);
     const [openModeMenuSlotId, setOpenModeMenuSlotId] = useState<string | null>(null);
 
+    // Floating teacher tooltip state for TV / kiosk mode
+    const [activeTeacherTooltip, setActiveTeacherTooltip] = useState<{
+        teacher: Teacher;
+        isAbsent?: boolean;
+        slotId: string;
+    } | null>(null);
+    const teacherTooltipTimerRef = useRef<any>(null);
+
+    const handleAvatarTouch = (teacher: Teacher, isAbsent: boolean, slotId: string) => {
+        if (teacherTooltipTimerRef.current) {
+            clearTimeout(teacherTooltipTimerRef.current);
+        }
+        setActiveTeacherTooltip({ teacher, isAbsent, slotId });
+        teacherTooltipTimerRef.current = setTimeout(() => {
+            setActiveTeacherTooltip(null);
+        }, 3000);
+    };
+
+    useEffect(() => {
+        return () => {
+            if (teacherTooltipTimerRef.current) {
+                clearTimeout(teacherTooltipTimerRef.current);
+            }
+        };
+    }, []);
+
     useEffect(() => {
         setSelectedDate(null);
         setSelectedSlotId(null);
@@ -848,6 +874,7 @@ const GuardList: React.FC<GuardListProps> = ({
                                             flexDirection: 'column',
                                             justifyContent: 'space-between',
                                             overflow: 'hidden',
+                                            position: 'relative',
                                         }}
                                     >
                                         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
@@ -1269,10 +1296,24 @@ const GuardList: React.FC<GuardListProps> = ({
                                                             return (
                                                                 <div 
                                                                     key={s.id}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        if (isPantallaRole(currentUser?.role)) {
+                                                                            handleAvatarTouch(t, isAbsent, slot.id);
+                                                                        }
+                                                                    }}
                                                                     onTouchStart={(e) => e.stopPropagation()}
                                                                     onTouchMove={(e) => e.stopPropagation()}
-                                                                    onTouchEnd={(e) => e.stopPropagation()}
-                                                                    style={{ display: 'inline-block' }}
+                                                                    onTouchEnd={(e) => {
+                                                                        e.stopPropagation();
+                                                                        if (isPantallaRole(currentUser?.role)) {
+                                                                            handleAvatarTouch(t, isAbsent, slot.id);
+                                                                        }
+                                                                    }}
+                                                                    style={{ 
+                                                                        display: 'inline-block',
+                                                                        cursor: isPantallaRole(currentUser?.role) ? 'pointer' : 'default'
+                                                                    }}
                                                                 >
                                                                     <TeacherAvatar
                                                                         teacher={t}
@@ -1282,6 +1323,7 @@ const GuardList: React.FC<GuardListProps> = ({
                                                                         canRevert={canRevert}
                                                                         onRevert={handleRevert}
                                                                         glowColor={glowColor}
+                                                                        showViewer={!isPantallaRole(currentUser?.role)}
                                                                     />
                                                                 </div>
                                                             );
@@ -1289,6 +1331,82 @@ const GuardList: React.FC<GuardListProps> = ({
                                                     })()}
                                                 </ScrollableAvatars>
                                             </div>
+
+                                            {/* Floating teacher info card in TV mode */}
+                                            <AnimatePresence>
+                                                {isPantallaRole(currentUser?.role) && activeTeacherTooltip && activeTeacherTooltip.slotId === slot.id && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                        transition={{ duration: 0.15 }}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        onTouchStart={(e) => e.stopPropagation()}
+                                                        onTouchEnd={(e) => e.stopPropagation()}
+                                                        style={{
+                                                            position: 'absolute',
+                                                            bottom: 80,
+                                                            left: 10,
+                                                            right: 10,
+                                                            zIndex: 100,
+                                                            background: 'rgba(15, 23, 42, 0.96)',
+                                                            backdropFilter: 'blur(16px)',
+                                                            WebkitBackdropFilter: 'blur(16px)',
+                                                            border: '1.5px solid rgba(6, 182, 212, 0.5)',
+                                                            borderRadius: 12,
+                                                            padding: '10px 14px',
+                                                            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.8), 0 0 16px rgba(6, 182, 212, 0.3)',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: 12,
+                                                            pointerEvents: 'auto'
+                                                        }}
+                                                    >
+                                                        <div style={{ flexShrink: 0 }}>
+                                                            <TeacherAvatar
+                                                                teacher={activeTeacherTooltip.teacher}
+                                                                size={42}
+                                                                showViewer={false}
+                                                                isAbsent={activeTeacherTooltip.isAbsent}
+                                                            />
+                                                        </div>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1, textAlign: 'left' }}>
+                                                            <span style={{ 
+                                                                fontSize: '0.95rem', 
+                                                                fontWeight: 800, 
+                                                                color: '#f8fafc',
+                                                                lineHeight: 1.2,
+                                                                whiteSpace: 'nowrap',
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis'
+                                                            }}>
+                                                                {activeTeacherTooltip.teacher.name}
+                                                            </span>
+                                                            <span style={{ 
+                                                                fontSize: '0.8rem', 
+                                                                fontWeight: 600, 
+                                                                color: 'var(--brand-400)',
+                                                                marginTop: 3,
+                                                                whiteSpace: 'nowrap',
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis'
+                                                            }}>
+                                                                {activeTeacherTooltip.teacher.department || 'Sin departamento'}
+                                                            </span>
+                                                            {activeTeacherTooltip.isAbsent && (
+                                                                <span style={{
+                                                                    fontSize: '0.72rem',
+                                                                    fontWeight: 700,
+                                                                    color: '#ef4444',
+                                                                    marginTop: 2
+                                                                }}>
+                                                                    Ausente en esta hora
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
                                         </div>
                                     </motion.div>
                                 );
