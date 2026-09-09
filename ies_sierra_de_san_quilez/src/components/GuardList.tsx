@@ -339,17 +339,28 @@ const GuardList: React.FC<GuardListProps> = ({
         return 0;
     }, [carouselItems, meta.slots, currentTimeStr, todayDateStr]);
 
+    // Inicialización del carrusel en la franja actual
+    useEffect(() => {
+        if (carouselItems.length > 0 && !hasInitializedCarousel.current) {
+            setCarouselStartIndex(defaultCarouselStart);
+            hasInitializedCarousel.current = true;
+        }
+    }, [carouselItems.length, defaultCarouselStart]);
+
     // Retorno automático a la vista principal y reseteo de scroll tras 10s de inactividad
     useEffect(() => {
-        if (carouselItems.length === 0 || !hasInitializedCarousel.current) return;
+        if (carouselItems.length === 0) return;
 
-        let timer: NodeJS.Timeout;
+        let timer: any;
 
         const resetToDefaultView = () => {
             setCarouselStartIndex(defaultCarouselStart);
-            const scrollContainers = document.querySelectorAll('.custom-touch-scroll');
+            window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+            document.documentElement.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+            document.body.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+            const scrollContainers = document.querySelectorAll('.custom-touch-scroll, main, #root, .layout-content');
             scrollContainers.forEach(el => {
-                el.scrollTo({ top: 0, behavior: 'smooth' });
+                el.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
             });
         };
 
@@ -358,7 +369,7 @@ const GuardList: React.FC<GuardListProps> = ({
             timer = setTimeout(resetToDefaultView, 10000);
         };
 
-        // Iniciar temporizador inicial
+        // Iniciar temporizador
         resetInactivityTimer();
 
         // Detectar cualquier interacción del usuario (táctil, ratón, scroll, teclado)
