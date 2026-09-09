@@ -90,7 +90,7 @@ const ScrollableAvatars: React.FC<ScrollableAvatarsProps> = ({ children, isTV })
                     overflowX: 'auto',
                     width: '100%',
                     WebkitOverflowScrolling: 'touch',
-                    padding: '4px 0',
+                    padding: '6px 6px',
                 }}
             >
                 {children}

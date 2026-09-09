@@ -197,12 +197,12 @@ const TeacherAvatar: React.FC<TeacherAvatarProps> = ({
                         }}
                         style={{
                             position: 'absolute',
-                            top: -3,
-                            left: -3,
-                            width: size < 32 ? 14 : 18,
-                            height: size < 32 ? 14 : 18,
-                            minWidth: size < 32 ? 14 : 18,
-                            minHeight: size < 32 ? 14 : 18,
+                            top: -2,
+                            right: -2,
+                            width: size < 32 ? 16 : (size >= 48 ? 20 : 18),
+                            height: size < 32 ? 16 : (size >= 48 ? 20 : 18),
+                            minWidth: size < 32 ? 16 : (size >= 48 ? 20 : 18),
+                            minHeight: size < 32 ? 16 : (size >= 48 ? 20 : 18),
                             borderRadius: '50%',
                             background: '#eab308',
                             border: '1.5px solid var(--bg-card)',
@@ -210,8 +210,8 @@ const TeacherAvatar: React.FC<TeacherAvatarProps> = ({
                             alignItems: 'center',
                             justifyContent: 'center',
                             cursor: 'pointer',
-                            color: '#1e293b',
-                            boxShadow: '0 2px 6px rgba(234, 179, 8, 0.4)',
+                            color: '#0f172a',
+                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.4), 0 0 8px rgba(234, 179, 8, 0.3)',
                             zIndex: 15,
                             padding: 0,
                             boxSizing: 'border-box',
@@ -219,7 +219,7 @@ const TeacherAvatar: React.FC<TeacherAvatarProps> = ({
                         }}
                         title="Revertir ausencia de guardia"
                     >
-                        <RotateCcw size={size < 32 ? 9 : 12} />
+                        <RotateCcw size={size < 32 ? 9 : (size >= 48 ? 12 : 11)} strokeWidth={2.5} />
                     </div>
                 )}
 
