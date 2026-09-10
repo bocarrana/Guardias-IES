@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Teacher, Guard, MetaOptions, GuardType } from '../types';
-import { isAdminRole, getRoleDisplayName, getRoleStyle, canEditTeacherProfile, getAssignableRoles } from '../utils/roles';
+import { isAdminRole, isPantallaRole, isAdministracionRole, getRoleDisplayName, getRoleStyle, canEditTeacherProfile, getAssignableRoles } from '../utils/roles';
 import {
     Users,
     ShieldAlert,
@@ -355,17 +355,20 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
     const auditResults = teachers
         .filter(t => {
             const isActive = t.active !== false;
-            // Exclude management team from audit as they might not have regular schedules
+            // Exclude management team, Pantalla and Administracion from audit
             const isNotDirectivo = t.guard_group !== 'Equipo Directivo';
+            const isNotPantalla = !isPantallaRole(t.role);
+            const isNotAdmin = !isAdministracionRole(t.role);
             const matchesSearch = t.name.toLowerCase().includes(search.toLowerCase()) || 
                                  (t.email || '').toLowerCase().includes(search.toLowerCase());
-            return isActive && isNotDirectivo && matchesSearch;
+            return isActive && isNotDirectivo && isNotPantalla && isNotAdmin && matchesSearch;
         })
         .map(t => {
             // If we are loading audit data, we assume they are okay to avoid flicker
             // or we could show a loading state in the table
             const hasPersonal = auditData.lectivoIds.has(t.id);
-            const hasGuards = auditData.guardiaIds.has(t.id);
+            const hasGuards = auditData.guardiaIds.has(t.id) || t.horas_guardia === 0;
+            const noGuardsConfirmed = t.horas_guardia === 0 && !auditData.guardiaIds.has(t.id);
             
             return {
                 id: t.id,
@@ -373,6 +376,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                 email: t.email,
                 missing_personal: !hasPersonal,
                 missing_guards: !hasGuards,
+                no_guards_confirmed: noGuardsConfirmed,
                 teacher: t
             };
         })
@@ -1379,25 +1383,67 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                             <th style={thStyle}>Categoría</th>
                                             <th style={thStyle}>Nombre / Valor</th>
                                             <th style={{ ...thStyle, textAlign: 'right' }}>
-                                                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
-                                                    <button 
-                                                        onClick={() => setExpandedSubjects(new Set(meta.subjects.filter(s => !s.padre_id).map(s => s.id)))}
-                                                        className="btn btn-ghost" 
-                                                        style={{ ...iconBtnStyle, width: 'auto', padding: '0 8px', fontSize: '11px', color: 'var(--brand-400)' }}
-                                                        title="Expandir todo"
-                                                    >
-                                                        <Maximize2 size={12} style={{ marginRight: 4 }} /> Todo
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => setExpandedSubjects(new Set())}
-                                                        className="btn btn-ghost" 
-                                                        style={{ ...iconBtnStyle, width: 'auto', padding: '0 8px', fontSize: '11px', color: 'var(--text-muted)' }}
-                                                        title="Colapsar todo"
-                                                    >
-                                                        <Minimize2 size={12} style={{ marginRight: 4 }} /> Nada
-                                                    </button>
-                                                    <span>Acciones</span>
-                                                </div>
+                                                {(() => {
+                                                    const parentSubjects = meta.subjects.filter(s => !s.padre_id);
+                                                    const isAllExpanded = parentSubjects.length > 0 && parentSubjects.every(s => expandedSubjects.has(s.id));
+                                                    const isAllCollapsed = expandedSubjects.size === 0;
+                                                    return (
+                                                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
+                                                            <div style={{ 
+                                                                display: 'flex', 
+                                                                background: 'rgba(0,0,0,0.3)', 
+                                                                borderRadius: 8, 
+                                                                padding: 2, 
+                                                                border: '1px solid var(--border-subtle)',
+                                                                marginRight: 4
+                                                            }}>
+                                                                <button 
+                                                                    onClick={() => setExpandedSubjects(new Set(parentSubjects.map(s => s.id)))}
+                                                                    style={{
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: 4,
+                                                                        padding: '4px 10px',
+                                                                        borderRadius: 6,
+                                                                        border: 'none',
+                                                                        fontSize: '11px',
+                                                                        fontWeight: 700,
+                                                                        cursor: 'pointer',
+                                                                        transition: 'all 0.2s',
+                                                                        background: isAllExpanded ? 'var(--brand-500)' : 'transparent',
+                                                                        color: isAllExpanded ? 'white' : 'var(--text-secondary)',
+                                                                        boxShadow: isAllExpanded ? '0 2px 8px var(--brand-500-40)' : 'none'
+                                                                    }}
+                                                                    title="Expandir todos los departamentos"
+                                                                >
+                                                                    <Maximize2 size={12} /> Todo
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => setExpandedSubjects(new Set())}
+                                                                    style={{
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: 4,
+                                                                        padding: '4px 10px',
+                                                                        borderRadius: 6,
+                                                                        border: 'none',
+                                                                        fontSize: '11px',
+                                                                        fontWeight: 700,
+                                                                        cursor: 'pointer',
+                                                                        transition: 'all 0.2s',
+                                                                        background: isAllCollapsed ? 'var(--brand-500)' : 'transparent',
+                                                                        color: isAllCollapsed ? 'white' : 'var(--text-secondary)',
+                                                                        boxShadow: isAllCollapsed ? '0 2px 8px var(--brand-500-40)' : 'none'
+                                                                    }}
+                                                                    title="Colapsar todos los departamentos"
+                                                                >
+                                                                    <Minimize2 size={12} /> Nada
+                                                                </button>
+                                                            </div>
+                                                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>Acciones</span>
+                                                        </div>
+                                                    );
+                                                })()}
                                             </th>
                                         </>
                                     )}
@@ -2086,7 +2132,61 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                     </div>
                                 </div>
                                 
-                                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                                    {selectedTeacherId && (() => {
+                                        const currentSelTeacher = teachers.find(t => t.id === selectedTeacherId);
+                                        if (!currentSelTeacher) return null;
+                                        const isNoGuards = currentSelTeacher.horas_guardia === 0 && schedules.filter(s => s.profesor_id === selectedTeacherId).length === 0;
+                                        return (
+                                            <label style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 8,
+                                                padding: '5px 12px',
+                                                borderRadius: 10,
+                                                background: isNoGuards ? 'rgba(34, 197, 94, 0.12)' : 'rgba(255, 255, 255, 0.04)',
+                                                border: `1px solid ${isNoGuards ? 'rgba(34, 197, 94, 0.35)' : 'var(--border-subtle)'}`,
+                                                cursor: 'pointer',
+                                                userSelect: 'none',
+                                                transition: 'all 0.2s'
+                                            }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isNoGuards}
+                                                    onChange={async (e) => {
+                                                        const checked = e.target.checked;
+                                                        try {
+                                                            if (checked) {
+                                                                await updateTeacher(selectedTeacherId, { horas_guardia: 0 });
+                                                                const teacherSchedules = schedules.filter(s => s.profesor_id === selectedTeacherId);
+                                                                for (const sch of teacherSchedules) {
+                                                                    await deletePersonalScheduleEntry(sch.id);
+                                                                }
+                                                                toast.success(`Guardado: ${currentSelTeacher.name} marcado sin guardias (0h)`);
+                                                            } else {
+                                                                await updateTeacher(selectedTeacherId, { horas_guardia: 1 });
+                                                                toast.info(`Guardado: ${currentSelTeacher.name} habilitado para guardias`);
+                                                            }
+                                                            await onRefetch();
+                                                            fetchSchedules();
+                                                        } catch (err: any) {
+                                                            toast.error('Error al actualizar disponibilidad de guardias');
+                                                        }
+                                                    }}
+                                                    style={{ width: 15, height: 15, accentColor: 'var(--green-500)', cursor: 'pointer' }}
+                                                />
+                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: isNoGuards ? 'var(--green-400)' : 'var(--text-primary)' }}>
+                                                        Sin guardias asignadas (0h)
+                                                    </span>
+                                                    <span style={{ fontSize: '0.65rem', color: isNoGuards ? 'rgba(74, 222, 128, 0.8)' : 'var(--text-muted)' }}>
+                                                        {isNoGuards ? 'Confirmado para auditoría' : 'Marcar si no hace guardias'}
+                                                    </span>
+                                                </div>
+                                            </label>
+                                        );
+                                    })()}
+
                                     {(() => {
                                         const activeSchedules = schedules.filter(s => !selectedTeacherId || s.profesor_id === selectedTeacherId);
                                         const recreosCount = activeSchedules.filter(s => s.time_slot?.label?.toLowerCase().includes('recreo')).length;
@@ -2185,6 +2285,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                             </>
                                         )}
                                         onSlotClick={async (existing, day, slot) => {
+                                            const currentSelTeacher = teachers.find(t => t.id === selectedTeacherId);
+                                            if (currentSelTeacher && currentSelTeacher.horas_guardia === 0) {
+                                                await updateTeacher(selectedTeacherId, { horas_guardia: 1 });
+                                                await onRefetch();
+                                            }
                                             if (existing) {
                                                 await deletePersonalScheduleEntry(existing.id);
                                             } else {
@@ -2734,7 +2839,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                                         color: res.missing_guards ? 'var(--red-400)' : 'var(--green-400)',
                                                         border: `1px solid ${res.missing_guards ? 'rgba(239,68,68,0.3)' : 'rgba(34,197,94,0.3)'}`
                                                     }}>
-                                                        {res.missing_guards ? '❌ Guardias' : '✅ Guardias'}
+                                                        {res.missing_guards ? '❌ Guardias' : (res.no_guards_confirmed ? '✅ Sin guardias' : '✅ Guardias')}
                                                     </span>
                                                 </div>
                                             </td>

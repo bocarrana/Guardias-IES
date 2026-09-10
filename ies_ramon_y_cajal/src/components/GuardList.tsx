@@ -4,7 +4,7 @@ import { Guard, GuardStatus, GuardType, Teacher, MetaOptions, GuardGroupSchedule
 import {
     User, Calendar, Clock, MapPin, CheckCircle, Zap,
     BookOpen, Shield, Pencil, Trash2, FileText, Search, Loader2, AlertTriangle,
-    ChevronLeft, ChevronRight, X, Dices, ChevronDown
+    ChevronLeft, ChevronRight, X, Dices, ChevronDown, MessageSquare, FileCheck
 } from 'lucide-react';
 import { getStorageUrl, getTaskFileUrl } from '../services/supabaseClient';
 import { Download } from 'lucide-react';
@@ -196,6 +196,16 @@ const GuardList: React.FC<GuardListProps> = ({
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [mapRoomId, setMapRoomId] = useState<string | null>(null);
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [selectedObservationGuard, setSelectedObservationGuard] = useState<Guard | null>(null);
+
+    // Auto-cerrar modal de observación tras 8 segundos
+    useEffect(() => {
+        if (!selectedObservationGuard) return;
+        const timer = setTimeout(() => {
+            setSelectedObservationGuard(null);
+        }, 8000);
+        return () => clearTimeout(timer);
+    }, [selectedObservationGuard]);
 
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
@@ -1084,21 +1094,67 @@ const GuardList: React.FC<GuardListProps> = ({
                                                                             {g.classroom.name}
                                                                         </div>
                                                                     )}
+                                                                    {(() => {
+                                                                        const isCoexistence = g.type === GuardType.COEXISTENCE || 
+                                                                                              g.subject_id === 'M_CONVIVENCIA' || 
+                                                                                              g.subject?.name?.toLowerCase().includes('convivencia') || 
+                                                                                              g.classroom?.name?.toLowerCase().includes('convivencia');
+                                                                        if (isCoexistence) return null;
+
+                                                                        const hasNotes = Boolean(g.observations && g.observations.trim().length > 0);
+                                                                        const hasTask = Boolean(g.has_task === 'Sí' || g.has_task === 'SÍ' || g.has_task === 'si' || g.has_task === 'SI' || g.task_file_url);
+                                                                        if (!hasNotes && !hasTask) return null;
+
+                                                                        const isTV = isPantallaRole(currentUser?.role);
+                                                                        const size = isTV ? 20 : 16;
+                                                                        const iconSize = isTV ? 11 : 9;
+
+                                                                        return (
+                                                                            <motion.button 
+                                                                                type="button"
+                                                                                whileHover={{ scale: 1.2, filter: 'brightness(1.25)' }}
+                                                                                whileTap={{ scale: 0.9 }}
+                                                                                onClick={(e) => { 
+                                                                                    e.stopPropagation(); 
+                                                                                    setSelectedObservationGuard(g); 
+                                                                                }}
+                                                                                onTouchStart={(e) => e.stopPropagation()}
+                                                                                onTouchEnd={(e) => { 
+                                                                                    e.stopPropagation(); 
+                                                                                    e.preventDefault(); 
+                                                                                    setSelectedObservationGuard(g); 
+                                                                                }}
+                                                                                title="Ver observaciones / tarea"
+                                                                                style={{ 
+                                                                                    display: 'inline-flex',
+                                                                                    alignItems: 'center',
+                                                                                    justifyContent: 'center',
+                                                                                    width: `${size}px`,
+                                                                                    height: `${size}px`,
+                                                                                    minWidth: `${size}px`,
+                                                                                    minHeight: `${size}px`,
+                                                                                    maxWidth: `${size}px`,
+                                                                                    maxHeight: `${size}px`,
+                                                                                    aspectRatio: '1 / 1',
+                                                                                    borderRadius: '50%',
+                                                                                    color: '#f97316',
+                                                                                    background: 'rgba(249, 115, 22, 0.15)',
+                                                                                    border: '1.5px solid #f97316',
+                                                                                    boxShadow: '0 0 6px rgba(249, 115, 22, 0.4)',
+                                                                                    cursor: 'pointer',
+                                                                                    padding: 0,
+                                                                                    margin: 0,
+                                                                                    boxSizing: 'border-box',
+                                                                                    flexShrink: 0,
+                                                                                    lineHeight: 0
+                                                                                }}
+                                                                            >
+                                                                                <FileText size={iconSize} strokeWidth={2.4} />
+                                                                            </motion.button>
+                                                                        );
+                                                                    })()}
                                                                 </div>
                                                                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                                                                    {g.task_file_url && (
-                                                                        <a 
-                                                                            href={getTaskFileUrl(g.task_file_url)} 
-                                                                            target="_blank" 
-                                                                            rel="noopener noreferrer" 
-                                                                            title="Ver Tarea" 
-                                                                            style={{ color: 'var(--brand-400)' }}
-                                                                            onTouchStart={(e) => e.stopPropagation()}
-                                                                            onTouchEnd={(e) => e.stopPropagation()}
-                                                                        >
-                                                                            <FileText size={14} />
-                                                                        </a>
-                                                                    )}
                                                                     {g.covering_teacher_id === currentUser?.id && !isPantallaRole(currentUser?.role) && g.status === GuardStatus.ASSIGNED && (
                                                                         <button 
                                                                             onClick={() => onRelease(g.id)} 
@@ -2373,6 +2429,144 @@ const GuardList: React.FC<GuardListProps> = ({
                 meta={meta}
                 onClose={() => setMapRoomId(null)}
             />
+
+            {/* Observation & Task Modal */}
+            <AnimatePresence>
+                {selectedObservationGuard && (
+                    <div 
+                        style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            background: 'rgba(3, 7, 18, 0.72)',
+                            backdropFilter: 'blur(6px)',
+                            WebkitBackdropFilter: 'blur(6px)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 9999,
+                            padding: 16
+                        }}
+                        onClick={() => setSelectedObservationGuard(null)}
+                        onTouchEnd={(e) => {
+                            if (e.target === e.currentTarget) {
+                                setSelectedObservationGuard(null);
+                            }
+                        }}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.92, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.92, y: 10 }}
+                            transition={{ duration: 0.18, ease: 'easeOut' }}
+                            onClick={(e) => e.stopPropagation()}
+                            onTouchStart={(e) => e.stopPropagation()}
+                            onTouchEnd={(e) => e.stopPropagation()}
+                            style={{
+                                background: '#0f172a',
+                                border: '1.5px solid rgba(249, 115, 22, 0.6)',
+                                borderRadius: 14,
+                                padding: '16px 18px',
+                                maxWidth: 420,
+                                width: '100%',
+                                boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.9), 0 0 20px rgba(249, 115, 22, 0.25)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 12,
+                                color: '#f8fafc',
+                                position: 'relative'
+                            }}
+                        >
+                            {/* Close button */}
+                            <button
+                                onClick={() => setSelectedObservationGuard(null)}
+                                style={{
+                                    position: 'absolute',
+                                    top: 10,
+                                    right: 10,
+                                    background: 'rgba(255, 255, 255, 0.06)',
+                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                    color: 'var(--text-muted, #94a3b8)',
+                                    borderRadius: '50%',
+                                    width: 26,
+                                    height: 26,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                <X size={15} />
+                            </button>
+
+                            {/* Task notice (if attached file or task left) */}
+                            {(selectedObservationGuard.has_task === 'Sí' || selectedObservationGuard.has_task === 'SÍ' || selectedObservationGuard.has_task === 'si' || selectedObservationGuard.has_task === 'SI' || selectedObservationGuard.task_file_url) && (
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    padding: '8px 12px',
+                                    borderRadius: 8,
+                                    background: 'rgba(249, 115, 22, 0.15)',
+                                    border: '1px solid rgba(249, 115, 22, 0.45)',
+                                    color: '#fdba74',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 700,
+                                    marginRight: 28
+                                }}>
+                                    <FileCheck size={16} color="#f97316" strokeWidth={2.5} />
+                                    <span>{selectedObservationGuard.task_file_url ? 'Tarea dejada en archivo adjunto' : 'Tarea dejada por el profesor'}</span>
+                                </div>
+                            )}
+
+                            {/* Observation text */}
+                            {selectedObservationGuard.observations?.trim() ? (
+                                <div style={{
+                                    background: 'rgba(2, 6, 23, 0.6)',
+                                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                                    borderRadius: 8,
+                                    padding: '12px 14px',
+                                    fontSize: '0.92rem',
+                                    lineHeight: 1.5,
+                                    color: '#f8fafc',
+                                    whiteSpace: 'pre-wrap',
+                                    wordBreak: 'break-word',
+                                    maxHeight: 220,
+                                    overflowY: 'auto'
+                                }}>
+                                    {selectedObservationGuard.observations.trim()}
+                                </div>
+                            ) : !(selectedObservationGuard.has_task === 'Sí' || selectedObservationGuard.has_task === 'SÍ' || selectedObservationGuard.has_task === 'si' || selectedObservationGuard.has_task === 'SI' || selectedObservationGuard.task_file_url) ? (
+                                <div style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic', padding: 8 }}>
+                                    Sin observaciones registradas.
+                                </div>
+                            ) : null}
+
+                            {/* 8-second auto-close animated line at bottom */}
+                            <div style={{
+                                width: '100%',
+                                height: 3,
+                                background: 'rgba(255, 255, 255, 0.08)',
+                                borderRadius: 2,
+                                overflow: 'hidden',
+                                marginTop: 2
+                            }}>
+                                <motion.div
+                                    initial={{ width: '100%' }}
+                                    animate={{ width: '0%' }}
+                                    transition={{ duration: 8, ease: 'linear' }}
+                                    style={{
+                                        height: '100%',
+                                        background: 'linear-gradient(90deg, #ea580c, #f97316)'
+                                    }}
+                                />
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

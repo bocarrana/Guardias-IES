@@ -5,7 +5,7 @@ import {
     Trash2, AlertTriangle, Check, CalendarDays,
     ChevronDown, ChevronUp, Filter, RefreshCw,
     BadgeCheck, Clock, TrendingUp, Shield,
-    Download, FileSpreadsheet, FileText,
+    Download, FileSpreadsheet, FileText, Zap,
 } from 'lucide-react';
 import { Teacher } from '../types';
 import {
@@ -13,6 +13,7 @@ import {
     getCupoMaximo, setCupoMaximo, LibreDisposicion, LdTipo,
     getCalendarDays,
     getMaxLdPerTeacher, setMaxLdPerTeacher,
+    auditLibreDisposicionGuards, syncMissingLibreDisposicionGuards, LdMissingGuardInfo,
 } from '../services/supabaseClient';
 import { getTeachers } from '../services/supabaseClient';
 import { canManageLibreDisposicion } from '../utils/roles';
@@ -94,6 +95,11 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
+    // Audit and sync missing guards
+    const [missingGuardsAudit, setMissingGuardsAudit] = useState<LdMissingGuardInfo[]>([]);
+    const [syncingLdId, setSyncingLdId] = useState<string | null>(null);
+    const [syncingAll, setSyncingAll] = useState(false);
+
     // Form state
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedTeachers, setSelectedTeachers] = useState<Teacher[]>([]);
@@ -131,12 +137,13 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
 
     const fetchAll = useCallback(async () => {
         try {
-            const [ld, cupo, maxLd, days, tchrs] = await Promise.all([
+            const [ld, cupo, maxLd, days, tchrs, missingAudit] = await Promise.all([
                 getLibreDisposicion(),
                 getCupoMaximo(),
                 getMaxLdPerTeacher(),
                 getCalendarDays(),
                 isAdmin ? getTeachers(true) : Promise.resolve([]),
+                isAdmin ? auditLibreDisposicionGuards() : Promise.resolve([]),
             ]);
             setLdRecords(ld);
             setCupoMaxState(cupo);
@@ -145,6 +152,7 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
             setNewMaxLd(maxLd);
             setCalendarDays(days);
             setTeachers(tchrs as Teacher[]);
+            setMissingGuardsAudit(missingAudit);
         } catch (err) {
             console.error('Error loading LD panel:', err);
             toast.error('Error al cargar los datos');
@@ -160,6 +168,29 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
         setRefreshing(true);
         await fetchAll();
         toast.success('Datos actualizados');
+    };
+
+    const handleSyncGuards = async (targetLdId?: string) => {
+        try {
+            if (targetLdId) {
+                setSyncingLdId(targetLdId);
+            } else {
+                setSyncingAll(true);
+            }
+            const res = await syncMissingLibreDisposicionGuards(targetLdId);
+            if (res.createdGuardsCount > 0) {
+                toast.success(`Guardias generadas con éxito: ${res.createdGuardsCount} guardia(s) creada(s)`);
+            } else {
+                toast.info('Todas las guardias ya estaban generadas');
+            }
+            await fetchAll();
+        } catch (err: any) {
+            console.error('Error sincronizando guardias:', err);
+            toast.error('Error al generar las guardias');
+        } finally {
+            setSyncingLdId(null);
+            setSyncingAll(false);
+        }
     };
 
     // ── Derived data ──────────────────────────────────────
@@ -1100,6 +1131,45 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
                                 </select>
                             </div>
                         )}
+                        {/* Missing Guards Audit Banner */}
+                        {isAdmin && missingGuardsAudit.length > 0 && (
+                            <div style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                padding: '12px 16px', borderRadius: 12,
+                                background: 'rgba(245,158,11,0.12)',
+                                border: '1px solid rgba(245,158,11,0.35)',
+                                marginTop: 10, gap: 12, flexWrap: 'wrap',
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    <AlertTriangle size={18} color="#f59e0b" style={{ flexShrink: 0 }} />
+                                    <div>
+                                        <div style={{ fontSize: '0.84rem', color: '#f59e0b', fontWeight: 800 }}>
+                                            Auditoría: {missingGuardsAudit.length} permiso(s) sin guardias generadas
+                                        </div>
+                                        <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+                                            {missingGuardsAudit.map(m => `${m.profesorName} (${m.fecha})`).slice(0, 3).join(', ')}
+                                            {missingGuardsAudit.length > 3 ? '...' : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => handleSyncGuards()}
+                                    disabled={syncingAll}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: 6,
+                                        padding: '7px 14px', borderRadius: 9,
+                                        background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                                        border: 'none', color: '#000',
+                                        fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer',
+                                        boxShadow: '0 2px 10px rgba(245,158,11,0.3)',
+                                        opacity: syncingAll ? 0.6 : 1,
+                                    }}
+                                >
+                                    <Zap size={14} />
+                                    {syncingAll ? 'Generando...' : 'Generar todas las guardias'}
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     {/* List */}
@@ -1139,6 +1209,7 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
                                 const totalUsage = ldRecords.filter(rec => rec.profesor_id === r.profesor_id).length;
                                 const isLast = usage === totalUsage;
                                 const dayLdCount = ldCountByDay.get(r.fecha) || 0;
+                                const missingInfo = missingGuardsAudit.find(m => m.ldId === r.id);
 
                                 return (
                                     <motion.div
@@ -1243,10 +1314,29 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
                                             )}
                                         </div>
 
-                                        {/* Confirmed status */}
-                                        <div style={{ flexShrink: 0 }}>
-                                            <BadgeCheck size={16} style={{ color: '#22c55e', opacity: 0.8 }} />
-                                        </div>
+                                        {/* Status / Sync button */}
+                                        {isAdmin && missingInfo ? (
+                                            <button
+                                                onClick={() => handleSyncGuards(r.id)}
+                                                disabled={syncingLdId === r.id}
+                                                title={`Faltan ${missingInfo.missingSlots.length} guardia(s). Clic para generar automáticamente.`}
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: 5,
+                                                    padding: '5px 10px', borderRadius: 8,
+                                                    background: 'rgba(245,158,11,0.15)',
+                                                    border: '1px solid rgba(245,158,11,0.4)',
+                                                    color: '#f59e0b', fontSize: '0.72rem', fontWeight: 800,
+                                                    cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0,
+                                                }}
+                                            >
+                                                <Zap size={12} />
+                                                {syncingLdId === r.id ? 'Generando...' : 'Generar guardias'}
+                                            </button>
+                                        ) : (
+                                            <div style={{ flexShrink: 0 }} title="Guardias generadas correctamente">
+                                                <BadgeCheck size={16} style={{ color: '#22c55e', opacity: 0.8 }} />
+                                            </div>
+                                        )}
 
                                         {/* Delete (admin only) */}
                                         {isAdmin && (

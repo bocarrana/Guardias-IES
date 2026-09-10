@@ -1418,7 +1418,7 @@ export const uploadCalendarFile = async (file: File): Promise<string> => {
     const filePath = `calendar-files/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
-        .from('guardia-tasks') // Reuse existing bucket or create a new one
+        .from('guardia-tasks')
         .upload(filePath, file);
 
     if (uploadError) throw uploadError;
@@ -1508,8 +1508,6 @@ export const deleteRoomReservation = async (id: string): Promise<void> => {
 };
 
 // ─── QUICK (DAILY) ROOM RESERVATIONS ────────────────────
-// Quick reservations use motivo = 'RAPIDA:TeacherName' to differentiate
-// from normal reservations. They auto-expire at end of day.
 
 export const getQuickReservationsForDate = async (fecha: string): Promise<RoomReservation[]> => {
     return getCached(`quick_reservations:${fecha}`, async () => {
@@ -1699,13 +1697,12 @@ export const createLibreDisposicion = async (
         });
         
         if (gError) {
-            // Si el error es violación de unicidad (23505), lo ignoramos de forma segura como fallback
             if (gError.code === '23505') {
                 console.warn(`Conflicto de restricción única (23505) omitido para ${profesorId} el ${fecha} a las ${slot.franja_id}.`);
                 continue;
             }
             console.error('createLibreDisposicion: error creating guard for slot', slot.franja_id, gError);
-            throw gError; // Lanzar el error para que el proceso batch se detenga y notifique
+            throw gError;
         }
     }
 
@@ -1741,13 +1738,146 @@ export const deleteLibreDisposicion = async (id: string): Promise<void> => {
 
     if (guardError) {
         console.error('deleteLibreDisposicion: error deleting guardias', guardError);
-        // No lanzamos error aquí para que el registro LD se borre igualmente
     }
 
     // 3. Eliminar el registro de libre disposición
     const { error } = await supabase.from('libre_disposicion').delete().eq('id', id);
     if (error) throw error;
     invalidateCache(['libre_disposicion', 'guards']);
+};
+
+export interface LdMissingGuardInfo {
+    ldId: string;
+    profesorId: string;
+    profesorName: string;
+    fecha: string;
+    tipo: LdTipo;
+    diaSemana: string;
+    missingSlots: Array<{
+        franja_id: string;
+        tipo: string;
+        materia_id?: string;
+        grupo_id?: string;
+        aula_id?: string;
+    }>;
+}
+
+/**
+ * Audita todos los registros de libre disposición para comprobar si
+ * tienen sus guardias creadas en la tabla Guardias según su Horario Personal.
+ */
+export const auditLibreDisposicionGuards = async (): Promise<LdMissingGuardInfo[]> => {
+    const ldRecords = await getLibreDisposicion();
+    if (!ldRecords || ldRecords.length === 0) return [];
+
+    const DOW_MAP: Record<number, string> = {
+        1: 'Lunes', 2: 'Martes', 3: 'Miércoles',
+        4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 0: 'Domingo',
+    };
+
+    const missingRecords: LdMissingGuardInfo[] = [];
+
+    for (const ld of ldRecords) {
+        const date = new Date(ld.fecha + 'T00:00:00');
+        const diaSemana = DOW_MAP[date.getDay()];
+        if (!diaSemana || date.getDay() === 0 || date.getDay() === 6) continue;
+
+        // 1. Obtener horario personal para ese día
+        const { data: schedule } = await supabase
+            .from('Horario_Personal')
+            .select('franja_id, materia_id, grupo_id, aula_id, tipo')
+            .eq('profesor_id', ld.profesor_id)
+            .eq('dia_semana', diaSemana)
+            .in('tipo', ['Lectivo', 'Guardia']);
+
+        if (!schedule || schedule.length === 0) continue;
+
+        // 2. Obtener guardias existentes para ese profesor y fecha
+        const { data: existingGuards } = await supabase
+            .from('Guardias')
+            .select('"Franja horaria"')
+            .eq('Profesor ausente', ld.profesor_id)
+            .eq('Fecha', ld.fecha);
+
+        const existingFranjas = new Set((existingGuards || []).map((g: any) => g['Franja horaria']));
+
+        const missingSlots = schedule.filter(slot => !existingFranjas.has(slot.franja_id));
+
+        if (missingSlots.length > 0) {
+            missingRecords.push({
+                ldId: ld.id,
+                profesorId: ld.profesor_id,
+                profesorName: ld.teacher?.name || ld.profesor_id,
+                fecha: ld.fecha,
+                tipo: ld.tipo,
+                diaSemana,
+                missingSlots: missingSlots.map(s => ({
+                    franja_id: s.franja_id,
+                    tipo: s.tipo,
+                    materia_id: s.materia_id,
+                    grupo_id: s.grupo_id,
+                    aula_id: s.aula_id,
+                })),
+            });
+        }
+    }
+
+    return missingRecords;
+};
+
+/**
+ * Sincroniza y genera automáticamente todas las guardias faltantes de registros de Libre Disposición.
+ * Puede sincronizar un registro específico (por ldId) o todos los pendientes.
+ */
+export const syncMissingLibreDisposicionGuards = async (targetLdId?: string): Promise<{ createdGuardsCount: number; affectedTeachers: number }> => {
+    const missingAudit = await auditLibreDisposicionGuards();
+    const recordsToSync = targetLdId ? missingAudit.filter(m => m.ldId === targetLdId) : missingAudit;
+
+    let createdGuardsCount = 0;
+    const affectedTeachersSet = new Set<string>();
+
+    for (const item of recordsToSync) {
+        for (const slot of item.missingSlots) {
+            // Comprobación de seguridad
+            const { data: existingGuard } = await supabase
+                .from('Guardias')
+                .select('"ID Guardia"')
+                .eq('Fecha', item.fecha)
+                .eq('Franja horaria', slot.franja_id)
+                .eq('Profesor ausente', item.profesorId)
+                .maybeSingle();
+
+            if (existingGuard) continue;
+
+            const newId = await generateGuardId();
+            const isGuard = slot.tipo === 'Guardia';
+            const { error: gError } = await supabase.from('Guardias').insert({
+                'ID Guardia': newId,
+                'Fecha': item.fecha,
+                'Franja horaria': slot.franja_id,
+                'Profesor ausente': item.profesorId,
+                'Materia ausente': isGuard ? 'M_GUARDIA' : (slot.materia_id || null),
+                'Grupo atendido': isGuard ? null : (slot.grupo_id || null),
+                'Aula': isGuard ? null : (slot.aula_id || null),
+                'Estado': 'Pendiente/disponible',
+                'Tipo de Guardia': 'Ordinaria',
+                'Tarea dejada': 'NO',
+            });
+
+            if (!gError) {
+                createdGuardsCount++;
+                affectedTeachersSet.add(item.profesorId);
+            } else if (gError.code !== '23505') {
+                console.error('syncMissingLibreDisposicionGuards error:', gError);
+            }
+        }
+    }
+
+    if (createdGuardsCount > 0) {
+        invalidateCache(['libre_disposicion', 'guards']);
+    }
+
+    return { createdGuardsCount, affectedTeachers: affectedTeachersSet.size };
 };
 
 // ─── CONFIGURACIÓN CENTRO ───────────────────────────────
@@ -1766,7 +1896,6 @@ export const getCupoMaximo = async (): Promise<number> => {
     }, 60);
 };
 
-/** Actualiza el cupo máximo diario. */
 export const setCupoMaximo = async (valor: number): Promise<void> => {
     const { error } = await supabase
         .from('configuracion_centro')

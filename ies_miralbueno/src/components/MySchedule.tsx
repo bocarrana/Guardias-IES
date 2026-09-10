@@ -12,7 +12,8 @@ import {
     deletePersonalScheduleEntries,
     createPersonalScheduleEntry,
     bulkCreatePersonalSchedule,
-    findOrCreateMixedGroup
+    findOrCreateMixedGroup,
+    updateTeacher
 } from '../services/supabaseClient';
 
 interface MyScheduleProps {
@@ -28,6 +29,9 @@ const MySchedule: React.FC<MyScheduleProps> = ({ currentUser, meta }) => {
 
     const [draftPersonal, setDraftPersonal] = useState<PersonalScheduleEntry[]>([]);
     const [draftGuard, setDraftGuard] = useState<GuardGroupSchedule[]>([]);
+
+    const [hasNoGuards, setHasNoGuards] = useState(currentUser.horas_guardia === 0);
+    const [dbNoGuards, setDbNoGuards] = useState(currentUser.horas_guardia === 0);
 
     const [hasChanges, setHasChanges] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -69,6 +73,10 @@ const MySchedule: React.FC<MyScheduleProps> = ({ currentUser, meta }) => {
             setDbGuard(gData);
             setDraftGuard(gData);
             
+            const isZero = (currentUser.horas_guardia === 0 && gData.length === 0);
+            setDbNoGuards(isZero);
+            setHasNoGuards(isZero);
+
             setHasChanges(false);
         } catch (error) {
             toast.error('Error al cargar el horario');
@@ -128,17 +136,30 @@ const MySchedule: React.FC<MyScheduleProps> = ({ currentUser, meta }) => {
                 });
             }
 
-            for (const entry of draftGuard) {
-                entriesToCreate.push({
-                    profesor_id: entry.profesor_id,
-                    dia_semana: entry.dia_semana,
-                    franja_id: entry.franja_id,
-                    tipo: 'Guardia'
-                });
+            if (!hasNoGuards) {
+                for (const entry of draftGuard) {
+                    entriesToCreate.push({
+                        profesor_id: entry.profesor_id,
+                        dia_semana: entry.dia_semana,
+                        franja_id: entry.franja_id,
+                        tipo: 'Guardia'
+                    });
+                }
             }
 
             if (entriesToCreate.length > 0) {
                 await bulkCreatePersonalSchedule(entriesToCreate);
+            }
+
+            // Actualizar horas_guardia en el perfil del profesor
+            if (hasNoGuards) {
+                await updateTeacher(currentUser.id, { horas_guardia: 0 });
+                currentUser.horas_guardia = 0;
+            } else {
+                const guardCount = draftGuard.length;
+                const finalHours = guardCount > 0 ? guardCount : 1;
+                await updateTeacher(currentUser.id, { horas_guardia: finalHours });
+                currentUser.horas_guardia = finalHours;
             }
 
             setHasChanges(false);
@@ -159,6 +180,7 @@ const MySchedule: React.FC<MyScheduleProps> = ({ currentUser, meta }) => {
     const handleCancel = () => {
         setDraftPersonal([...dbPersonal]);
         setDraftGuard([...dbGuard]);
+        setHasNoGuards(dbNoGuards);
         setHasChanges(false);
     };
 
@@ -499,23 +521,65 @@ const MySchedule: React.FC<MyScheduleProps> = ({ currentUser, meta }) => {
                                 border: '1px solid var(--brand-500-40)', 
                                 marginBottom: 20,
                                 gap: 16,
+                                flexWrap: 'wrap'
                             }}>
-                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', flex: 1 }}>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', flex: 1, minWidth: 240 }}>
                                     Haz clic en las franjas horarias en las que tengas disponibilidad oficial de Guardia según tu cuadrante del centro.
                                 </div>
 
-                                {/* ── Contadores separados ─────────────────── */}
-                                <div style={{ display: 'flex', gap: 16, flexShrink: 0 }}>
+                                {/* ── Casilla Sin Guardias y Contadores ────── */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexShrink: 0, flexWrap: 'wrap' }}>
+                                    {/* Casilla / Checkbox */}
+                                    <label style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 10,
+                                        padding: '8px 14px',
+                                        borderRadius: 10,
+                                        background: hasNoGuards ? 'rgba(34, 197, 94, 0.12)' : 'rgba(255, 255, 255, 0.04)',
+                                        border: `1px solid ${hasNoGuards ? 'rgba(34, 197, 94, 0.35)' : 'var(--border-subtle)'}`,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        userSelect: 'none'
+                                    }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={hasNoGuards}
+                                            onChange={(e) => {
+                                                const checked = e.target.checked;
+                                                setHasNoGuards(checked);
+                                                if (checked) {
+                                                    setDraftGuard([]);
+                                                }
+                                                setHasChanges(true);
+                                            }}
+                                            style={{ width: 16, height: 16, accentColor: 'var(--green-500)', cursor: 'pointer' }}
+                                        />
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: hasNoGuards ? 'var(--green-400)' : 'var(--text-primary)' }}>
+                                                Sin guardias asignadas
+                                            </span>
+                                            <span style={{ fontSize: '0.68rem', color: hasNoGuards ? 'rgba(74, 222, 128, 0.8)' : 'var(--text-muted)' }}>
+                                                Marca si no tienes guardias en tu horario
+                                            </span>
+                                        </div>
+                                    </label>
+
+                                    {/* Separador */}
+                                    <div style={{
+                                        width: 1, height: 32, background: 'var(--border-subtle)', opacity: 0.5
+                                    }} />
+
                                     {/* Horas ordinarias */}
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                         <div style={{
-                                            fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)',
+                                            fontSize: '0.65rem', fontWeight: 700, color: hasNoGuards ? 'var(--text-muted)' : 'var(--text-muted)',
                                             textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2
                                         }}>
                                             Ordinarias
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'baseline', color: 'var(--brand-400)' }}>
-                                            <span style={{ fontSize: '1.1rem', fontWeight: 800, lineHeight: 1 }}>{horasOrdinarias}</span>
+                                        <div style={{ display: 'flex', alignItems: 'baseline', color: hasNoGuards ? 'var(--text-muted)' : 'var(--brand-400)' }}>
+                                            <span style={{ fontSize: '1.1rem', fontWeight: 800, lineHeight: 1 }}>{hasNoGuards ? 0 : horasOrdinarias}</span>
                                         </div>
                                     </div>
 
@@ -529,13 +593,13 @@ const MySchedule: React.FC<MyScheduleProps> = ({ currentUser, meta }) => {
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                         <div style={{
                                             fontSize: '0.65rem', fontWeight: 700,
-                                            color: 'rgba(251,191,36,0.7)',
+                                            color: hasNoGuards ? 'var(--text-muted)' : 'rgba(251,191,36,0.7)',
                                             textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2
                                         }}>
                                             Recreos
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'baseline', color: 'rgba(251,191,36,0.9)' }}>
-                                            <span style={{ fontSize: '1.1rem', fontWeight: 800, lineHeight: 1 }}>{horasReceo}</span>
+                                        <div style={{ display: 'flex', alignItems: 'baseline', color: hasNoGuards ? 'var(--text-muted)' : 'rgba(251,191,36,0.9)' }}>
+                                            <span style={{ fontSize: '1.1rem', fontWeight: 800, lineHeight: 1 }}>{hasNoGuards ? 0 : horasReceo}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -553,6 +617,9 @@ const MySchedule: React.FC<MyScheduleProps> = ({ currentUser, meta }) => {
                                     </>
                                 )}
                                 onSlotClick={async (existing, day, slot) => {
+                                    if (hasNoGuards) {
+                                        setHasNoGuards(false);
+                                    }
                                     if (existing) {
                                         setDraftGuard(prev => prev.filter(e => e.id !== existing.id));
                                         setHasChanges(true);
