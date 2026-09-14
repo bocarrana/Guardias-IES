@@ -488,7 +488,7 @@ const GuardList: React.FC<GuardListProps> = ({
     const dateCounts = useMemo(() => {
         const countsMap: Record<string, number> = {};
         guards.forEach(g => {
-            if (g.type === GuardType.RECREO) return;
+            if (g.type === GuardType.RECREO || g.subject_id === 'M_GUARDIA') return;
             
             if (filter === 'today') {
                 if (g.status === GuardStatus.COMPLETED) return;
@@ -541,7 +541,7 @@ const GuardList: React.FC<GuardListProps> = ({
     const availableSlots = useMemo(() => {
         const uniqueSlotIds = new Set<string>();
         guards.forEach(g => {
-            if (g.type === GuardType.RECREO) return;
+            if (g.type === GuardType.RECREO || g.subject_id === 'M_GUARDIA') return;
             
             if (filter === 'today') {
                 if (g.status === GuardStatus.COMPLETED) return;
@@ -2045,7 +2045,7 @@ const GuardList: React.FC<GuardListProps> = ({
                                         const isSelected = selectedSlotId === slot.id;
                                         // Count how many guards in this slot
                                         const slotCount = guards.filter(g => {
-                                            if (g.type === GuardType.RECREO) return false;
+                                            if (g.type === GuardType.RECREO || g.subject_id === 'M_GUARDIA') return false;
                                             if (selectedDate && g.date !== selectedDate) return false;
                                             if (g.time_slot_id !== slot.id) return false;
                                             if (filter === 'today') return g.status !== GuardStatus.COMPLETED;

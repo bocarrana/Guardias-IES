@@ -43,7 +43,14 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
     };
 
     const currentDay = getDayName(formData.date);
-    const daySchedule = personalSchedule.filter(s => s.dia_semana === currentDay);
+    const daySchedule = personalSchedule.filter(s => {
+        if (s.dia_semana !== currentDay) return false;
+        if (s.tipo === 'Guardia') return false;
+        if (s.materia_id === 'M_GUARDIA') return false;
+        const slot = meta.slots.find(sl => sl.id === s.franja_id);
+        if (slot && (slot.label.toLowerCase().includes('recreo') || slot.label.toLowerCase().includes('patio'))) return false;
+        return true;
+    });
 
     useEffect(() => {
         if (formData.requesting_teacher_id) {
@@ -370,9 +377,34 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
                                 gap: 10
                             }}
                         >
-                            <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--brand-400)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                ⚡ Selección automática por día:
-                            </p>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+                                <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--brand-400)', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
+                                    ⚡ Selección de clases del día ({daySchedule.length}):
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (selectedScheduleEntries.length === daySchedule.length) {
+                                            setSelectedScheduleEntries([]);
+                                        } else {
+                                            setSelectedScheduleEntries([...daySchedule]);
+                                        }
+                                    }}
+                                    style={{
+                                        background: selectedScheduleEntries.length === daySchedule.length ? 'rgba(34, 211, 238, 0.2)' : 'rgba(255, 255, 255, 0.06)',
+                                        border: '1px solid var(--brand-400)',
+                                        borderRadius: 6,
+                                        padding: '3px 9px',
+                                        fontSize: '0.72rem',
+                                        color: 'var(--brand-400)',
+                                        cursor: 'pointer',
+                                        fontWeight: 700,
+                                        transition: 'all 0.15s',
+                                    }}
+                                >
+                                    {selectedScheduleEntries.length === daySchedule.length ? 'Deseleccionar todo' : 'Seleccionar toda la jornada'}
+                                </button>
+                            </div>
                             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                                 {daySchedule.map(entry => {
                                     const isSelected = selectedScheduleEntries.some(e => e.id === entry.id);

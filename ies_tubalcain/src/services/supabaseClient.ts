@@ -1675,13 +1675,13 @@ export const createLibreDisposicion = async (
     const diaSemana = DOW_MAP[date.getDay()];
     if (!diaSemana || date.getDay() === 0 || date.getDay() === 6) return; // no lectivo
 
-    // Obtener el horario personal del profesor para ese día de la semana
+    // Obtener el horario personal del profesor para ese día de la semana (solo clases lectivas)
     const { data: schedule, error: schError } = await supabase
         .from('Horario_Personal')
         .select('franja_id, materia_id, grupo_id, aula_id, tipo')
         .eq('profesor_id', profesorId)
         .eq('dia_semana', diaSemana)
-        .in('tipo', ['Lectivo', 'Guardia']);
+        .eq('tipo', 'Lectivo');
 
     if (schError) {
         console.error('createLibreDisposicion: error fetching schedule', schError);
@@ -1690,7 +1690,9 @@ export const createLibreDisposicion = async (
 
     if (!schedule || schedule.length === 0) return;
 
-    for (const slot of schedule) {
+    const lectiveSlots = schedule.filter(s => s.materia_id && s.materia_id !== 'M_GUARDIA');
+
+    for (const slot of lectiveSlots) {
         const { data: existingGuard } = await supabase
             .from('Guardias')
             .select('"ID Guardia"')
@@ -1704,15 +1706,14 @@ export const createLibreDisposicion = async (
         }
 
         const newId = await generateGuardId();
-        const isGuard = slot.tipo === 'Guardia';
         const { error: gError } = await supabase.from('Guardias').insert({
             'ID Guardia': newId,
             'Fecha': fecha,
             'Franja horaria': slot.franja_id,
             'Profesor ausente': profesorId,
-            'Materia ausente': isGuard ? 'M_GUARDIA' : (slot.materia_id || null),
-            'Grupo atendido': isGuard ? null : (slot.grupo_id || null),
-            'Aula': isGuard ? null : (slot.aula_id || null),
+            'Materia ausente': slot.materia_id || null,
+            'Grupo atendido': slot.grupo_id || null,
+            'Aula': slot.aula_id || null,
             'Estado': 'Pendiente/disponible',
             'Tipo de Guardia': 'Ordinaria',
             'Tarea dejada': 'NO',
@@ -1805,15 +1806,18 @@ export const auditLibreDisposicionGuards = async (onlyWithin24h: boolean = true)
         const diaSemana = DOW_MAP[date.getDay()];
         if (!diaSemana || date.getDay() === 0 || date.getDay() === 6) continue;
 
-        // 1. Obtener horario personal para ese día
+        // 1. Obtener horario personal para ese día (solo lectivos)
         const { data: schedule } = await supabase
             .from('Horario_Personal')
             .select('franja_id, materia_id, grupo_id, aula_id, tipo')
             .eq('profesor_id', ld.profesor_id)
             .eq('dia_semana', diaSemana)
-            .in('tipo', ['Lectivo', 'Guardia']);
+            .eq('tipo', 'Lectivo');
 
         if (!schedule || schedule.length === 0) continue;
+
+        const lectiveSlots = schedule.filter(s => s.materia_id && s.materia_id !== 'M_GUARDIA');
+        if (lectiveSlots.length === 0) continue;
 
         // 2. Obtener guardias existentes para ese profesor y fecha
         const { data: existingGuards } = await supabase
@@ -1824,7 +1828,7 @@ export const auditLibreDisposicionGuards = async (onlyWithin24h: boolean = true)
 
         const existingFranjas = new Set((existingGuards || []).map((g: any) => g['Franja horaria']));
 
-        const missingSlots = schedule.filter(slot => !existingFranjas.has(slot.franja_id));
+        const missingSlots = lectiveSlots.filter(slot => !existingFranjas.has(slot.franja_id));
 
         if (missingSlots.length > 0) {
             missingRecords.push({
@@ -1876,15 +1880,14 @@ export const syncMissingLibreDisposicionGuards = async (
             if (existingGuard) continue;
 
             const newId = await generateGuardId();
-            const isGuard = slot.tipo === 'Guardia';
             const { error: gError } = await supabase.from('Guardias').insert({
                 'ID Guardia': newId,
                 'Fecha': item.fecha,
                 'Franja horaria': slot.franja_id,
                 'Profesor ausente': item.profesorId,
-                'Materia ausente': isGuard ? 'M_GUARDIA' : (slot.materia_id || null),
-                'Grupo atendido': isGuard ? null : (slot.grupo_id || null),
-                'Aula': isGuard ? null : (slot.aula_id || null),
+                'Materia ausente': slot.materia_id || null,
+                'Grupo atendido': slot.grupo_id || null,
+                'Aula': slot.aula_id || null,
                 'Estado': 'Pendiente/disponible',
                 'Tipo de Guardia': 'Ordinaria',
                 'Tarea dejada': 'NO',
