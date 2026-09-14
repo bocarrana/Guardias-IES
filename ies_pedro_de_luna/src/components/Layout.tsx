@@ -154,7 +154,15 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, view, onViewChange, onCrea
 
             {/* Navigation */}
             {!isPantallaRole(currentUser?.role) && (
-                <nav style={{ padding: collapsed ? '16px 8px' : '16px', flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <nav style={{
+                    padding: collapsed ? '16px 8px' : '16px',
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 4,
+                    overflowY: 'auto',
+                    overflowX: 'hidden',
+                }}>
                     {navItems
                     .filter(item => {
                         if (isPantallaRole(currentUser?.role)) {
@@ -225,6 +233,47 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, view, onViewChange, onCrea
                             </motion.button>
                         );
                     })}
+
+                    {/* Ayuda y Guías rápido integrado en el menú principal */}
+                    <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => {
+                            setIsHelpOpen(true);
+                            setIsMobileMenuOpen(false);
+                        }}
+                        style={{
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: collapsed ? 'center' : 'flex-start',
+                            gap: collapsed ? 0 : 12,
+                            padding: collapsed ? '12px 0' : '12px 16px',
+                            borderRadius: 'var(--radius-md)',
+                            fontWeight: 600,
+                            fontSize: '0.875rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.25s',
+                            border: '1px solid rgba(34, 211, 238, 0.25)',
+                            background: 'rgba(34, 211, 238, 0.06)',
+                            color: 'var(--brand-400, #22d3ee)',
+                            position: 'relative',
+                            fontFamily: 'var(--font-sans)',
+                            overflow: 'visible',
+                            whiteSpace: 'nowrap',
+                            marginTop: 8,
+                        }}
+                        className="nav-item-btn"
+                        title="Centro de Ayuda y Guías (?)"
+                    >
+                        <HelpCircle style={{
+                            width: 20,
+                            height: 20,
+                            minWidth: 20,
+                            color: 'var(--brand-400, #22d3ee)',
+                        }} />
+                        {!collapsed && <span style={{ flex: 1, textAlign: 'left' }}>Ayuda y Guías (?)</span>}
+                        {collapsed && <span className="premium-tooltip">Ayuda y Guías (?)</span>}
+                    </motion.button>
                 </nav>
             )}
             {isPantallaRole(currentUser?.role) && <div style={{ flex: 1 }} />}
@@ -302,34 +351,6 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, view, onViewChange, onCrea
                     )}
                 </div>
 
-                {!isPantallaRole(currentUser?.role) && (
-                    <button
-                        onClick={() => setIsHelpOpen(true)}
-                        className="nav-item-btn"
-                        style={{
-                            width: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: collapsed ? 'center' : 'flex-start',
-                            gap: collapsed ? 0 : 8,
-                            padding: collapsed ? '8px 0' : '8px 12px',
-                            borderRadius: 'var(--radius-md)',
-                            fontWeight: 700,
-                            fontSize: '0.74rem',
-                            cursor: 'pointer',
-                            border: '1px solid rgba(34, 211, 238, 0.25)',
-                            background: 'rgba(34, 211, 238, 0.08)',
-                            color: 'var(--brand-400, #22d3ee)',
-                            marginBottom: 8,
-                            transition: 'all 0.2s',
-                        }}
-                        title="Centro de Ayuda y Guías (?)"
-                    >
-                        <HelpCircle style={{ width: 15, height: 15 }} />
-                        {!collapsed && <span>Ayuda y Guías (?)</span>}
-                        {collapsed && <span className="premium-tooltip">Ayuda y Guías (?)</span>}
-                    </button>
-                )}
                 <button
                     onClick={logout}
                     className="btn btn-danger-subtle nav-item-btn"
@@ -525,91 +546,67 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, view, onViewChange, onCrea
                     </div>
                 )}
 
+
                 {/* Page Header */}
                 {!isPantallaRole(currentUser?.role) && (
                     <header style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 28,
-                    flexShrink: 0,
-                    flexWrap: 'wrap',
-                    gap: 16,
-                }}>
-                    <div>
-                        <h2 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.01em', margin: 0 }}>
-                            <span className="text-gradient">{viewTitles[view]}</span>
-                        </h2>
-                        <p style={{
-                            color: 'var(--text-muted)',
-                            fontSize: '0.75rem',
-                            marginTop: 4,
-                            marginBottom: 0,
-                            fontFamily: 'var(--font-mono)',
-                        }}>
-                            :: IES SYSTEM V2.0 ::
-                        </p>
-                    </div>
-
-                    {/* Portal target for view-specific controls */}
-                    <div id="header-portal-root" className="hide-mobile" style={{
-                        flex: 1,
                         display: 'flex',
-                        justifyContent: 'center',
+                        justifyContent: 'space-between',
                         alignItems: 'center',
-                    }}></div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{
-                            padding: '6px 12px',
-                            borderRadius: 'var(--radius-full, 999px)',
-                            border: '1px solid var(--border-subtle)',
-                            background: 'var(--bg-sidebar)',
-                            display: 'flex',
-                            alignItems: 'center',
-                        }} className="hide-mobile">
-                            <ThemeToggle compact />
+                        marginBottom: 28,
+                        flexShrink: 0,
+                        flexWrap: 'wrap',
+                        gap: 16,
+                    }}>
+                        <div>
+                            <h2 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.01em', margin: 0 }}>
+                                <span className="text-gradient">{viewTitles[view]}</span>
+                            </h2>
+                            <p style={{
+                                color: 'var(--text-muted)',
+                                fontSize: '0.75rem',
+                                marginTop: 4,
+                                marginBottom: 0,
+                                fontFamily: 'var(--font-mono)',
+                            }}>
+                                :: IES SYSTEM V2.0 ::
+                            </p>
                         </div>
 
-                        <motion.button
-                            whileHover={{ scale: 1.04 }}
-                            whileTap={{ scale: 0.96 }}
-                            onClick={() => setIsHelpOpen(true)}
-                            title="Centro de Ayuda y Guías (?)"
-                            style={{
-                                padding: '6px 14px',
+                        {/* Portal target for view-specific controls */}
+                        <div id="header-portal-root" className="hide-mobile" style={{
+                            flex: 1,
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        }}></div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{
+                                padding: '6px 12px',
                                 borderRadius: 'var(--radius-full, 999px)',
-                                border: '1px solid rgba(34, 211, 238, 0.3)',
-                                background: 'rgba(34, 211, 238, 0.08)',
-                                color: 'var(--brand-400, #22d3ee)',
+                                border: '1px solid var(--border-subtle)',
+                                background: 'var(--bg-sidebar)',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 6,
-                                cursor: 'pointer',
-                                fontSize: '0.78rem',
-                                fontWeight: 700,
-                                transition: 'all 0.2s',
-                            }}
-                            className="hide-mobile"
-                        >
-                            <HelpCircle size={15} />
-                            <span>Ayuda</span>
-                        </motion.button>
+                            }} className="hide-mobile">
+                                <ThemeToggle compact />
+                            </div>
 
-                        {view === 'guards' && !isAdministracionRole(currentUser?.role) && (
-                            <motion.button
-                                whileHover={{ scale: 1.03 }}
-                                whileTap={{ scale: 0.97 }}
-                                onClick={onCreateGuard}
-                                className="btn btn-primary"
-                                style={{ fontWeight: 800, letterSpacing: '0.04em' }}
-                            >
-                                <Plus style={{ width: 18, height: 18 }} />
-                                <span className="hide-mobile">NUEVA GUARDIA</span>
-                            </motion.button>
-                        )}
-                    </div>
-                </header>
+                            {view === 'guards' && !isAdministracionRole(currentUser?.role) && (
+                                <motion.button
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ scale: 0.97 }}
+                                    onClick={onCreateGuard}
+                                    className="btn btn-primary"
+                                    style={{ fontWeight: 800, letterSpacing: '0.04em' }}
+                                >
+                                    <Plus style={{ width: 18, height: 18 }} />
+                                    <span className="hide-mobile">NUEVA GUARDIA</span>
+                                </motion.button>
+                            )}
+                        </div>
+                    </header>
                 )}
 
                 {/* Page Content - scrollable container */}
