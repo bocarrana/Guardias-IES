@@ -265,7 +265,7 @@ const Dashboard: React.FC<DashboardProps> = ({ guards, teachers, currentUser, gu
             targetSchedules = guardGroupSchedules.filter(s => myKeys.has(`${s.dia_semana}-${s.franja_id}`));
         }
 
-        // Agrupar por dia_semana y franja_id
+        // Agrupar por dia_semana y franja_id (excluyendo recreos)
         const groupsMap: Record<string, {
             dia_semana: string;
             franja_id: string;
@@ -274,6 +274,10 @@ const Dashboard: React.FC<DashboardProps> = ({ guards, teachers, currentUser, gu
         }> = {};
 
         targetSchedules.forEach(s => {
+            const slotLabel = s.time_slot?.label || s.franja_id || '';
+            const labelLower = slotLabel.toLowerCase();
+            if (labelLower.includes('recreo') || labelLower.includes('patio')) return;
+
             const key = `${s.dia_semana}-${s.franja_id}`;
             if (!groupsMap[key]) {
                 groupsMap[key] = {
@@ -540,7 +544,7 @@ const Dashboard: React.FC<DashboardProps> = ({ guards, teachers, currentUser, gu
             targetSchedules = guardGroupSchedules.filter(s => myKeys.has(`${s.dia_semana}-${s.franja_id}`));
         }
 
-        // Agrupar horarios por dia_semana y franja_id para definir los grupos
+        // Agrupar horarios por dia_semana y franja_id para definir los grupos (excluyendo recreos)
         const groupsMap: Record<string, {
             dia_semana: string;
             franja_id: string;
@@ -549,6 +553,10 @@ const Dashboard: React.FC<DashboardProps> = ({ guards, teachers, currentUser, gu
         }> = {};
 
         targetSchedules.forEach(s => {
+            const slotLabel = s.time_slot?.label || s.franja_id || '';
+            const labelLower = slotLabel.toLowerCase();
+            if (labelLower.includes('recreo') || labelLower.includes('patio')) return;
+
             const key = `${s.dia_semana}-${s.franja_id}`;
             if (!groupsMap[key]) {
                 groupsMap[key] = {
