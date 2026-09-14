@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Teacher, Guard, GuardType, GuardStatus } from '../types';
-import { X, Search, Zap, Dices, RefreshCw } from 'lucide-react';
+import { X, Search, Zap, Dices, RefreshCw, AlertTriangle } from 'lucide-react';
 import TeacherAvatar from './TeacherAvatar';
 import { rankTeachers } from '../utils/guardAssignment';
 import { getStorageUrl } from '../services/supabaseClient';
@@ -40,6 +40,65 @@ const TeacherSelectionModal: React.FC<TeacherSelectionModalProps> = ({
     const [winner, setWinner] = useState<Teacher | null>(null);
     const [tickerWiggle, setTickerWiggle] = useState(false);
     const [confettiParticles, setConfettiParticles] = useState<{ id: number; x: number; y: number; color: string; size: number; delay: number }[]>([]);
+    const [pendingConfirmTeacher, setPendingConfirmTeacher] = useState<Teacher | null>(null);
+
+    // Determinar si la guardia pertenece a la franja horaria y fecha actual (AHORA)
+    const isCurrentTimeSlot = useMemo(() => {
+        if (!guard) return true;
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${y}-${m}-${d}`;
+
+        // Si la guardia es de otro día
+        if (guard.date && guard.date !== todayStr) {
+            return false;
+        }
+
+        const slot = guard.time_slot;
+        if (!slot?.start_time || !slot?.end_time) {
+            return true;
+        }
+
+        const nowMinutes = now.getHours() * 60 + now.getMinutes();
+        const [startH, startM] = slot.start_time.slice(0, 5).split(':').map(Number);
+        const [endH, endM] = slot.end_time.slice(0, 5).split(':').map(Number);
+        const slotStart = startH * 60 + startM;
+        const slotEnd = endH * 60 + endM;
+
+        return nowMinutes >= slotStart && nowMinutes <= slotEnd;
+    }, [guard]);
+
+    const slotInfoText = useMemo(() => {
+        if (!guard?.time_slot) return '';
+        const slot = guard.time_slot;
+        const timeRange = (slot.start_time && slot.end_time) ? ` (${slot.start_time.slice(0, 5)} - ${slot.end_time.slice(0, 5)})` : '';
+        return `${slot.label}${timeRange}`;
+    }, [guard]);
+
+    const currentTimeFormatted = useMemo(() => {
+        const now = new Date();
+        return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    }, []);
+
+    const isDifferentDate = useMemo(() => {
+        if (!guard?.date) return false;
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${y}-${m}-${d}`;
+        return guard.date !== todayStr;
+    }, [guard]);
+
+    const handleTeacherClick = (t: Teacher) => {
+        if (isTVMode && actionType === 'pickup' && !isCurrentTimeSlot) {
+            setPendingConfirmTeacher(t);
+            return;
+        }
+        onSelect(t);
+    };
 
     const actionText = useMemo(() => {
         switch (actionType) {
@@ -269,6 +328,57 @@ const TeacherSelectionModal: React.FC<TeacherSelectionModalProps> = ({
                         <X size={18} />
                     </button>
                 </div>
+
+                {/* Banner de aviso destacado si la guardia no es de la hora actual */}
+                {actionType === 'pickup' && !isCurrentTimeSlot && (
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: '11px 14px',
+                        borderRadius: 14,
+                        background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(239, 68, 68, 0.12))',
+                        border: '1px solid rgba(245, 158, 11, 0.45)',
+                        marginBottom: 16,
+                        boxShadow: '0 4px 18px rgba(245, 158, 11, 0.12)',
+                        flexShrink: 0,
+                    }}>
+                        <div style={{
+                            width: 34,
+                            height: 34,
+                            borderRadius: 10,
+                            background: 'rgba(245, 158, 11, 0.22)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                        }}>
+                            <AlertTriangle size={18} color="#f59e0b" />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{
+                                fontSize: '0.84rem',
+                                fontWeight: 800,
+                                color: '#f59e0b',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                flexWrap: 'wrap',
+                            }}>
+                                <span>⚠️ Atención: Guardia de otra franja horaria</span>
+                                {isDifferentDate && (
+                                    <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: 4, background: 'rgba(239,68,68,0.2)', color: '#ef4444', fontWeight: 700 }}>
+                                        Día: {guard?.date}
+                                    </span>
+                                )}
+                            </div>
+                            <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', marginTop: 2 }}>
+                                Esta guardia es para <strong style={{ color: '#fff' }}>{slotInfoText || 'otra franja horaria'}</strong>.
+                                {currentTimeFormatted && <> Hora actual: <strong style={{ color: 'var(--brand-400)' }}>{currentTimeFormatted}</strong>.</>}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {isRandomMode ? (
                     <div style={{
@@ -501,7 +611,7 @@ const TeacherSelectionModal: React.FC<TeacherSelectionModalProps> = ({
 
                                     <div style={{ display: 'flex', gap: 10, width: '100%', maxWidth: 300 }}>
                                         <button
-                                            onClick={() => onSelect(winner)}
+                                            onClick={() => winner && handleTeacherClick(winner)}
                                             style={{
                                                 flex: 1,
                                                 padding: '10px 16px',
@@ -681,7 +791,7 @@ const TeacherSelectionModal: React.FC<TeacherSelectionModalProps> = ({
                                                     key={t.id}
                                                     whileHover={{ scale: 1.02, backgroundColor: 'rgba(6, 182, 212, 0.28)', borderColor: glowColor || 'var(--brand-400)' }}
                                                     whileTap={{ scale: 0.98 }}
-                                                    onClick={() => onSelect(t)}
+                                                    onClick={() => handleTeacherClick(t)}
                                                     style={{
                                                         display: 'flex',
                                                         alignItems: 'center',
@@ -782,7 +892,7 @@ const TeacherSelectionModal: React.FC<TeacherSelectionModalProps> = ({
                                                 key={t.id}
                                                 whileHover={{ scale: 1.02, backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'var(--border-subtle)' }}
                                                 whileTap={{ scale: 0.98 }}
-                                                onClick={() => onSelect(t)}
+                                                onClick={() => handleTeacherClick(t)}
                                                 style={{
                                                     display: 'flex',
                                                     alignItems: 'center',
@@ -843,6 +953,99 @@ const TeacherSelectionModal: React.FC<TeacherSelectionModalProps> = ({
                         )}
                     </>
                 )}
+
+                {/* Diálogo de confirmación antes de recoger guardia de otra franja */}
+                <AnimatePresence>
+                    {pendingConfirmTeacher && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.18 }}
+                            style={{
+                                position: 'absolute', inset: 0,
+                                background: 'rgba(13, 17, 23, 0.96)',
+                                backdropFilter: 'blur(14px)',
+                                borderRadius: 24,
+                                zIndex: 100,
+                                padding: 24,
+                                display: 'flex', flexDirection: 'column',
+                                alignItems: 'center', justifyContent: 'center',
+                                textAlign: 'center',
+                            }}
+                        >
+                            <div style={{
+                                width: 58, height: 58, borderRadius: 18,
+                                background: 'rgba(245, 158, 11, 0.18)',
+                                border: '2px solid rgba(245, 158, 11, 0.5)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                marginBottom: 14,
+                                boxShadow: '0 0 24px rgba(245, 158, 11, 0.25)',
+                            }}>
+                                <AlertTriangle size={30} color="#f59e0b" />
+                            </div>
+
+                            <h3 style={{ margin: '0 0 8px', fontSize: '1.2rem', fontWeight: 800, color: 'white' }}>
+                                ¿Confirmar guardia de otra hora?
+                            </h3>
+
+                            <div style={{
+                                maxWidth: 430,
+                                background: 'rgba(255,255,255,0.04)',
+                                border: '1px solid var(--border-subtle)',
+                                borderRadius: 14,
+                                padding: '14px 18px',
+                                marginBottom: 20,
+                                fontSize: '0.86rem',
+                                color: 'var(--text-secondary)',
+                                lineHeight: 1.5,
+                            }}>
+                                <div style={{ color: 'white', fontWeight: 700, marginBottom: 4, fontSize: '0.95rem' }}>
+                                    {pendingConfirmTeacher.name}
+                                </div>
+                                Vas a recoger la guardia de{' '}
+                                <strong style={{ color: '#f59e0b' }}>{slotInfoText || 'otra franja horaria'}</strong>
+                                {isDifferentDate ? ` (${guard?.date})` : ''}.<br />
+                                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                                    Hora actual en el centro: <strong style={{ color: 'var(--brand-400)' }}>{currentTimeFormatted}</strong>
+                                </span>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: 12, width: '100%', maxWidth: 380 }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setPendingConfirmTeacher(null)}
+                                    style={{
+                                        flex: 1, padding: '12px 16px', borderRadius: 12,
+                                        background: 'var(--bg-main)', border: '1px solid var(--border-subtle)',
+                                        color: 'var(--text-primary)', fontWeight: 700, fontSize: '0.88rem',
+                                        cursor: 'pointer', transition: 'all 0.15s',
+                                    }}
+                                >
+                                    Cancelar / Volver
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const t = pendingConfirmTeacher;
+                                        setPendingConfirmTeacher(null);
+                                        onSelect(t);
+                                    }}
+                                    style={{
+                                        flex: 1, padding: '12px 16px', borderRadius: 12,
+                                        background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                                        border: 'none', color: '#000',
+                                        fontWeight: 800, fontSize: '0.88rem',
+                                        cursor: 'pointer', transition: 'all 0.15s',
+                                        boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)',
+                                    }}
+                                >
+                                    Sí, recogerla
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </motion.div>
         </div>
     );
