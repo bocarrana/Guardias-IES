@@ -145,8 +145,106 @@ export const exportLdPDF = (
     records: LibreDisposicion[],
     grouping: ExportGrouping,
     filterMonth?: string,
+    filterDay?: string,
+    filterTeacher?: string,
+    maxLdPerTeacher: number = 4
 ) => {
-    const allRows = buildRows(records);
+    let allRows = buildRows(records);
+    if (filterTeacher) {
+        const q = filterTeacher.toLowerCase();
+        allRows = allRows.filter(r => r.profesor.toLowerCase().includes(q));
+    }
+
+    // ── Modo Parte Diario (si hay día filtrado) ──
+    if (filterDay) {
+        const dayRows = allRows.filter(r => r.fecha === filterDay);
+        if (dayRows.length === 0) return;
+
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const dateObj = parseDate(filterDay);
+        const dayName = DAY_NAMES[dateObj.getDay()];
+        const formattedDate = `${dayName}, ${formatDateEs(dateObj)}`;
+
+        // Header band
+        doc.setFillColor(15, 23, 42); // Dark slate
+        doc.rect(0, 0, pageWidth, 52, 'F');
+
+        doc.setFillColor(...BRAND_RGB);
+        doc.rect(0, 48, pageWidth, 4, 'F');
+
+        doc.setTextColor(...HEADER_TEXT);
+        doc.setFontSize(20);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Parte Diario de Libre Disposición', 14, 24);
+
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Fecha: ${formattedDate}`, 14, 34);
+
+        const now = new Date();
+        const generatedStr = `Generado el ${formatDateEs(now)} a las ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        doc.setFontSize(8.5);
+        doc.setTextColor(200, 200, 200);
+        doc.text(generatedStr, pageWidth - 14, 34, { align: 'right' });
+
+        doc.setTextColor(0, 0, 0);
+
+        // Tabla de profesores
+        autoTable(doc, {
+            startY: 60,
+            head: [['#', 'Profesor / Docente', 'Departamento', 'Tipo de Permiso', 'Firma / Cotejo']],
+            body: dayRows.map((r, i) => [
+                (i + 1).toString(),
+                r.profesor,
+                r.departamento,
+                r.tipoLabel,
+                '', // Espacio para firma
+            ]),
+            theme: 'grid',
+            headStyles: {
+                fillColor: BRAND_RGB,
+                textColor: HEADER_TEXT,
+                fontStyle: 'bold',
+                fontSize: 9.5,
+                halign: 'left',
+            },
+            bodyStyles: { fontSize: 9, cellPadding: 6 },
+            alternateRowStyles: { fillColor: ALT_ROW },
+            columnStyles: {
+                0: { cellWidth: 10, halign: 'center' },
+                1: { cellWidth: 55, fontStyle: 'bold' },
+                2: { cellWidth: 45 },
+                3: { cellWidth: 35 },
+                4: { cellWidth: 'auto' },
+            },
+            margin: { left: 14, right: 14 },
+        });
+
+        // Summary box
+        const finalY = (doc as any).lastAutoTable?.finalY || 100;
+        doc.setFillColor(...BRAND_LIGHT);
+        doc.roundedRect(14, finalY + 8, pageWidth - 28, 14, 3, 3, 'F');
+        doc.setFontSize(9.5);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(40, 40, 40);
+        doc.text(
+            `Total de permisos concedidos: ${dayRows.length} docente${dayRows.length !== 1 ? 's' : ''}`,
+            pageWidth / 2, finalY + 17, { align: 'center' }
+        );
+
+        // Footer
+        const pageHeight = doc.internal.pageSize.getHeight();
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(150, 150, 150);
+        doc.text('Guardias IES — Sistema de Gestión de Guardias y Permisos', 14, pageHeight - 8);
+        doc.text('Página 1 de 1', pageWidth - 14, pageHeight - 8, { align: 'right' });
+
+        doc.save(`parte_libre_disposicion_${filterDay}.pdf`);
+        return;
+    }
+
     const filtered = filterMonth
         ? allRows.filter(r => r.fecha.startsWith(filterMonth))
         : allRows;
@@ -178,7 +276,7 @@ export const exportLdPDF = (
     const periodLabel = filterMonth
         ? getGroupLabel(filterMonth, 'month')
         : 'Curso completo';
-    doc.text(`Período: ${periodLabel}  ·  Agrupado por: ${grouping === 'month' ? 'Meses' : 'Semanas'}`, 14, 46);
+    doc.text(`Período: ${periodLabel}${filterTeacher ? `  ·  Profesor: ${filterTeacher}` : ''}  ·  Agrupado por: ${grouping === 'month' ? 'Meses' : 'Semanas'}`, 14, 46);
 
     doc.setTextColor(0, 0, 0);
 
@@ -198,7 +296,7 @@ export const exportLdPDF = (
         body: resumen.map(r => [
             r.nombre,
             r.departamento,
-            `${r.diasUtilizados}/4`,
+            `${r.diasUtilizados}/${maxLdPerTeacher}`,
             r.tipos,
             r.fechas.join(', '),
         ]),
@@ -328,8 +426,57 @@ export const exportLdExcel = (
     records: LibreDisposicion[],
     grouping: ExportGrouping,
     filterMonth?: string,
+    filterDay?: string,
+    filterTeacher?: string,
+    maxLdPerTeacher: number = 4
 ) => {
-    const allRows = buildRows(records);
+    let allRows = buildRows(records);
+    if (filterTeacher) {
+        const q = filterTeacher.toLowerCase();
+        allRows = allRows.filter(r => r.profesor.toLowerCase().includes(q));
+    }
+
+    // ── Modo Parte Diario (si hay día filtrado) ──
+    if (filterDay) {
+        const dayRows = allRows.filter(r => r.fecha === filterDay);
+        if (dayRows.length === 0) return;
+
+        const wb = XLSX.utils.book_new();
+        const dateObj = parseDate(filterDay);
+        const dayName = DAY_NAMES[dateObj.getDay()];
+        const formattedDate = `${dayName}, ${formatDateEs(dateObj)}`;
+
+        const sheetData = [
+            ['PARTE DIARIO DE LIBRE DISPOSICIÓN'],
+            [`Fecha: ${formattedDate}`],
+            [`Generado: ${formatDateEs(new Date())}`],
+            [`Total docentes con permiso: ${dayRows.length}`],
+            [],
+            ['#', 'Profesor / Docente', 'Departamento', 'Fecha', 'Día', 'Tipo de Permiso'],
+            ...dayRows.map((r, i) => [
+                i + 1,
+                r.profesor,
+                r.departamento,
+                formatDateEs(r.fechaObj),
+                r.diaSemana,
+                r.tipoLabel,
+            ]),
+        ];
+
+        const ws = XLSX.utils.aoa_to_sheet(sheetData);
+        ws['!cols'] = [
+            { wch: 6 }, { wch: 38 }, { wch: 30 }, { wch: 14 }, { wch: 14 }, { wch: 24 },
+        ];
+        ws['!merges'] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } },
+            { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } },
+        ];
+
+        XLSX.utils.book_append_sheet(wb, ws, `Parte_${filterDay}`);
+        XLSX.writeFile(wb, `parte_libre_disposicion_${filterDay}.xlsx`);
+        return;
+    }
+
     const filtered = filterMonth
         ? allRows.filter(r => r.fecha.startsWith(filterMonth))
         : allRows;
@@ -353,8 +500,8 @@ export const exportLdExcel = (
             r.nombre,
             r.departamento,
             r.diasUtilizados,
-            4,
-            4 - r.diasUtilizados,
+            maxLdPerTeacher,
+            Math.max(0, maxLdPerTeacher - r.diasUtilizados),
             r.tipos,
             r.fechas.join(', '),
         ]),

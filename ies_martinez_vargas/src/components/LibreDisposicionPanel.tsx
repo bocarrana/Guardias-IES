@@ -115,6 +115,7 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
     // List filters
     const [filterTeacher, setFilterTeacher] = useState('');
     const [filterMonth, setFilterMonth] = useState('');
+    const [filterDay, setFilterDay] = useState('');
     const [sortOrder, setSortOrder] = useState<'date_asc' | 'date_desc' | 'name'>('date_desc');
     const [showAssignSection, setShowAssignSection] = useState(true);
 
@@ -248,7 +249,9 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
             const q = filterTeacher.toLowerCase();
             recs = recs.filter(r => r.teacher?.name?.toLowerCase().includes(q));
         }
-        if (filterMonth) {
+        if (filterDay) {
+            recs = recs.filter(r => r.fecha === filterDay);
+        } else if (filterMonth) {
             recs = recs.filter(r => r.fecha.startsWith(filterMonth));
         }
 
@@ -257,7 +260,7 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
         else recs.sort((a, b) => (a.teacher?.name || '').localeCompare(b.teacher?.name || ''));
 
         return recs;
-    }, [ldRecords, myRecords, isAdmin, filterTeacher, filterMonth, sortOrder]);
+    }, [ldRecords, myRecords, isAdmin, filterTeacher, filterMonth, filterDay, sortOrder]);
 
     // Stats
     const stats = useMemo(() => {
@@ -375,10 +378,12 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
         setShowExportMenu(false);
         try {
             const monthFilter = filterMonth || undefined;
+            const dayFilter = filterDay || undefined;
+            const teacherFilter = filterTeacher || undefined;
             if (format === 'pdf') {
-                exportLdPDF(ldRecords, grouping, monthFilter);
+                exportLdPDF(ldRecords, grouping, monthFilter, dayFilter, teacherFilter, MAX_LD_PER_TEACHER);
             } else {
-                exportLdExcel(ldRecords, grouping, monthFilter);
+                exportLdExcel(ldRecords, grouping, monthFilter, dayFilter, teacherFilter, MAX_LD_PER_TEACHER);
             }
             toast.success(`Informe ${format.toUpperCase()} generado correctamente.`);
         } catch (err: any) {
@@ -989,28 +994,47 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
                                                         <FileText size={12} />
                                                         PDF
                                                     </div>
-                                                    {[
-                                                        { label: 'Agrupado por meses', grouping: 'month' as ExportGrouping },
-                                                        { label: 'Agrupado por semanas', grouping: 'week' as ExportGrouping },
-                                                    ].map(opt => (
+                                                    {filterDay ? (
                                                         <button
-                                                            key={`pdf-${opt.grouping}`}
-                                                            onClick={() => handleExport('pdf', opt.grouping)}
+                                                            onClick={() => handleExport('pdf', 'month')}
                                                             style={{
                                                                 display: 'flex', alignItems: 'center', gap: 8,
                                                                 width: '100%', padding: '9px 12px', borderRadius: 8,
-                                                                border: 'none', background: 'transparent',
+                                                                border: 'none', background: 'rgba(239,68,68,0.08)',
                                                                 color: 'var(--text-primary)', fontSize: '0.82rem',
-                                                                fontWeight: 600, cursor: 'pointer', textAlign: 'left',
+                                                                fontWeight: 700, cursor: 'pointer', textAlign: 'left',
                                                                 transition: 'background 0.15s',
                                                             }}
-                                                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(34,211,238,0.08)'}
-                                                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.14)'}
+                                                            onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
                                                         >
                                                             <span style={{ color: '#ef4444', fontSize: '0.7rem', fontWeight: 800, padding: '1px 5px', borderRadius: 4, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>PDF</span>
-                                                            {opt.label}
+                                                            Parte Diario ({formatShortDate(filterDay)})
                                                         </button>
-                                                    ))}
+                                                    ) : (
+                                                        [
+                                                            { label: 'Agrupado por meses', grouping: 'month' as ExportGrouping },
+                                                            { label: 'Agrupado por semanas', grouping: 'week' as ExportGrouping },
+                                                        ].map(opt => (
+                                                            <button
+                                                                key={`pdf-${opt.grouping}`}
+                                                                onClick={() => handleExport('pdf', opt.grouping)}
+                                                                style={{
+                                                                    display: 'flex', alignItems: 'center', gap: 8,
+                                                                    width: '100%', padding: '9px 12px', borderRadius: 8,
+                                                                    border: 'none', background: 'transparent',
+                                                                    color: 'var(--text-primary)', fontSize: '0.82rem',
+                                                                    fontWeight: 600, cursor: 'pointer', textAlign: 'left',
+                                                                    transition: 'background 0.15s',
+                                                                }}
+                                                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(34,211,238,0.08)'}
+                                                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                                            >
+                                                                <span style={{ color: '#ef4444', fontSize: '0.7rem', fontWeight: 800, padding: '1px 5px', borderRadius: 4, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>PDF</span>
+                                                                {opt.label}
+                                                            </button>
+                                                        ))
+                                                    )}
 
                                                     {/* Divider */}
                                                     <div style={{ height: 1, background: 'var(--border-subtle)', margin: '6px 8px' }} />
@@ -1024,31 +1048,50 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
                                                         <FileSpreadsheet size={12} />
                                                         Excel
                                                     </div>
-                                                    {[
-                                                        { label: 'Agrupado por meses', grouping: 'month' as ExportGrouping },
-                                                        { label: 'Agrupado por semanas', grouping: 'week' as ExportGrouping },
-                                                    ].map(opt => (
+                                                    {filterDay ? (
                                                         <button
-                                                            key={`excel-${opt.grouping}`}
-                                                            onClick={() => handleExport('excel', opt.grouping)}
+                                                            onClick={() => handleExport('excel', 'month')}
                                                             style={{
                                                                 display: 'flex', alignItems: 'center', gap: 8,
                                                                 width: '100%', padding: '9px 12px', borderRadius: 8,
-                                                                border: 'none', background: 'transparent',
+                                                                border: 'none', background: 'rgba(34,197,94,0.08)',
                                                                 color: 'var(--text-primary)', fontSize: '0.82rem',
-                                                                fontWeight: 600, cursor: 'pointer', textAlign: 'left',
+                                                                fontWeight: 700, cursor: 'pointer', textAlign: 'left',
                                                                 transition: 'background 0.15s',
                                                             }}
-                                                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(34,197,94,0.08)'}
-                                                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(34,197,94,0.14)'}
+                                                            onMouseLeave={e => e.currentTarget.style.background = 'rgba(34,197,94,0.08)'}
                                                         >
                                                             <span style={{ color: '#22c55e', fontSize: '0.7rem', fontWeight: 800, padding: '1px 5px', borderRadius: 4, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>XLSX</span>
-                                                            {opt.label}
+                                                            Parte Diario ({formatShortDate(filterDay)})
                                                         </button>
-                                                    ))}
+                                                    ) : (
+                                                        [
+                                                            { label: 'Agrupado por meses', grouping: 'month' as ExportGrouping },
+                                                            { label: 'Agrupado por semanas', grouping: 'week' as ExportGrouping },
+                                                        ].map(opt => (
+                                                            <button
+                                                                key={`excel-${opt.grouping}`}
+                                                                onClick={() => handleExport('excel', opt.grouping)}
+                                                                style={{
+                                                                    display: 'flex', alignItems: 'center', gap: 8,
+                                                                    width: '100%', padding: '9px 12px', borderRadius: 8,
+                                                                    border: 'none', background: 'transparent',
+                                                                    color: 'var(--text-primary)', fontSize: '0.82rem',
+                                                                    fontWeight: 600, cursor: 'pointer', textAlign: 'left',
+                                                                    transition: 'background 0.15s',
+                                                                }}
+                                                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(34,197,94,0.08)'}
+                                                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                                            >
+                                                                <span style={{ color: '#22c55e', fontSize: '0.7rem', fontWeight: 800, padding: '1px 5px', borderRadius: 4, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>XLSX</span>
+                                                                {opt.label}
+                                                            </button>
+                                                        ))
+                                                    )}
 
                                                     {/* Filter notice */}
-                                                    {filterMonth && (
+                                                    {(filterDay || filterMonth || filterTeacher) && (
                                                         <>
                                                             <div style={{ height: 1, background: 'var(--border-subtle)', margin: '6px 8px' }} />
                                                             <div style={{
@@ -1057,10 +1100,14 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
                                                                 display: 'flex', alignItems: 'center', gap: 6,
                                                             }}>
                                                                 <Filter size={11} />
-                                                                Solo exportará: {(() => {
-                                                                    const [y, m] = filterMonth.split('-');
-                                                                    return `${MONTH_NAMES[parseInt(m) - 1]} ${y}`;
-                                                                })()}
+                                                                {filterDay
+                                                                    ? `Filtro: Día ${formatShortDate(filterDay)}`
+                                                                    : filterMonth
+                                                                        ? `Filtro: ${(() => {
+                                                                            const [y, m] = filterMonth.split('-');
+                                                                            return `${MONTH_NAMES[parseInt(m) - 1]} ${y}`;
+                                                                        })()}`
+                                                                        : `Filtro: ${filterTeacher}`}
                                                             </div>
                                                         </>
                                                     )}
@@ -1091,8 +1138,9 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
 
                         {/* Filters */}
                         {isAdmin && (
-                            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                                <div style={{ position: 'relative', flex: 1, minWidth: 160 }}>
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                                {/* Teacher input filter */}
+                                <div style={{ position: 'relative', flex: '1 1 170px', minWidth: 150 }}>
                                     <Filter size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                                     <input
                                         type="text"
@@ -1100,23 +1148,89 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
                                         onChange={e => setFilterTeacher(e.target.value)}
                                         placeholder="Filtrar por profesor..."
                                         style={{
-                                            padding: '8px 12px 8px 30px',
+                                            padding: '7px 12px 7px 30px',
                                             borderRadius: 8, border: '1px solid var(--border-subtle)',
                                             background: 'var(--bg-main)',
-                                            color: 'var(--text-primary)', fontSize: '0.82rem',
+                                            color: 'var(--text-primary)', fontSize: '0.8rem',
                                             outline: 'none', width: '100%', boxSizing: 'border-box',
                                         }}
                                     />
+                                    {filterTeacher && (
+                                        <button
+                                            onClick={() => setFilterTeacher('')}
+                                            style={{
+                                                position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                                                border: 'none', background: 'transparent', cursor: 'pointer',
+                                                color: 'var(--text-muted)', padding: 4, display: 'flex', alignItems: 'center',
+                                            }}
+                                            title="Borrar filtro de profesor"
+                                        >
+                                            <X size={12} />
+                                        </button>
+                                    )}
                                 </div>
+
+                                {/* Day Date Picker */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: '0 0 auto' }}>
+                                    <input
+                                        type="date"
+                                        value={filterDay}
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            setFilterDay(val);
+                                            if (val) {
+                                                const [y, m] = val.split('-');
+                                                setFilterMonth(`${y}-${m}`);
+                                            }
+                                        }}
+                                        title="Filtrar por día específico"
+                                        style={{
+                                            padding: '6px 10px', borderRadius: 8,
+                                            border: filterDay ? '1px solid rgba(34,211,238,0.5)' : '1px solid var(--border-subtle)',
+                                            background: filterDay ? 'rgba(34,211,238,0.08)' : 'var(--bg-main)',
+                                            color: filterDay ? 'var(--brand-400)' : 'var(--text-muted)',
+                                            fontSize: '0.8rem', outline: 'none', cursor: 'pointer',
+                                            fontWeight: filterDay ? 700 : 500,
+                                        }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const today = new Date().toISOString().split('T')[0];
+                                            setFilterDay(today);
+                                            const [y, m] = today.split('-');
+                                            setFilterMonth(`${y}-${m}`);
+                                        }}
+                                        style={{
+                                            padding: '6px 9px', borderRadius: 8,
+                                            border: '1px solid var(--border-subtle)',
+                                            background: filterDay === new Date().toISOString().split('T')[0] ? 'rgba(34,211,238,0.15)' : 'var(--bg-main)',
+                                            color: filterDay === new Date().toISOString().split('T')[0] ? 'var(--brand-400)' : 'var(--text-secondary)',
+                                            fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer',
+                                            transition: 'all 0.15s',
+                                        }}
+                                        title="Filtrar por hoy"
+                                    >
+                                        Hoy
+                                    </button>
+                                </div>
+
+                                {/* Month Select */}
                                 <select
                                     value={filterMonth}
-                                    onChange={e => setFilterMonth(e.target.value)}
+                                    onChange={e => {
+                                        setFilterMonth(e.target.value);
+                                        if (filterDay && !filterDay.startsWith(e.target.value)) {
+                                            setFilterDay('');
+                                        }
+                                    }}
                                     style={{
-                                        padding: '8px 10px', borderRadius: 8,
+                                        padding: '7px 10px', borderRadius: 8,
                                         border: '1px solid var(--border-subtle)',
                                         background: 'var(--bg-main)',
                                         color: filterMonth ? 'var(--text-primary)' : 'var(--text-muted)',
-                                        fontSize: '0.82rem', outline: 'none', cursor: 'pointer',
+                                        fontSize: '0.8rem', outline: 'none', cursor: 'pointer',
+                                        flex: '0 0 auto',
                                     }}
                                 >
                                     <option value="">Todos los meses</option>
@@ -1129,6 +1243,29 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
                                         );
                                     })}
                                 </select>
+
+                                {/* Clear all filters */}
+                                {(filterTeacher || filterMonth || filterDay) && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setFilterTeacher('');
+                                            setFilterMonth('');
+                                            setFilterDay('');
+                                        }}
+                                        style={{
+                                            padding: '6px 9px', borderRadius: 8,
+                                            border: '1px solid rgba(239,68,68,0.25)',
+                                            background: 'rgba(239,68,68,0.08)',
+                                            color: '#ef4444', fontSize: '0.74rem', fontWeight: 700,
+                                            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+                                        }}
+                                        title="Limpiar todos los filtros"
+                                    >
+                                        <X size={12} />
+                                        Limpiar
+                                    </button>
+                                )}
                             </div>
                         )}
                         {/* Missing Guards Audit Banner */}
