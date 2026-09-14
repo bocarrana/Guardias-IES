@@ -14,6 +14,7 @@ import {
     getCalendarDays,
     getMaxLdPerTeacher, setMaxLdPerTeacher,
     auditLibreDisposicionGuards, syncMissingLibreDisposicionGuards, LdMissingGuardInfo,
+    isWithin24Hours,
 } from '../services/supabaseClient';
 import { getTeachers } from '../services/supabaseClient';
 import { canManageLibreDisposicion } from '../utils/roles';
@@ -308,7 +309,12 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
                 ok++;
             }
             const tipoLabel = selectedTipo === 'causa_sobrevenida' ? ' (causa sobrevenida)' : '';
-            toast.success(`✅ ${ok} profesor(es) asignados para el ${formatShortDate(selectedDate)}${tipoLabel}.`);
+            const imminent = isWithin24Hours(selectedDate);
+            if (imminent) {
+                toast.success(`✅ ${ok} profesor(es) asignados para el ${formatShortDate(selectedDate)}${tipoLabel}. Guardias generadas.`);
+            } else {
+                toast.success(`✅ ${ok} profesor(es) asignados para el ${formatShortDate(selectedDate)}${tipoLabel}. Por privacidad, las guardias se activarán 24h antes.`);
+            }
             setSelectedTeachers([]);
             setSearchQuery('');
             setSelectedDate('');
@@ -892,7 +898,7 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
                                                 <UserPlus size={16} />
                                                 {saving
                                                     ? `Asignando ${selectedTeachers.length} profesor(es)…`
-                                                    : `Confirmar${selectedTeachers.length > 0 ? ` (${selectedTeachers.length})` : ''} y generar guardias`}
+                                                    : `Confirmar permiso${selectedTeachers.length > 0 ? ` (${selectedTeachers.length})` : ''}`}
                                             </button>
                                         </div>
                                     </motion.div>

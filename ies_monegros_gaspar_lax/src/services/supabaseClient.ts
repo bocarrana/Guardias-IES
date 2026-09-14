@@ -1629,6 +1629,24 @@ export const getLibreDisposicion = async (): Promise<LibreDisposicion[]> => {
  * Registra un día de libre disposición para un profesor y genera
  * automáticamente las guardias correspondientes en la tabla Guardias.
  */
+/**
+ * Comprueba si una fecha y franja horaria están dentro de las próximas 24 horas (o son de hoy/pasadas).
+ * Si faltan más de 24 horas para el inicio, devuelve false (para proteger la privacidad docente).
+ */
+export const isWithin24Hours = (fecha: string, startTime?: string): boolean => {
+    const now = new Date();
+    const timeStr = startTime ? startTime.slice(0, 5) : '08:00';
+    const guardDateTime = new Date(`${fecha}T${timeStr}:00`);
+    const diffMs = guardDateTime.getTime() - now.getTime();
+    const twentyFourHoursMs = 24 * 60 * 60 * 1000;
+    return diffMs <= twentyFourHoursMs;
+};
+
+/**
+ * Registra un día de libre disposición para un profesor.
+ * PRIVACIDAD: Si la fecha está a más de 24h de antelación, el permiso queda guardado y contabilizado
+ * pero las guardias no se insertan en la tabla general hasta que resten 24h para el inicio.
+ */
 export const createLibreDisposicion = async (
     profesorId: string,
     fecha: string, // 'YYYY-MM-DD'
@@ -1641,7 +1659,14 @@ export const createLibreDisposicion = async (
 
     if (ldError) throw ldError;
 
-    // 2. Determinar el día de la semana en español
+    // 2. Si faltan más de 24 horas para la fecha, NO creamos las guardias todavía (privacidad)
+    if (!isWithin24Hours(fecha)) {
+        invalidateCache(['libre_disposicion']);
+        await logActivity('ADMIN_LIBRE_DISPOSICION', undefined, profesorId);
+        return;
+    }
+
+    // 3. Si es para hoy o dentro de las próximas 24 horas, generar las guardias de inmediato
     const date = new Date(fecha + 'T00:00:00');
     const DOW_MAP: Record<number, string> = {
         1: 'Lunes', 2: 'Martes', 3: 'Miércoles',
@@ -1650,24 +1675,22 @@ export const createLibreDisposicion = async (
     const diaSemana = DOW_MAP[date.getDay()];
     if (!diaSemana || date.getDay() === 0 || date.getDay() === 6) return; // no lectivo
 
-    // 3. Obtener el horario personal del profesor para ese día de la semana
+    // Obtener el horario personal del profesor para ese día de la semana
     const { data: schedule, error: schError } = await supabase
         .from('Horario_Personal')
         .select('franja_id, materia_id, grupo_id, aula_id, tipo')
         .eq('profesor_id', profesorId)
         .eq('dia_semana', diaSemana)
-        .in('tipo', ['Lectivo', 'Guardia']); // Las horas lectivas y de guardia asignada generan ausencia
+        .in('tipo', ['Lectivo', 'Guardia']);
 
     if (schError) {
         console.error('createLibreDisposicion: error fetching schedule', schError);
         return;
     }
 
-    if (!schedule || schedule.length === 0) return; // sin horario, sin guardias
+    if (!schedule || schedule.length === 0) return;
 
-    // 4. Generar un ID de guardia por cada franja y insertar
     for (const slot of schedule) {
-        // Verificar si la guardia ya existe para evitar duplicados por concurrencia
         const { data: existingGuard } = await supabase
             .from('Guardias')
             .select('"ID Guardia"')
@@ -1677,7 +1700,6 @@ export const createLibreDisposicion = async (
             .maybeSingle();
 
         if (existingGuard) {
-            console.log(`Guardia ya existente para ${profesorId} el ${fecha} a las ${slot.franja_id}. Omitiendo inserción.`);
             continue;
         }
 
@@ -1696,11 +1718,7 @@ export const createLibreDisposicion = async (
             'Tarea dejada': 'NO',
         });
         
-        if (gError) {
-            if (gError.code === '23505') {
-                console.warn(`Conflicto de restricción única (23505) omitido para ${profesorId} el ${fecha} a las ${slot.franja_id}.`);
-                continue;
-            }
+        if (gError && gError.code !== '23505') {
             console.error('createLibreDisposicion: error creating guard for slot', slot.franja_id, gError);
             throw gError;
         }
@@ -1728,7 +1746,6 @@ export const deleteLibreDisposicion = async (id: string): Promise<void> => {
 
     // 2. Eliminar las guardias generadas para ese profesor y fecha
     //    que TODAVÍA no han sido cubiertas (Pendiente/disponible)
-    //    — las guardias ya cubiertas se conservan para el historial.
     const { error: guardError } = await supabase
         .from('Guardias')
         .delete()
@@ -1763,10 +1780,11 @@ export interface LdMissingGuardInfo {
 }
 
 /**
- * Audita todos los registros de libre disposición para comprobar si
+ * Audita registros de libre disposición para comprobar si
  * tienen sus guardias creadas en la tabla Guardias según su Horario Personal.
+ * Por defecto filtra solo los permisos inminentes (<= 24h) para no alertar de permisos futuros diferidos.
  */
-export const auditLibreDisposicionGuards = async (): Promise<LdMissingGuardInfo[]> => {
+export const auditLibreDisposicionGuards = async (onlyWithin24h: boolean = true): Promise<LdMissingGuardInfo[]> => {
     const ldRecords = await getLibreDisposicion();
     if (!ldRecords || ldRecords.length === 0) return [];
 
@@ -1778,6 +1796,11 @@ export const auditLibreDisposicionGuards = async (): Promise<LdMissingGuardInfo[
     const missingRecords: LdMissingGuardInfo[] = [];
 
     for (const ld of ldRecords) {
+        // Si solo auditamos los que están dentro de 24h, ignorar los que están a más de 24h
+        if (onlyWithin24h && !isWithin24Hours(ld.fecha)) {
+            continue;
+        }
+
         const date = new Date(ld.fecha + 'T00:00:00');
         const diaSemana = DOW_MAP[date.getDay()];
         if (!diaSemana || date.getDay() === 0 || date.getDay() === 6) continue;
@@ -1827,10 +1850,13 @@ export const auditLibreDisposicionGuards = async (): Promise<LdMissingGuardInfo[
 
 /**
  * Sincroniza y genera automáticamente todas las guardias faltantes de registros de Libre Disposición.
- * Puede sincronizar un registro específico (por ldId) o todos los pendientes.
+ * Puede sincronizar un registro específico (por ldId) o todos los inminentes (<= 24h).
  */
-export const syncMissingLibreDisposicionGuards = async (targetLdId?: string): Promise<{ createdGuardsCount: number; affectedTeachers: number }> => {
-    const missingAudit = await auditLibreDisposicionGuards();
+export const syncMissingLibreDisposicionGuards = async (
+    targetLdId?: string,
+    onlyWithin24h: boolean = true
+): Promise<{ createdGuardsCount: number; affectedTeachers: number }> => {
+    const missingAudit = await auditLibreDisposicionGuards(targetLdId ? false : onlyWithin24h);
     const recordsToSync = targetLdId ? missingAudit.filter(m => m.ldId === targetLdId) : missingAudit;
 
     let createdGuardsCount = 0;
@@ -1878,6 +1904,36 @@ export const syncMissingLibreDisposicionGuards = async (targetLdId?: string): Pr
     }
 
     return { createdGuardsCount, affectedTeachers: affectedTeachersSet.size };
+};
+
+/**
+ * Función de mantenimiento automático:
+ * 1. Genera las guardias de los registros de Libre Disposición que entran en la ventana de las 24 horas.
+ * 2. Limpia guardias pendientes de Libre Disposición que estuvieran creadas prematuramente a más de 24h.
+ */
+export const syncImminentLibreDisposicionGuards = async (): Promise<number> => {
+    try {
+        const ldRecords = await getLibreDisposicion();
+        if (!ldRecords || ldRecords.length === 0) return 0;
+
+        // Limpieza de guardias no asignadas que estén a > 24h de antelación para proteger privacidad
+        const futureLds = ldRecords.filter(ld => !isWithin24Hours(ld.fecha));
+        for (const fLd of futureLds) {
+            await supabase
+                .from('Guardias')
+                .delete()
+                .eq('Profesor ausente', fLd.profesor_id)
+                .eq('Fecha', fLd.fecha)
+                .eq('Estado', 'Pendiente/disponible');
+        }
+
+        // Generar guardias para los registros dentro de las 24 horas
+        const res = await syncMissingLibreDisposicionGuards(undefined, true);
+        return res.createdGuardsCount;
+    } catch (err) {
+        console.error('syncImminentLibreDisposicionGuards error:', err);
+        return 0;
+    }
 };
 
 // ─── CONFIGURACIÓN CENTRO ───────────────────────────────

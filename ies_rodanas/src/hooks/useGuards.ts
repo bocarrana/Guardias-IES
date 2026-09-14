@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Guard, GuardGroupSchedule, MetaOptions, Teacher } from '../types';
 // Updated to use Horario_Personal as single source of truth for Guard Groups
-import { getGuards, getMetaOptions, getTeachers, getAutoGuardGroups, subscribeToGuards, supabase, invalidateCache } from '../services/supabaseClient';
+import { getGuards, getMetaOptions, getTeachers, getAutoGuardGroups, subscribeToGuards, supabase, invalidateCache, syncImminentLibreDisposicionGuards } from '../services/supabaseClient';
 
 import { isAdministracionRole } from '../utils/roles';
 
@@ -36,6 +36,14 @@ export const useGuards = (isAuthenticated: boolean) => {
             setTeachers(teachersData);
             setMeta(metaData);
             setGuardGroupSchedules(schedulesData);
+
+            // Sincronizar automáticamente permisos de libre disposición que entren en la ventana de 24h
+            syncImminentLibreDisposicionGuards().then(created => {
+                if (created > 0) {
+                    invalidateCache('guards');
+                    getGuards().then(setGuards).catch(console.error);
+                }
+            }).catch(console.error);
         } catch (err) {
             console.error('Failed to fetch data:', err);
         } finally {
