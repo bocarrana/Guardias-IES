@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Guard, GuardGroupSchedule, MetaOptions, Teacher } from '../types';
 // Updated to use Horario_Personal as single source of truth for Guard Groups
-import { getGuards, getMetaOptions, getTeachers, getAutoGuardGroups, subscribeToGuards, supabase } from '../services/supabaseClient';
+import { getGuards, getMetaOptions, getTeachers, getAutoGuardGroups, subscribeToGuards, supabase, invalidateCache } from '../services/supabaseClient';
 
 import { isAdministracionRole } from '../utils/roles';
 
@@ -17,9 +17,15 @@ export const useGuards = (isAuthenticated: boolean) => {
     });
     const [loading, setLoading] = useState(true);
 
-    const fetchData = useCallback(async () => {
+    const fetchData = useCallback(async (force = false) => {
         if (!isAuthenticated) return;
         try {
+            if (force) {
+                invalidateCache('guards');
+                invalidateCache('teachers');
+                invalidateCache('meta_options');
+                invalidateCache('auto_guard_groups');
+            }
             const [guardsData, teachersData, metaData, schedulesData] = await Promise.all([
                 getGuards(),
                 getTeachers(true),
@@ -43,6 +49,16 @@ export const useGuards = (isAuthenticated: boolean) => {
             fetchData();
         }
     }, [isAuthenticated, fetchData]);
+
+    // Polling de respaldo cada 30 segundos (vital para TV y conexiones suspendidas)
+    useEffect(() => {
+        if (!isAuthenticated) return;
+        const interval = setInterval(() => {
+            invalidateCache('guards');
+            getGuards().then(setGuards).catch(console.error);
+        }, 30000);
+        return () => clearInterval(interval);
+    }, [isAuthenticated]);
 
     // Realtime subscription
     useEffect(() => {
@@ -91,6 +107,6 @@ export const useGuards = (isAuthenticated: boolean) => {
         meta,
         guardGroupSchedules,
         loading,
-        refetch: fetchData,
+        refetch: () => fetchData(true),
     };
 };

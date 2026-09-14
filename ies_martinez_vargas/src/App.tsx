@@ -626,6 +626,7 @@ const App: React.FC = () => {
                     guardGroupSchedules={guardGroupSchedules}
                     assignmentModes={assignmentModes}
                     onChangeAssignmentMode={handleAssignmentModeChange}
+                    onRefresh={refetch}
                 />
             )}
             {view === 'my_schedule' && currentUser && canAccessMySchedule(currentUser) && (

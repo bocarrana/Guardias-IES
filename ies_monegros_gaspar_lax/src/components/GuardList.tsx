@@ -4,7 +4,7 @@ import { Guard, GuardStatus, GuardType, Teacher, MetaOptions, GuardGroupSchedule
 import {
     User, Calendar, Clock, MapPin, CheckCircle, Zap,
     BookOpen, Shield, Pencil, Trash2, FileText, Search, Loader2, AlertTriangle,
-    ChevronLeft, ChevronRight, X, Dices, ChevronDown, MessageSquare, FileCheck
+    ChevronLeft, ChevronRight, X, Dices, ChevronDown, MessageSquare, FileCheck, RotateCw
 } from 'lucide-react';
 import { getStorageUrl, getTaskFileUrl } from '../services/supabaseClient';
 import { Download } from 'lucide-react';
@@ -28,25 +28,19 @@ const ScrollableAvatars: React.FC<ScrollableAvatarsProps> = ({ children, isTV })
 
     const checkScroll = () => {
         const el = containerRef.current;
-        if (!el) return;
-        setShowLeft(el.scrollLeft > 2);
-        setShowRight(el.scrollWidth - el.clientWidth - el.scrollLeft > 2);
+        if (!el || !isTV) return;
+        setShowLeft(el.scrollLeft > 4);
+        setShowRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
     };
 
     useEffect(() => {
         const el = containerRef.current;
         if (!el || !isTV) return;
-
         checkScroll();
-
-        window.addEventListener('resize', checkScroll);
-        
-        const observer = new MutationObserver(checkScroll);
-        observer.observe(el, { childList: true, subtree: true });
-
+        const handleResize = () => checkScroll();
+        window.addEventListener('resize', handleResize);
         return () => {
-            window.removeEventListener('resize', checkScroll);
-            observer.disconnect();
+            window.removeEventListener('resize', handleResize);
         };
     }, [isTV, children]);
 
@@ -130,6 +124,7 @@ interface GuardListProps {
     guardGroupSchedules: GuardGroupSchedule[];
     assignmentModes: Record<string, 'recommended' | 'random'>;
     onChangeAssignmentMode: (slotId: string, mode: 'recommended' | 'random') => void;
+    onRefresh?: () => Promise<void> | void;
 }
 
 const getStatusBadgeClass = (status: GuardStatus) => {
@@ -189,7 +184,7 @@ export const isGuardPassed = (guard: Guard, now: Date) => {
 
 const GuardList: React.FC<GuardListProps> = ({
     guards, currentUser, loading, onPickup, onRelease, onComplete, onDelete, onEdit, meta, guardGroupSchedules,
-    assignmentModes, onChangeAssignmentMode
+    assignmentModes, onChangeAssignmentMode, onRefresh
 }) => {
     const [filter, setFilter] = useState<'today' | 'mine' | 'available' | 'history'>('today');
     const [searchQuery, setSearchQuery] = useState('');
@@ -197,6 +192,29 @@ const GuardList: React.FC<GuardListProps> = ({
     const [mapRoomId, setMapRoomId] = useState<string | null>(null);
     const [currentTime, setCurrentTime] = useState(new Date());
     const [selectedObservationGuard, setSelectedObservationGuard] = useState<Guard | null>(null);
+
+    // Estados para indicador En Vivo y botón de Actualización manual
+    const [showLiveInfo, setShowLiveInfo] = useState(false);
+    const [showRefreshInfo, setShowRefreshInfo] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    const handleManualRefresh = async () => {
+        if (isRefreshing) return;
+        setIsRefreshing(true);
+        try {
+            if (onRefresh) {
+                await onRefresh();
+            }
+            toast.success('Datos actualizados en tiempo real', { duration: 2000 });
+        } catch (error) {
+            console.error('Error al actualizar datos:', error);
+            toast.error('Error al actualizar los datos');
+        } finally {
+            setTimeout(() => {
+                setIsRefreshing(false);
+            }, 600);
+        }
+    };
 
     // Auto-cerrar modal de observación tras 8 segundos
     useEffect(() => {
@@ -749,30 +767,150 @@ const GuardList: React.FC<GuardListProps> = ({
                                 {currentSlot ? `Entorno de Guardias — ${currentDay}` : 'Entorno próximas guardias'}
                             </div>
 
-                            {/* DYNAMIC DIGITAL CLOCK */}
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 10,
-                                padding: isPantallaRole(currentUser?.role) ? '8px 16px' : '6px 14px',
-                                background: 'rgba(6, 182, 212, 0.05)',
-                                borderRadius: 'var(--radius-full)',
-                                border: '1px solid rgba(6, 182, 212, 0.15)',
-                                backdropFilter: 'blur(4px)'
-                            }}>
-                                <Clock size={isPantallaRole(currentUser?.role) ? 16 : 14} style={{ color: 'var(--brand-400)' }} />
-                                <span style={{
-                                    fontFamily: 'var(--font-mono)',
-                                    fontSize: isPantallaRole(currentUser?.role) ? '1.1rem' : '0.95rem',
-                                    fontWeight: 700,
-                                    color: 'var(--text-primary)',
-                                    letterSpacing: '0.05em',
-                                    minWidth: isPantallaRole(currentUser?.role) ? '100px' : '85px',
-                                    textAlign: 'center',
-                                    textShadow: '0 0 10px rgba(6, 182, 212, 0.3)'
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                {/* LIVE + MANUAL REFRESH PILL */}
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    padding: isPantallaRole(currentUser?.role) ? '6px 12px' : '5px 10px',
+                                    background: 'rgba(6, 182, 212, 0.05)',
+                                    borderRadius: 'var(--radius-full)',
+                                    border: '1px solid rgba(6, 182, 212, 0.15)',
+                                    backdropFilter: 'blur(4px)',
+                                    height: isPantallaRole(currentUser?.role) ? 38 : 32,
+                                    boxSizing: 'border-box'
                                 }}>
-                                    {currentTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                                </span>
+                                    {/* Indicador En Vivo (Sólo icono por defecto, expande texto al pulsar o hover) */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowLiveInfo(prev => !prev)}
+                                        onMouseEnter={() => setShowLiveInfo(true)}
+                                        onMouseLeave={() => setShowLiveInfo(false)}
+                                        title="Conexión en tiempo real activa"
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            padding: '2px 4px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 6,
+                                            cursor: 'pointer',
+                                            borderRadius: 'var(--radius-full)',
+                                            color: 'var(--text-primary)',
+                                            outline: 'none',
+                                        }}
+                                    >
+                                        <span style={{
+                                            width: 8,
+                                            height: 8,
+                                            borderRadius: '50%',
+                                            backgroundColor: '#22c55e',
+                                            boxShadow: '0 0 8px #22c55e',
+                                            display: 'inline-block',
+                                        }} />
+                                        <AnimatePresence>
+                                            {showLiveInfo && (
+                                                <motion.span
+                                                    initial={{ opacity: 0, width: 0 }}
+                                                    animate={{ opacity: 1, width: 'auto' }}
+                                                    exit={{ opacity: 0, width: 0 }}
+                                                    transition={{ duration: 0.18 }}
+                                                    style={{
+                                                        fontSize: isPantallaRole(currentUser?.role) ? '0.8rem' : '0.75rem',
+                                                        fontWeight: 700,
+                                                        color: '#22c55e',
+                                                        whiteSpace: 'nowrap',
+                                                        overflow: 'hidden',
+                                                    }}
+                                                >
+                                                    En vivo
+                                                </motion.span>
+                                            )}
+                                        </AnimatePresence>
+                                    </button>
+
+                                    {/* Separador sutil */}
+                                    <div style={{ width: 1, height: 14, backgroundColor: 'rgba(6, 182, 212, 0.2)' }} />
+
+                                    {/* Botón Actualizar (Sólo icono por defecto, expande texto al pulsar o hover) */}
+                                    <button
+                                        type="button"
+                                        onClick={handleManualRefresh}
+                                        onMouseEnter={() => setShowRefreshInfo(true)}
+                                        onMouseLeave={() => setShowRefreshInfo(false)}
+                                        title="Actualizar datos ahora"
+                                        disabled={isRefreshing}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            padding: '2px 4px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 6,
+                                            cursor: isRefreshing ? 'wait' : 'pointer',
+                                            borderRadius: 'var(--radius-full)',
+                                            color: isRefreshing ? 'var(--brand-400)' : 'var(--text-muted)',
+                                            outline: 'none',
+                                        }}
+                                    >
+                                        <RotateCw 
+                                            size={isPantallaRole(currentUser?.role) ? 15 : 13} 
+                                            style={{
+                                                color: isRefreshing ? 'var(--brand-400)' : 'var(--text-muted)',
+                                                animation: isRefreshing ? 'spin 1s linear infinite' : 'none',
+                                                transition: 'color 0.2s',
+                                            }}
+                                        />
+                                        <AnimatePresence>
+                                            {(showRefreshInfo || isRefreshing) && (
+                                                <motion.span
+                                                    initial={{ opacity: 0, width: 0 }}
+                                                    animate={{ opacity: 1, width: 'auto' }}
+                                                    exit={{ opacity: 0, width: 0 }}
+                                                    transition={{ duration: 0.18 }}
+                                                    style={{
+                                                        fontSize: isPantallaRole(currentUser?.role) ? '0.8rem' : '0.75rem',
+                                                        fontWeight: 700,
+                                                        color: isRefreshing ? 'var(--brand-400)' : 'var(--text-secondary)',
+                                                        whiteSpace: 'nowrap',
+                                                        overflow: 'hidden',
+                                                    }}
+                                                >
+                                                    {isRefreshing ? 'Actualizando...' : 'Actualizar'}
+                                                </motion.span>
+                                            )}
+                                        </AnimatePresence>
+                                    </button>
+                                </div>
+
+                                {/* DYNAMIC DIGITAL CLOCK */}
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 10,
+                                    padding: isPantallaRole(currentUser?.role) ? '8px 16px' : '6px 14px',
+                                    background: 'rgba(6, 182, 212, 0.05)',
+                                    borderRadius: 'var(--radius-full)',
+                                    border: '1px solid rgba(6, 182, 212, 0.15)',
+                                    backdropFilter: 'blur(4px)',
+                                    height: isPantallaRole(currentUser?.role) ? 38 : 32,
+                                    boxSizing: 'border-box'
+                                }}>
+                                    <Clock size={isPantallaRole(currentUser?.role) ? 16 : 14} style={{ color: 'var(--brand-400)' }} />
+                                    <span style={{
+                                        fontFamily: 'var(--font-mono)',
+                                        fontSize: isPantallaRole(currentUser?.role) ? '1.1rem' : '0.95rem',
+                                        fontWeight: 700,
+                                        color: 'var(--text-primary)',
+                                        letterSpacing: '0.05em',
+                                        minWidth: isPantallaRole(currentUser?.role) ? '100px' : '85px',
+                                        textAlign: 'center',
+                                        textShadow: '0 0 10px rgba(6, 182, 212, 0.3)'
+                                    }}>
+                                        {currentTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                    </span>
+                                </div>
                             </div>
                         </h2>
                     </div>
