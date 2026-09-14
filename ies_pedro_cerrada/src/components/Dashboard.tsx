@@ -196,6 +196,8 @@ const Dashboard: React.FC<DashboardProps> = ({ guards, teachers, currentUser, gu
         const mySchedules = guardGroupSchedules.filter(s => s.profesor_id === currentUser.id);
         const isAdminOrJefatura = canAccessAdminPanel(currentUser);
         return mySchedules.length === 0 && isAdminOrJefatura;
+    });
+
     // ── Estado de Grupo Resaltado por Clic en Histograma ──
     const [highlightedGroupId, setHighlightedGroupId] = useState<string | null>(null);
 
@@ -1231,8 +1233,9 @@ const Dashboard: React.FC<DashboardProps> = ({ guards, teachers, currentUser, gu
                                 </div>
                             </div>
                         </motion.div>
-                    ))
-                )}
+                    );
+                })
+            )}
             </div>
         </div>
     );
