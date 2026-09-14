@@ -149,6 +149,38 @@ const getShortSlotLabel = (dayName: string, slotLabel: string, slotId: string): 
     return `${dayInitial}${num}`;
 };
 
+const CustomXAxisTick = (props: any) => {
+    const { x, y, payload, onTickClick } = props;
+    return (
+        <g transform={`translate(${x},${y})`}>
+            <text
+                x={0}
+                y={0}
+                dy={12}
+                textAnchor="middle"
+                fill="var(--text-muted)"
+                fontSize={7.5}
+                fontWeight={700}
+                style={{ cursor: 'pointer', transition: 'fill 0.15s ease' }}
+                onMouseEnter={(e) => {
+                    (e.target as SVGTextElement).style.fill = 'var(--brand-400)';
+                }}
+                onMouseLeave={(e) => {
+                    (e.target as SVGTextElement).style.fill = 'var(--text-muted)';
+                }}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (onTickClick) {
+                        onTickClick(payload.value);
+                    }
+                }}
+            >
+                {payload.value}
+            </text>
+        </g>
+    );
+};
+
 import { MonthDayPicker } from './MonthDayPicker';
 
 const formatDateForPdf = (dateStr: string) => {
@@ -164,7 +196,20 @@ const Dashboard: React.FC<DashboardProps> = ({ guards, teachers, currentUser, gu
         const mySchedules = guardGroupSchedules.filter(s => s.profesor_id === currentUser.id);
         const isAdminOrJefatura = canAccessAdminPanel(currentUser);
         return mySchedules.length === 0 && isAdminOrJefatura;
-    });
+    // ── Estado de Grupo Resaltado por Clic en Histograma ──
+    const [highlightedGroupId, setHighlightedGroupId] = useState<string | null>(null);
+
+    const handleScrollToGroup = (shortLabel: string) => {
+        if (!shortLabel) return;
+        const targetElement = document.getElementById(`group-card-${shortLabel}`);
+        if (targetElement) {
+            targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setHighlightedGroupId(shortLabel);
+            setTimeout(() => {
+                setHighlightedGroupId(prev => (prev === shortLabel ? null : prev));
+            }, 3000);
+        }
+    };
 
     // ── Límite y Estado de Fechas para Exportación PDF ──────
     const today = useMemo(() => new Date(), []);
@@ -951,15 +996,28 @@ const Dashboard: React.FC<DashboardProps> = ({ guards, teachers, currentUser, gu
 
                             {/* Totales por Grupo/Franja (Histograma) */}
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 12 }}>
+                                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 2 }}>
                                     Guardias Realizadas por Franja Horaria
                                 </h4>
+                                <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: 10 }}>
+                                    💡 Haz clic en una franja (L1, L2...) para ir a su tarjeta
+                                </p>
                                 {globalStats.barData.length > 0 ? (
                                     <ResponsiveContainer width="100%" height={220}>
-                                        <BarChart data={globalStats.barData} barGap={1} margin={{ top: 20, right: 10, left: -20, bottom: 5 }}>
+                                        <BarChart 
+                                            data={globalStats.barData} 
+                                            barGap={1} 
+                                            margin={{ top: 20, right: 10, left: -20, bottom: 5 }}
+                                            style={{ cursor: 'pointer' }}
+                                            onClick={(state: any) => {
+                                                if (state && state.activeLabel) {
+                                                    handleScrollToGroup(state.activeLabel);
+                                                }
+                                            }}
+                                        >
                                             <XAxis 
                                                 dataKey="name" 
-                                                tick={{ fill: 'var(--text-muted)', fontSize: 7.5, fontWeight: 600 }}
+                                                tick={<CustomXAxisTick onTickClick={handleScrollToGroup} />}
                                                 interval={0}
                                                 axisLine={false}
                                                 tickLine={false}
@@ -1012,14 +1070,28 @@ const Dashboard: React.FC<DashboardProps> = ({ guards, teachers, currentUser, gu
                         </p>
                     </div>
                 ) : (
-                    groupsData.map((group, idx) => (
-                        <motion.div
-                            key={`${group.dia_semana}-${group.franja_id}`}
-                            {...cardAnim}
-                            transition={{ delay: idx * 0.1 }}
-                            className="card"
-                            style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}
-                        >
+                    groupsData.map((group, idx) => {
+                        const shortKey = getShortSlotLabel(group.dia_semana, group.time_slot_label, group.franja_id);
+                        const isHighlighted = highlightedGroupId === shortKey;
+
+                        return (
+                            <motion.div
+                                key={`${group.dia_semana}-${group.franja_id}`}
+                                id={`group-card-${shortKey}`}
+                                {...cardAnim}
+                                transition={{ delay: idx * 0.1 }}
+                                className="card"
+                                style={{ 
+                                    padding: 24, 
+                                    display: 'flex', 
+                                    flexDirection: 'column', 
+                                    gap: 20,
+                                    border: isHighlighted ? '2px solid var(--brand-400)' : undefined,
+                                    boxShadow: isHighlighted ? '0 0 25px rgba(6, 182, 212, 0.45)' : undefined,
+                                    transition: 'border 0.3s ease, box-shadow 0.3s ease',
+                                    scrollMarginTop: '120px',
+                                }}
+                            >
                             {/* Cabecera del Grupo */}
                             <div style={{
                                 display: 'flex',
