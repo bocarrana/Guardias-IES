@@ -124,16 +124,23 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
     const [showExportMenu, setShowExportMenu] = useState(false);
     const exportMenuRef = useRef<HTMLDivElement>(null);
 
-    // Close export menu when clicking outside
+    // Teacher picker dropdown state
+    const [isTeacherDropdownOpen, setIsTeacherDropdownOpen] = useState(false);
+    const teacherDropdownRef = useRef<HTMLDivElement>(null);
+
+    // Close menus when clicking outside
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
                 setShowExportMenu(false);
             }
+            if (teacherDropdownRef.current && !teacherDropdownRef.current.contains(e.target as Node)) {
+                setIsTeacherDropdownOpen(false);
+            }
         };
-        if (showExportMenu) document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [showExportMenu]);
+    }, []);
 
     const isAdmin = canManageLibreDisposicion(currentUser);
 
@@ -210,10 +217,15 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
     }, [ldRecords]);
 
     const filteredTeachers = useMemo(() => {
-        if (!searchQuery.trim()) return [];
-        const q = searchQuery.toLowerCase();
         const selectedIds = new Set(selectedTeachers.map(t => t.id));
-        return teachers.filter(t => t.name?.toLowerCase().includes(q) && !selectedIds.has(t.id)).slice(0, 8);
+        const available = teachers.filter(t => !selectedIds.has(t.id));
+        if (!searchQuery.trim()) {
+            return [...available].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        }
+        const q = searchQuery.toLowerCase();
+        return available
+            .filter(t => t.name?.toLowerCase().includes(q) || t.department?.toLowerCase().includes(q))
+            .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     }, [teachers, searchQuery, selectedTeachers]);
 
     const teacherLdCounts = useMemo(() => {
@@ -720,78 +732,107 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
                                                     </div>
                                                 )}
 
-                                                {/* Search input (always visible) */}
-                                                <div style={{ position: 'relative' }}>
-                                                    <div style={{ position: 'relative' }}>
-                                                        <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                                {/* Search input and dropdown */}
+                                                <div ref={teacherDropdownRef} style={{ position: 'relative' }}>
+                                                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                                        <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
                                                         <input
                                                             type="text"
                                                             value={searchQuery}
-                                                            onChange={e => setSearchQuery(e.target.value)}
+                                                            onChange={e => {
+                                                                setSearchQuery(e.target.value);
+                                                                setIsTeacherDropdownOpen(true);
+                                                            }}
+                                                            onFocus={() => setIsTeacherDropdownOpen(true)}
                                                             placeholder="Buscar y añadir profesores..."
                                                             style={{
-                                                                width: '100%', padding: '10px 14px 10px 36px',
+                                                                width: '100%', padding: '10px 38px 10px 36px',
                                                                 borderRadius: 10, border: '1px solid var(--border-subtle)',
                                                                 background: 'var(--bg-main)',
                                                                 color: 'var(--text-primary)', fontSize: '0.88rem',
                                                                 outline: 'none', boxSizing: 'border-box',
                                                             }}
                                                         />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setIsTeacherDropdownOpen(prev => !prev)}
+                                                            title={isTeacherDropdownOpen ? 'Cerrar lista' : 'Mostrar todos los profesores'}
+                                                            style={{
+                                                                position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                                                                background: 'none', border: 'none', cursor: 'pointer',
+                                                                padding: '4px 6px', borderRadius: 6,
+                                                                color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                transition: 'color 0.15s',
+                                                            }}
+                                                            onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+                                                            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                                                        >
+                                                            {isTeacherDropdownOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                                        </button>
                                                     </div>
                                                     <AnimatePresence>
-                                                        {filteredTeachers.length > 0 && (
+                                                        {isTeacherDropdownOpen && (
                                                             <motion.div
-                                                                initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                                                                initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                                                                 style={{
                                                                     position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
                                                                     background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
                                                                     borderRadius: 10, overflow: 'hidden', marginTop: 4,
                                                                     boxShadow: '0 12px 32px rgba(0,0,0,0.3)',
-                                                                    maxHeight: 220, overflowY: 'auto',
+                                                                    maxHeight: 250, overflowY: 'auto',
                                                                 }}
                                                             >
-                                                                {filteredTeachers.map(t => {
-                                                                    const tUsage = ldRecords.filter(r => r.profesor_id === t.id).length;
-                                                                    return (
-                                                                        <div
-                                                                            key={t.id}
-                                                                            onClick={() => { setSelectedTeachers(prev => [...prev, t]); setSearchQuery(''); }}
-                                                                            style={{
-                                                                                padding: '10px 14px', cursor: 'pointer',
-                                                                                fontSize: '0.85rem', borderBottom: '1px solid var(--border-subtle)',
-                                                                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                                                                transition: 'background 0.15s',
-                                                                            }}
-                                                                            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover, rgba(255,255,255,0.04))'}
-                                                                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                                                                        >
-                                                                            <div>
-                                                                                <div style={{ fontWeight: 600 }}>{t.name}</div>
-                                                                                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{t.department}</div>
+                                                                {filteredTeachers.length === 0 ? (
+                                                                    <div style={{ padding: '12px 14px', fontSize: '0.82rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                                                                        No se encontraron profesores
+                                                                    </div>
+                                                                ) : (
+                                                                    filteredTeachers.map(t => {
+                                                                        const tUsage = ldRecords.filter(r => r.profesor_id === t.id).length;
+                                                                        return (
+                                                                            <div
+                                                                                key={t.id}
+                                                                                onClick={() => {
+                                                                                    setSelectedTeachers(prev => [...prev, t]);
+                                                                                    setSearchQuery('');
+                                                                                }}
+                                                                                style={{
+                                                                                    padding: '10px 14px', cursor: 'pointer',
+                                                                                    fontSize: '0.85rem', borderBottom: '1px solid var(--border-subtle)',
+                                                                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                                                    transition: 'background 0.15s',
+                                                                                }}
+                                                                                onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover, rgba(255,255,255,0.04))'}
+                                                                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                                                            >
+                                                                                <div>
+                                                                                    <div style={{ fontWeight: 600 }}>{t.name}</div>
+                                                                                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{t.department}</div>
+                                                                                </div>
+                                                                                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                                                                    {t.active === false && (
+                                                                                        <span style={{ 
+                                                                                            fontSize: '0.6rem', fontWeight: 900, 
+                                                                                            padding: '1px 5px', borderRadius: 4, 
+                                                                                            background: 'rgba(239,68,68,0.15)', color: '#ef4444',
+                                                                                            border: '1px solid rgba(239,68,68,0.3)',
+                                                                                            textTransform: 'uppercase'
+                                                                                        }}>Baja</span>
+                                                                                    )}
+                                                                                    <span style={{
+                                                                                        fontSize: '0.68rem', fontWeight: 800,
+                                                                                        padding: '2px 7px', borderRadius: 6,
+                                                                                        background: tUsage >= MAX_LD_PER_TEACHER ? 'rgba(239,68,68,0.15)' : 'rgba(34,211,238,0.12)',
+                                                                                        color: tUsage >= MAX_LD_PER_TEACHER ? '#ef4444' : 'var(--brand-400)',
+                                                                                        border: '1px solid currentColor',
+                                                                                    }}>
+                                                                                        {tUsage}/{MAX_LD_PER_TEACHER}
+                                                                                    </span>
+                                                                                </div>
                                                                             </div>
-                                                                            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                                                                                {t.active === false && (
-                                                                                    <span style={{ 
-                                                                                        fontSize: '0.6rem', fontWeight: 900, 
-                                                                                        padding: '1px 5px', borderRadius: 4, 
-                                                                                        background: 'rgba(239,68,68,0.15)', color: '#ef4444',
-                                                                                        border: '1px solid rgba(239,68,68,0.3)',
-                                                                                        textTransform: 'uppercase'
-                                                                                    }}>Baja</span>
-                                                                                )}
-                                                                                <span style={{
-                                                                                    fontSize: '0.68rem', fontWeight: 800,
-                                                                                    padding: '2px 7px', borderRadius: 6,
-                                                                                    background: tUsage >= MAX_LD_PER_TEACHER ? 'rgba(239,68,68,0.15)' : 'rgba(34,211,238,0.12)',
-                                                                                    color: tUsage >= MAX_LD_PER_TEACHER ? '#ef4444' : 'var(--brand-400)',
-                                                                                    border: '1px solid currentColor',
-                                                                                }}>
-                                                                                    {tUsage}/{MAX_LD_PER_TEACHER}
-                                                                                </span>
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                })}
+                                                                        );
+                                                                    })
+                                                                )}
                                                             </motion.div>
                                                         )}
                                                     </AnimatePresence>
