@@ -67,7 +67,9 @@ const TeacherSelectionModal: React.FC<TeacherSelectionModalProps> = ({
         const slotStart = startH * 60 + startM;
         const slotEnd = endH * 60 + endM;
 
-        return nowMinutes >= slotStart && nowMinutes <= slotEnd;
+        // Margen de cortesía de 25 minutos de antelación para recoger guardias de la siguiente franja (ideal en recreos/cambios de clase)
+        const EARLY_MARGIN_MINUTES = 25;
+        return nowMinutes >= (slotStart - EARLY_MARGIN_MINUTES) && nowMinutes <= slotEnd;
     }, [guard]);
 
     const slotInfoText = useMemo(() => {
