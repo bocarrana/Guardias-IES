@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import ReactDOM from 'react-dom';
 import { AnimatePresence } from 'framer-motion';
 import { HelpCircle } from 'lucide-react';
 import { HELP_ITEMS, HelpItem } from '../../data/helpDictionary';
@@ -25,14 +26,51 @@ export const HelpBadge: React.FC<HelpBadgeProps> = ({
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const badgeRef = useRef<HTMLDivElement>(null);
+    const [coords, setCoords] = useState<{ top: number; left: number; placeAbove: boolean } | null>(null);
 
     const numSize = typeof size === 'number' ? size : size === 'sm' ? 18 : size === 'lg' ? 26 : 22;
     const helpData = item || HELP_ITEMS[helpKey];
 
-    // Close when clicking outside
+    const updatePosition = useCallback(() => {
+        if (!badgeRef.current) return;
+        const rect = badgeRef.current.getBoundingClientRect();
+        const CARD_WIDTH = Math.min(320, window.innerWidth - 32);
+        
+        // Calculate horizontal position clamped to viewport
+        const badgeCenterX = rect.left + rect.width / 2;
+        let left = badgeCenterX - CARD_WIDTH / 2;
+        left = Math.max(16, Math.min(left, window.innerWidth - CARD_WIDTH - 16));
+
+        // Calculate vertical position (place above if not enough space below)
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        const placeAbove = position === 'top' || (spaceBelow < 280 && spaceAbove > spaceBelow);
+
+        const top = placeAbove ? rect.top - 8 : rect.bottom + 8;
+
+        setCoords({ top, left, placeAbove });
+    }, [position]);
+
+    const handleToggle = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!isOpen) {
+            updatePosition();
+            setIsOpen(true);
+        } else {
+            setIsOpen(false);
+        }
+    };
+
+    // Close when clicking outside or scrolling / resizing
     useEffect(() => {
+        if (!isOpen) return;
+
         const handleClickOutside = (e: MouseEvent) => {
             if (badgeRef.current && !badgeRef.current.contains(e.target as Node)) {
+                // If click is not inside the portal popover
+                const popover = document.getElementById('help-badge-portal-popover');
+                if (popover && popover.contains(e.target as Node)) return;
                 setIsOpen(false);
             }
         };
@@ -43,32 +81,24 @@ export const HelpBadge: React.FC<HelpBadgeProps> = ({
             }
         };
 
-        if (isOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-            document.addEventListener('keydown', handleKeyDown);
-        }
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-            document.removeEventListener('keydown', handleKeyDown);
+        const handleScrollOrResize = () => {
+            updatePosition();
         };
-    }, [isOpen]);
+
+        document.addEventListener('mousedown', handleClickOutside, true);
+        document.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('resize', handleScrollOrResize);
+        window.addEventListener('scroll', handleScrollOrResize, true);
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside, true);
+            document.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('resize', handleScrollOrResize);
+            window.removeEventListener('scroll', handleScrollOrResize, true);
+        };
+    }, [isOpen, updatePosition]);
 
     if (!helpData) return null;
-
-    // Popover placement
-    const getPlacementStyles = (): React.CSSProperties => {
-        switch (position) {
-            case 'top':
-                return { bottom: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)' };
-            case 'left':
-                return { right: 'calc(100% + 8px)', top: '50%', transform: 'translateY(-50%)' };
-            case 'right':
-                return { left: 'calc(100% + 8px)', top: '50%', transform: 'translateY(-50%)' };
-            case 'bottom':
-            default:
-                return { top: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)' };
-        }
-    };
 
     return (
         <div
@@ -86,11 +116,7 @@ export const HelpBadge: React.FC<HelpBadgeProps> = ({
         >
             <button
                 type="button"
-                onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsOpen(prev => !prev);
-                }}
+                onClick={handleToggle}
                 title={helpData.title}
                 aria-label={`Ayuda: ${helpData.title}`}
                 style={{
@@ -132,24 +158,32 @@ export const HelpBadge: React.FC<HelpBadgeProps> = ({
                 <HelpCircle size={Math.round(numSize * 0.72)} />
             </button>
 
-            {/* Popover Card */}
-            <AnimatePresence>
-                {isOpen && (
-                    <div
-                        style={{
-                            position: 'absolute',
-                            zIndex: 1000,
-                            ...getPlacementStyles(),
-                        }}
-                    >
-                        <HelpCard
-                            item={helpData}
-                            onClose={() => setIsOpen(false)}
-                            onOpenFullHelp={onOpenFullHelp}
-                        />
-                    </div>
-                )}
-            </AnimatePresence>
+            {/* Portal Popover Card: prevents overflow / clipping by parent cards */}
+            {typeof document !== 'undefined' && ReactDOM.createPortal(
+                <AnimatePresence>
+                    {isOpen && coords && (
+                        <div
+                            id="help-badge-portal-popover"
+                            style={{
+                                position: 'fixed',
+                                top: coords.top,
+                                left: coords.left,
+                                zIndex: 99999,
+                                transform: coords.placeAbove ? 'translateY(-100%)' : 'none',
+                                pointerEvents: 'auto',
+                            }}
+                        >
+                            <HelpCard
+                                item={helpData}
+                                onClose={() => setIsOpen(false)}
+                                onOpenFullHelp={onOpenFullHelp}
+                            />
+                        </div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </div>
     );
 };
+

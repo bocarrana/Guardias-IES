@@ -20,6 +20,8 @@ export const HelpCard: React.FC<HelpCardProps> = ({ item, onClose, onOpenFullHel
             style={{
                 width: 320,
                 maxWidth: 'calc(100vw - 32px)',
+                maxHeight: 'calc(100vh - 32px)',
+                overflowY: 'auto',
                 background: 'rgba(15, 23, 42, 0.95)',
                 backdropFilter: 'blur(16px)',
                 WebkitBackdropFilter: 'blur(16px)',
