@@ -1117,7 +1117,7 @@ const GuardList: React.FC<GuardListProps> = ({
                                                         }}>
                                                             <div style={{ fontSize: isPantallaRole(currentUser?.role) ? '1.1rem' : '0.8rem', fontWeight: 600 }}>{g.requesting_teacher?.name || 'Varios'}</div>
                                                             <div style={{ fontSize: isPantallaRole(currentUser?.role) ? '0.9rem' : '0.7rem', color: 'var(--text-secondary)' }}>
-                                                                {g.type === GuardType.COEXISTENCE ? g.subject?.name : `${g.subject?.name || ''}${g.group?.name ? ` - ${g.group.name}` : ''}`}
+                                                                {g.type === GuardType.COEXISTENCE ? (g.subject?.name || 'Convivencia') : `${g.subject?.name || ''}${g.group?.name ? ` - ${g.group.name}` : ''}`}
                                                             </div>
                                                             <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -2301,7 +2301,7 @@ const GuardList: React.FC<GuardListProps> = ({
                                                     ) : (
                                                         <BookOpen style={{ width: 20, height: 20, color: 'var(--brand-500)' }} />
                                                     )}
-                                                    {guard.subject?.name || 'Materia'}
+                                                    {guard.type === GuardType.COEXISTENCE ? (guard.subject?.name || 'Convivencia') : (guard.subject?.name || 'Materia')}
                                                     {guard.type !== GuardType.COEXISTENCE && (
                                                         <>
                                                             <span style={{ color: 'var(--border-subtle)', fontWeight: 400, fontSize: '0.9rem' }}>|</span>
