@@ -22,6 +22,7 @@ import { CalendarDay } from '../types';
 import { toast } from 'sonner';
 import { exportLdPDF, exportLdExcel, ExportGrouping, ExportFormat } from '../utils/ldExport';
 import { MonthDayPicker } from './MonthDayPicker';
+import { HelpBadge } from './help';
 
 interface LibreDisposicionPanelProps {
     currentUser: Teacher | null;
@@ -447,9 +448,12 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
                         <Users size={26} style={{ color: 'var(--brand-400)' }} />
                     </div>
                     <div>
-                        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: 'var(--heading-color)' }}>
-                            Gestión de Libre Disposición
-                        </h2>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: 'var(--heading-color)' }}>
+                                Gestión de Libre Disposición
+                            </h2>
+                            <HelpBadge helpKey="libre_disposicion_rules" size="sm" />
+                        </div>
                         <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                             {isAdmin ? 'Panel de Administrador · Permisos y cupos' : 'Mis días de libre disposición'}
                         </p>

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, ListTodo, Users, Plus, LogOut, Database, Clock, Info, Menu, CalendarRange, MapPin, Map, CalendarDays, Bookmark, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { LayoutDashboard, ListTodo, Users, Plus, LogOut, Database, Clock, Info, Menu, CalendarRange, MapPin, Map, CalendarDays, Bookmark, ChevronsLeft, ChevronsRight, HelpCircle } from 'lucide-react';
 import { Teacher, ViewType } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { LOGO_DARK_URL, LOGO_LIGHT_URL } from '../config/supabase';
@@ -12,6 +12,7 @@ import AboutInfo from './AboutInfo';
 import PrivacyModal from './PrivacyModal';
 import CrownLogo from './CrownLogo';
 import { canAccessAdminPanel, canAccessMySchedule, canAccessDashboard, canAccessFreeClassrooms, isAdministracionRole, isPantallaRole, getRoleDisplayName } from '../utils/roles';
+import { HelpCenterModal } from './help';
 
 
 
@@ -58,11 +59,28 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, view, onViewChange, onCrea
     const { theme } = useTheme();
     const [isAboutOpen, setIsAboutOpen] = React.useState(false);
     const [isPrivacyOpen, setIsPrivacyOpen] = React.useState(false);
+    const [isHelpOpen, setIsHelpOpen] = React.useState(false);
     const [isMobile, setIsMobile] = React.useState(window.innerWidth <= 768);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = React.useState(() => {
         try { return localStorage.getItem('sidebar-collapsed') === 'true'; } catch { return false; }
     });
+
+    // Global keyboard shortcut: ? or F1 to open Help
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const target = e.target as HTMLElement;
+            if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+                return;
+            }
+            if (e.key === '?' || e.key === 'F1') {
+                e.preventDefault();
+                setIsHelpOpen(prev => !prev);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     const toggleSidebar = () => {
         setSidebarCollapsed(prev => {
@@ -283,6 +301,35 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, view, onViewChange, onCrea
                         </div>
                     )}
                 </div>
+
+                {!isPantallaRole(currentUser?.role) && (
+                    <button
+                        onClick={() => setIsHelpOpen(true)}
+                        className="nav-item-btn"
+                        style={{
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: collapsed ? 'center' : 'flex-start',
+                            gap: collapsed ? 0 : 8,
+                            padding: collapsed ? '8px 0' : '8px 12px',
+                            borderRadius: 'var(--radius-md)',
+                            fontWeight: 700,
+                            fontSize: '0.74rem',
+                            cursor: 'pointer',
+                            border: '1px solid rgba(34, 211, 238, 0.25)',
+                            background: 'rgba(34, 211, 238, 0.08)',
+                            color: 'var(--brand-400, #22d3ee)',
+                            marginBottom: 8,
+                            transition: 'all 0.2s',
+                        }}
+                        title="Centro de Ayuda y Guías (?)"
+                    >
+                        <HelpCircle style={{ width: 15, height: 15 }} />
+                        {!collapsed && <span>Ayuda y Guías (?)</span>}
+                        {collapsed && <span className="premium-tooltip">Ayuda y Guías (?)</span>}
+                    </button>
+                )}
                 <button
                     onClick={logout}
                     className="btn btn-danger-subtle nav-item-btn"
@@ -512,7 +559,7 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, view, onViewChange, onCrea
                         alignItems: 'center',
                     }}></div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div style={{
                             padding: '6px 12px',
                             borderRadius: 'var(--radius-full, 999px)',
@@ -523,6 +570,31 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, view, onViewChange, onCrea
                         }} className="hide-mobile">
                             <ThemeToggle compact />
                         </div>
+
+                        <motion.button
+                            whileHover={{ scale: 1.04 }}
+                            whileTap={{ scale: 0.96 }}
+                            onClick={() => setIsHelpOpen(true)}
+                            title="Centro de Ayuda y Guías (?)"
+                            style={{
+                                padding: '6px 14px',
+                                borderRadius: 'var(--radius-full, 999px)',
+                                border: '1px solid rgba(34, 211, 238, 0.3)',
+                                background: 'rgba(34, 211, 238, 0.08)',
+                                color: 'var(--brand-400, #22d3ee)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                cursor: 'pointer',
+                                fontSize: '0.78rem',
+                                fontWeight: 700,
+                                transition: 'all 0.2s',
+                            }}
+                            className="hide-mobile"
+                        >
+                            <HelpCircle size={15} />
+                            <span>Ayuda</span>
+                        </motion.button>
 
                         {view === 'guards' && !isAdministracionRole(currentUser?.role) && (
                             <motion.button
@@ -581,12 +653,7 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, view, onViewChange, onCrea
                         color: 'var(--text-secondary)',
                         borderRadius: '50%',
                         width: 44,
-                        height: 44,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        backdropFilter: 'blur(8px)',
+                                            backdropFilter: 'blur(8px)',
                         transition: 'all 0.3s ease',
                         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
                     }}
@@ -611,6 +678,17 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, view, onViewChange, onCrea
             {/* Consolidado: Una única instancia para Desktop y Móvil */}
             <AboutInfo isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} isMobile={isMobile} />
             <PrivacyModal isOpen={isPrivacyOpen} onClose={() => setIsPrivacyOpen(false)} />
+            <HelpCenterModal
+                isOpen={isHelpOpen}
+                onClose={() => setIsHelpOpen(false)}
+                initialTab={
+                    view === 'admin' || view === 'libre_disposicion'
+                        ? 'jefatura'
+                        : isPantallaRole(currentUser?.role)
+                        ? 'tv'
+                        : 'docentes'
+                }
+            />
         </div>
     );
 };

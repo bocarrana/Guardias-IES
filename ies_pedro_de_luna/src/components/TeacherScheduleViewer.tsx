@@ -6,6 +6,7 @@ import { Teacher, MetaOptions, PersonalScheduleEntry, GuardGroupSchedule } from 
 import { getPersonalSchedule } from '../services/supabaseClient';
 import TeacherAvatar from './TeacherAvatar';
 import ClassroomMapModal from './ClassroomMapModal';
+import { HelpBadge } from './help';
 
 const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
 const isBreak = (label?: string) => label?.toLowerCase().includes('recreo');
@@ -108,6 +109,7 @@ const TeacherScheduleViewer: React.FC<Props> = ({ teacher, meta, onClose }) => {
                         <Pill icon={<BookOpen size={11}/>} value={slotCounts.lectivoTotal} label="clases" color="#22d3ee" />
                         <Pill icon={<Shield size={11}/>}   value={slotCounts.guardiasOrd} label="guardias" color="#34d399" />
                         <Pill icon={<Coffee size={11}/>}   value={slotCounts.guardiasRec} label="recreos"  color="#fbbf24" />
+                        <HelpBadge helpKey="schedule_config" size="sm" />
                     </div>
 
                     {/* Close */}

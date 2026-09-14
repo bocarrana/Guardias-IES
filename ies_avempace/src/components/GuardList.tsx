@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { canAccessAdminPanel, isAdministracionRole, isPantallaRole, isAdminRole, isJefaturaRole } from '../utils/roles';
 import { rankTeachers } from '../utils/guardAssignment';
 import { LOGO_DARK_URL } from '../config/supabase';
+import { HelpBadge } from './help';
 
 interface ScrollableAvatarsProps {
     children: React.ReactNode;
@@ -765,6 +766,7 @@ const GuardList: React.FC<GuardListProps> = ({
                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                 <Zap size={isPantallaRole(currentUser?.role) ? 24 : 20} className="text-glow-brand" style={{ color: 'var(--brand-500)' }} />
                                 {currentSlot ? `Entorno de Guardias — ${currentDay}` : 'Entorno próximas guardias'}
+                                <HelpBadge helpKey={isPantallaRole(currentUser?.role) ? "tv_instructions" : "assignment_modes"} size="sm" />
                             </div>
 
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

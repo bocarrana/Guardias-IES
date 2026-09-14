@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { PersonalScheduleEntry } from '../types';
 import { useEffect } from 'react';
 import { canAccessAdminPanel } from '../utils/roles';
+import { HelpBadge } from './help';
 
 interface GuardModalProps {
     editingGuard: Guard | null;
@@ -261,6 +262,7 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
                             boxShadow: '0 0 10px var(--brand-500)',
                         }} />
                         {editingGuard ? 'Editar Guardia' : 'Solicitar Guardia'}
+                        <HelpBadge helpKey="guard_types" size="sm" />
                     </h3>
                     <button
                         onClick={onClose}
@@ -380,6 +382,7 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
                                 <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--brand-400)', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
                                     ⚡ Selección de clases del día ({daySchedule.length}):
+                                    <HelpBadge helpKey="guard_multi_select" size="sm" />
                                 </p>
                                 <button
                                     type="button"

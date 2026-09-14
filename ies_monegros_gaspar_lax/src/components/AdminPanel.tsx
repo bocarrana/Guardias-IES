@@ -39,6 +39,7 @@ import {
 import Papa from 'papaparse';
 import CrownLogo from './CrownLogo';
 import { MonthDayPicker } from './MonthDayPicker';
+import { HelpBadge } from './help';
 import {
     uploadCenterLogo,
     deleteCenterLogo,
@@ -928,9 +929,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                     fontSize: '0.75rem',
                     color: 'var(--text-muted)',
                     marginLeft: 'auto',
-                    fontFamily: 'var(--font-mono)'
+                    fontFamily: 'var(--font-mono)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
                 }}>
                     ESTADO: <span style={{ color: 'var(--brand-400)' }}>MODO ADMINISTRADOR</span>
+                    <HelpBadge helpKey="substitute_cloning" size="sm" />
                 </div>
             </div>
 

@@ -6,6 +6,7 @@ import { getStorageUrl } from '../services/supabaseClient';
 import TeacherAvatar from './TeacherAvatar';
 import TeacherScheduleViewer from './TeacherScheduleViewer';
 import { canEditTeacherProfile, isJefaturaRole, getRoleStyle, getRoleDisplayName } from '../utils/roles';
+import { HelpBadge } from './help';
 
 interface TeacherDirectoryProps {
     teachers: Teacher[];
@@ -118,7 +119,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, guards, m
 
             {/* Summary */}
             <div style={{
-                display: 'flex', gap: 12, flexWrap: 'wrap',
+                display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center',
                 borderBottom: '1px solid var(--border-subtle)',
                 paddingBottom: 16,
             }}>
@@ -128,6 +129,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, guards, m
                 }}>
                     REGISTROS: <span style={{ color: 'var(--brand-400)', fontWeight: 700 }}>{filtered.length}</span>
                 </span>
+                <HelpBadge helpKey="directory_views" size="sm" />
             </div>
 
             {/* Teacher Grid */}
