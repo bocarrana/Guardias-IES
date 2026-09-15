@@ -4,7 +4,7 @@ import { Guard, GuardStatus, GuardType, Teacher, MetaOptions, GuardGroupSchedule
 import {
     User, Calendar, Clock, MapPin, CheckCircle, Zap,
     BookOpen, Shield, Pencil, Trash2, FileText, Search, Loader2, AlertTriangle,
-    ChevronLeft, ChevronRight, X, Dices, ChevronDown, MessageSquare, FileCheck, RotateCw, Filter, RotateCcw
+    ChevronLeft, ChevronRight, X, Dices, ChevronDown, MessageSquare, FileCheck, RotateCw
 } from 'lucide-react';
 import { getStorageUrl, getTaskFileUrl } from '../services/supabaseClient';
 import { Download } from 'lucide-react';
@@ -1777,14 +1777,14 @@ const GuardList: React.FC<GuardListProps> = ({
                         backdropFilter: 'blur(12px)',
                         border: '1px solid rgba(255, 255, 255, 0.05)',
                         borderRadius: 'var(--radius-xl)',
-                        padding: '18px 20px',
+                        padding: '20px',
                         display: 'flex',
                         flexDirection: 'column',
                         gap: 16,
                         marginTop: 16,
                         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
                     }}>
-                        {/* Top Row: Title, Active Filters & Toggle */}
+                        {/* Top Row: Title & Toggle */}
                         <div style={{
                             display: 'flex',
                             justifyContent: 'space-between',
@@ -1794,93 +1794,44 @@ const GuardList: React.FC<GuardListProps> = ({
                             borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
                             paddingBottom: 12
                         }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <div style={{
-                                    width: 28,
-                                    height: 28,
-                                    borderRadius: 'var(--radius-md)',
-                                    background: 'rgba(6, 182, 212, 0.12)',
-                                    border: '1px solid rgba(6, 182, 212, 0.25)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    color: 'var(--brand-400)'
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <Calendar size={18} style={{ color: 'var(--brand-400)' }} />
+                                <h3 style={{
+                                    margin: 0,
+                                    fontSize: '0.95rem',
+                                    fontWeight: 800,
+                                    color: 'white',
+                                    letterSpacing: '0.02em'
                                 }}>
-                                    <Filter size={15} />
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <h3 style={{
-                                        margin: 0,
-                                        fontSize: '0.92rem',
-                                        fontWeight: 800,
-                                        color: 'white',
-                                        letterSpacing: '0.02em'
-                                    }}>
-                                        Filtros de guardia
-                                    </h3>
-                                    {(selectedDate !== null || selectedSlotId !== null || onlyCompatible) && (
-                                        <motion.button
-                                            initial={{ opacity: 0, scale: 0.9 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            onClick={() => {
-                                                setSelectedDate(null);
-                                                setSelectedSlotId(null);
-                                                setOnlyCompatible(false);
-                                            }}
-                                            style={{
-                                                background: 'rgba(239, 68, 68, 0.12)',
-                                                border: '1px solid rgba(239, 68, 68, 0.3)',
-                                                color: '#f87171',
-                                                borderRadius: 'var(--radius-full)',
-                                                padding: '2px 9px',
-                                                fontSize: '0.7rem',
-                                                fontWeight: 700,
-                                                cursor: 'pointer',
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                gap: 4,
-                                                transition: 'all 0.2s'
-                                            }}
-                                        >
-                                            <RotateCcw size={10} />
-                                            <span>Restablecer</span>
-                                        </motion.button>
-                                    )}
-                                </div>
+                                    Filtro temporal
+                                </h3>
                             </div>
 
                             {currentUser && !isAdministracionRole(currentUser?.role) && (
-                                <div
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 10,
-                                        cursor: 'pointer',
-                                        background: onlyCompatible ? 'rgba(6, 182, 212, 0.12)' : 'rgba(30, 41, 59, 0.35)',
-                                        padding: '6px 14px',
-                                        borderRadius: 'var(--radius-full)',
-                                        border: '1px solid ' + (onlyCompatible ? 'rgba(6, 182, 212, 0.4)' : 'rgba(255, 255, 255, 0.06)'),
-                                        boxShadow: onlyCompatible ? '0 0 12px rgba(6, 182, 212, 0.15)' : 'none',
-                                        transition: 'all 0.3s ease'
-                                    }}
-                                    onClick={() => setOnlyCompatible(!onlyCompatible)}
-                                >
-                                    <Zap size={14} style={{ color: onlyCompatible ? 'var(--brand-400)' : 'var(--text-muted)' }} />
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 10,
+                                    cursor: 'pointer',
+                                    background: 'rgba(30, 41, 59, 0.3)',
+                                    padding: '6px 12px',
+                                    borderRadius: 'var(--radius-full)',
+                                    border: '1px solid ' + (onlyCompatible ? 'rgba(6, 182, 212, 0.3)' : 'rgba(255, 255, 255, 0.05)'),
+                                    transition: 'all 0.3s ease'
+                                }} onClick={() => setOnlyCompatible(!onlyCompatible)}>
                                     <span style={{
                                         fontSize: '0.8rem',
                                         fontWeight: 700,
-                                        color: onlyCompatible ? '#fff' : 'var(--text-secondary)',
+                                        color: onlyCompatible ? 'var(--brand-400)' : 'var(--text-secondary)',
                                         transition: 'color 0.2s'
                                     }}>
                                         Compatibles con mi horario
                                     </span>
                                     <div style={{
-                                        width: 34,
-                                        height: 18,
-                                        borderRadius: 9,
-                                        background: onlyCompatible ? 'var(--brand-500)' : 'var(--slate-700)',
+                                        width: 36,
+                                        height: 20,
+                                        borderRadius: 10,
+                                        background: onlyCompatible ? 'var(--brand-600)' : 'var(--slate-700)',
                                         padding: 2,
                                         display: 'flex',
                                         alignItems: 'center',
@@ -1890,8 +1841,8 @@ const GuardList: React.FC<GuardListProps> = ({
                                         <motion.div
                                             layout
                                             style={{
-                                                width: 14,
-                                                height: 14,
+                                                width: 16,
+                                                height: 16,
                                                 borderRadius: '50%',
                                                 background: '#fff',
                                                 boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
@@ -1902,61 +1853,44 @@ const GuardList: React.FC<GuardListProps> = ({
                             )}
                         </div>
 
-                        {/* Middle: Unified Date Filter */}
+                        {/* Middle: Scrollable Date Selector */}
                         {availableDates.length > 0 ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                 <div style={{
                                     display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 6,
-                                    color: 'var(--text-muted)',
-                                    fontSize: '0.72rem',
-                                    fontWeight: 700,
-                                    fontFamily: 'var(--font-mono)',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.06em'
-                                }}>
-                                    <Calendar size={13} style={{ color: 'var(--brand-400)' }} />
-                                    <span>Filtrar por fecha</span>
-                                </div>
-
-                                <div style={{
-                                    display: 'flex',
                                     gap: 8,
                                     overflowX: 'auto',
-                                    padding: '4px 2px 6px 2px',
+                                    padding: '10px 8px 8px 8px',
                                     scrollbarWidth: 'none',
                                     WebkitOverflowScrolling: 'touch'
                                 }} className="hide-scrollbar">
-                                    {/* Option "Todas las fechas" */}
+                                    {/* Option "Todos" */}
                                     <motion.button
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
+                                        whileHover={{ scale: 1.03 }}
+                                        whileTap={{ scale: 0.97 }}
                                         onClick={() => setSelectedDate(null)}
                                         style={{
-                                            display: 'inline-flex',
+                                            display: 'flex',
+                                            flexDirection: 'column',
                                             alignItems: 'center',
-                                            gap: 7,
-                                            padding: '6px 14px',
-                                            borderRadius: 'var(--radius-full)',
-                                            fontSize: '0.78rem',
-                                            fontWeight: 700,
-                                            cursor: 'pointer',
+                                            justifyContent: 'center',
+                                            minWidth: '64px',
+                                            height: '74px',
+                                            borderRadius: 'var(--radius-lg)',
                                             border: selectedDate === null
-                                                ? '1px solid var(--brand-400)'
+                                                ? '2px solid var(--brand-400)'
                                                 : '1px solid rgba(255, 255, 255, 0.08)',
                                             background: selectedDate === null
-                                                ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(8, 145, 178, 0.35))'
-                                                : 'rgba(30, 41, 59, 0.45)',
-                                            color: selectedDate === null ? '#fff' : 'var(--text-secondary)',
+                                                ? 'rgba(6, 182, 212, 0.15)'
+                                                : 'rgba(30, 41, 59, 0.35)',
+                                            color: selectedDate === null ? 'var(--brand-400)' : 'var(--text-secondary)',
+                                            cursor: 'pointer',
                                             transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                            boxShadow: selectedDate === null ? '0 0 12px rgba(6, 182, 212, 0.25)' : 'none',
-                                            whiteSpace: 'nowrap',
-                                            flexShrink: 0
+                                            boxShadow: selectedDate === null ? '0 0 15px rgba(6, 182, 212, 0.25)' : 'none',
                                         }}
                                     >
-                                        <Calendar size={13} style={{ opacity: selectedDate === null ? 1 : 0.7 }} />
-                                        <span>Todas las fechas</span>
+                                        <Calendar size={18} style={{ marginBottom: 4 }} />
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 800 }}>Todos</span>
                                     </motion.button>
 
                                     {/* Date pills */}
@@ -1968,58 +1902,76 @@ const GuardList: React.FC<GuardListProps> = ({
                                         return (
                                             <motion.button
                                                 key={dateStr}
-                                                whileHover={{ scale: 1.02 }}
-                                                whileTap={{ scale: 0.98 }}
+                                                whileHover={{ scale: 1.03 }}
+                                                whileTap={{ scale: 0.97 }}
                                                 onClick={() => setSelectedDate(dateStr)}
                                                 style={{
-                                                    display: 'inline-flex',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
                                                     alignItems: 'center',
-                                                    gap: 7,
-                                                    padding: '6px 14px',
-                                                    borderRadius: 'var(--radius-full)',
-                                                    fontSize: '0.78rem',
-                                                    fontWeight: 700,
-                                                    cursor: 'pointer',
+                                                    justifyContent: 'center',
+                                                    minWidth: '64px',
+                                                    height: '74px',
+                                                    borderRadius: 'var(--radius-lg)',
                                                     border: isSelected
-                                                        ? '1px solid var(--brand-400)'
+                                                        ? '2px solid var(--brand-400)'
                                                         : '1px solid rgba(255, 255, 255, 0.08)',
                                                     background: isSelected
-                                                        ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(8, 145, 178, 0.35))'
-                                                        : 'rgba(30, 41, 59, 0.45)',
-                                                    color: isSelected ? '#fff' : 'var(--text-secondary)',
+                                                        ? 'rgba(6, 182, 212, 0.15)'
+                                                        : 'rgba(30, 41, 59, 0.35)',
+                                                    color: isSelected ? 'var(--brand-400)' : 'var(--text-secondary)',
+                                                    cursor: 'pointer',
                                                     transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                                    boxShadow: isSelected ? '0 0 12px rgba(6, 182, 212, 0.25)' : 'none',
-                                                    whiteSpace: 'nowrap',
-                                                    flexShrink: 0
+                                                    boxShadow: isSelected ? '0 0 15px rgba(6, 182, 212, 0.25)' : 'none',
+                                                    position: 'relative',
                                                 }}
                                             >
-                                                {isToday && (
-                                                    <span style={{
-                                                        width: 6,
-                                                        height: 6,
-                                                        borderRadius: '50%',
-                                                        background: 'var(--warning)',
-                                                        boxShadow: '0 0 6px var(--warning)',
-                                                        display: 'inline-block'
-                                                    }} />
-                                                )}
-                                                <span>
-                                                    {isToday ? 'Hoy · ' : ''}{dayName} {dayNum} {monthName}
+                                                <span style={{
+                                                    fontSize: '0.6rem',
+                                                    fontWeight: 800,
+                                                    textTransform: 'uppercase',
+                                                    opacity: isSelected ? 1 : 0.6,
+                                                    color: isToday ? 'var(--warning)' : undefined,
+                                                    letterSpacing: '0.05em'
+                                                }}>
+                                                    {dayName} {isToday && '•'}
+                                                </span>
+                                                <span style={{
+                                                    fontSize: '1.25rem',
+                                                    fontWeight: 900,
+                                                    lineHeight: 1,
+                                                    margin: '3px 0'
+                                                }}>
+                                                    {dayNum}
+                                                </span>
+                                                <span style={{
+                                                    fontSize: '0.6rem',
+                                                    fontWeight: 800,
+                                                    textTransform: 'uppercase',
+                                                    opacity: isSelected ? 1 : 0.6,
+                                                    letterSpacing: '0.05em'
+                                                }}>
+                                                    {monthName}
                                                 </span>
 
                                                 {/* Guard Count Badge */}
                                                 {count > 0 && (
                                                     <span style={{
-                                                        background: isSelected ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.08)',
+                                                        position: 'absolute',
+                                                        top: -4,
+                                                        right: -4,
+                                                        background: isSelected ? 'var(--brand-500)' : 'rgba(15, 23, 42, 0.8)',
+                                                        border: '1.5px solid ' + (isSelected ? 'var(--brand-400)' : 'rgba(255,255,255,0.15)'),
                                                         color: isSelected ? '#fff' : 'var(--brand-400)',
-                                                        fontSize: '0.68rem',
-                                                        fontWeight: 800,
-                                                        padding: '1px 6px',
-                                                        borderRadius: 'var(--radius-full)',
-                                                        border: isSelected ? '1px solid rgba(255, 255, 255, 0.4)' : '1px solid rgba(255, 255, 255, 0.06)',
-                                                        minWidth: '18px',
-                                                        textAlign: 'center',
-                                                        boxShadow: isSelected ? '0 0 8px rgba(255, 255, 255, 0.2)' : 'none'
+                                                        fontSize: '0.55rem',
+                                                        fontWeight: 900,
+                                                        borderRadius: '50%',
+                                                        width: 17,
+                                                        height: 17,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
                                                     }}>
                                                         {count}
                                                     </span>
@@ -2031,10 +1983,10 @@ const GuardList: React.FC<GuardListProps> = ({
                             </div>
                         ) : (
                             <div style={{
-                                padding: '14px',
+                                padding: '16px',
                                 textAlign: 'center',
                                 color: 'var(--text-muted)',
-                                fontSize: '0.82rem',
+                                fontSize: '0.85rem',
                                 background: 'rgba(30, 41, 59, 0.15)',
                                 borderRadius: 'var(--radius-lg)',
                                 border: '1px dashed rgba(255, 255, 255, 0.05)'
@@ -2043,7 +1995,7 @@ const GuardList: React.FC<GuardListProps> = ({
                             </div>
                         )}
 
-                        {/* Bottom: Unified Slot Filter */}
+                        {/* Bottom: Slot Pills */}
                         {availableSlots.length > 0 && (
                             <div style={{
                                 display: 'flex',
@@ -2057,52 +2009,38 @@ const GuardList: React.FC<GuardListProps> = ({
                                     alignItems: 'center',
                                     gap: 6,
                                     color: 'var(--text-muted)',
-                                    fontSize: '0.72rem',
+                                    fontSize: '0.75rem',
                                     fontWeight: 700,
                                     fontFamily: 'var(--font-mono)',
                                     textTransform: 'uppercase',
-                                    letterSpacing: '0.06em'
+                                    letterSpacing: '0.05em'
                                 }}>
-                                    <Clock size={13} style={{ color: 'var(--brand-400)' }} />
+                                    <Clock size={12} />
                                     <span>Filtrar por tramo horario</span>
                                 </div>
 
-                                <div style={{
-                                    display: 'flex',
-                                    gap: 8,
-                                    overflowX: 'auto',
-                                    padding: '4px 2px 6px 2px',
-                                    scrollbarWidth: 'none',
-                                    WebkitOverflowScrolling: 'touch'
-                                }} className="hide-scrollbar">
+                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                                     <motion.button
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={() => setSelectedSlotId(null)}
                                         style={{
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: 7,
-                                            padding: '6px 14px',
+                                            padding: '4px 12px',
                                             borderRadius: 'var(--radius-full)',
-                                            fontSize: '0.78rem',
+                                            fontSize: '0.75rem',
                                             fontWeight: 700,
                                             cursor: 'pointer',
                                             border: selectedSlotId === null
                                                 ? '1px solid var(--brand-400)'
                                                 : '1px solid rgba(255, 255, 255, 0.08)',
                                             background: selectedSlotId === null
-                                                ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(8, 145, 178, 0.35))'
-                                                : 'rgba(30, 41, 59, 0.45)',
-                                            color: selectedSlotId === null ? '#fff' : 'var(--text-secondary)',
-                                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                            boxShadow: selectedSlotId === null ? '0 0 12px rgba(6, 182, 212, 0.25)' : 'none',
-                                            whiteSpace: 'nowrap',
-                                            flexShrink: 0
+                                                ? 'rgba(6, 182, 212, 0.15)'
+                                                : 'rgba(30, 41, 59, 0.35)',
+                                            color: selectedSlotId === null ? 'var(--brand-400)' : 'var(--text-secondary)',
+                                            transition: 'all 0.2s',
                                         }}
                                     >
-                                        <Clock size={13} style={{ opacity: selectedSlotId === null ? 1 : 0.7 }} />
-                                        <span>Todos los tramos</span>
+                                        Todos los tramos
                                     </motion.button>
 
                                     {availableSlots.map(slot => {
@@ -2129,40 +2067,33 @@ const GuardList: React.FC<GuardListProps> = ({
                                                 whileTap={{ scale: 0.98 }}
                                                 onClick={() => setSelectedSlotId(slot.id)}
                                                 style={{
-                                                    display: 'inline-flex',
-                                                    alignItems: 'center',
-                                                    gap: 7,
-                                                    padding: '6px 14px',
+                                                    padding: '4px 12px',
                                                     borderRadius: 'var(--radius-full)',
-                                                    fontSize: '0.78rem',
+                                                    fontSize: '0.75rem',
                                                     fontWeight: 700,
                                                     cursor: 'pointer',
                                                     border: isSelected
                                                         ? '1px solid var(--brand-400)'
                                                         : '1px solid rgba(255, 255, 255, 0.08)',
                                                     background: isSelected
-                                                        ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(8, 145, 178, 0.35))'
-                                                        : 'rgba(30, 41, 59, 0.45)',
-                                                    color: isSelected ? '#fff' : 'var(--text-secondary)',
-                                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                                    boxShadow: isSelected ? '0 0 12px rgba(6, 182, 212, 0.25)' : 'none',
-                                                    whiteSpace: 'nowrap',
-                                                    flexShrink: 0
+                                                        ? 'rgba(6, 182, 212, 0.15)'
+                                                        : 'rgba(30, 41, 59, 0.35)',
+                                                    color: isSelected ? 'var(--brand-400)' : 'var(--text-secondary)',
+                                                    transition: 'all 0.2s',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: 6
                                                 }}
                                             >
                                                 <span>{slot.label}</span>
                                                 {slotCount > 0 && (
                                                     <span style={{
-                                                        background: isSelected ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.08)',
-                                                        color: isSelected ? '#fff' : 'var(--brand-400)',
-                                                        fontSize: '0.68rem',
+                                                        background: isSelected ? 'var(--brand-500)' : 'rgba(255,255,255,0.1)',
+                                                        color: isSelected ? '#fff' : 'var(--text-secondary)',
+                                                        fontSize: '0.6rem',
                                                         fontWeight: 800,
-                                                        padding: '1px 6px',
-                                                        borderRadius: 'var(--radius-full)',
-                                                        border: isSelected ? '1px solid rgba(255, 255, 255, 0.4)' : '1px solid rgba(255, 255, 255, 0.06)',
-                                                        minWidth: '18px',
-                                                        textAlign: 'center',
-                                                        boxShadow: isSelected ? '0 0 8px rgba(255, 255, 255, 0.2)' : 'none'
+                                                        padding: '1px 5px',
+                                                        borderRadius: 'var(--radius-full)'
                                                     }}>
                                                         {slotCount}
                                                     </span>
