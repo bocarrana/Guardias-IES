@@ -36,14 +36,6 @@ export const useGuards = (isAuthenticated: boolean) => {
             setTeachers(teachersData);
             setMeta(metaData);
             setGuardGroupSchedules(schedulesData);
-
-            // Sincronizar automáticamente permisos de libre disposición que entren en la ventana de 24h
-            syncImminentLibreDisposicionGuards().then(created => {
-                if (created > 0) {
-                    invalidateCache('guards');
-                    getGuards().then(setGuards).catch(console.error);
-                }
-            }).catch(console.error);
         } catch (err) {
             console.error('Failed to fetch data:', err);
         } finally {
@@ -58,13 +50,14 @@ export const useGuards = (isAuthenticated: boolean) => {
         }
     }, [isAuthenticated, fetchData]);
 
-    // Polling de respaldo cada 30 segundos (vital para TV y conexiones suspendidas)
+    // Polling de respaldo pasivo cada 90 segundos si la pestaña está visible (salvaguarda si WebSocket se suspende)
     useEffect(() => {
         if (!isAuthenticated) return;
         const interval = setInterval(() => {
-            invalidateCache('guards');
-            getGuards().then(setGuards).catch(console.error);
-        }, 30000);
+            if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+                getGuards().then(setGuards).catch(console.error);
+            }
+        }, 90000);
         return () => clearInterval(interval);
     }, [isAuthenticated]);
 

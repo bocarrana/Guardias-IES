@@ -90,14 +90,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return;
             }
 
-            const sess = await getCurrentSession();
+            const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 6000));
+            const sess = await Promise.race([getCurrentSession(), timeoutPromise]);
             console.log('Verificando sesión:', sess?.user?.email);
 
             if (sess?.user?.email) {
                 const email = sess.user.email.toLowerCase();
 
-                // Validar que el profesor existe en la base de datos
-                const teacher = await getTeacherByEmail(email);
+                // Validar que el profesor existe en la base de datos (con timeout de seguridad de 6s)
+                const teacher = await Promise.race([getTeacherByEmail(email), timeoutPromise]);
                 console.log('Resultado búsqueda profesor:', teacher ? 'Encontrado' : 'No encontrado');
 
                 if (teacher) {
@@ -113,10 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     setSession(null);
                     setRealUser(null);
                     setCurrentUser(null);
-                    setAuthError(`Acceso denegado: El email "${email}" no está registrado en la base de datos. Contacte con Jefatura de Estudios.`);
-
-                    const { supabase } = await import('../config/supabase');
-                    await supabase.auth.signOut();
+                    setAuthError(`Acceso denegado o tiempo agotado: No se pudo verificar el email "${email}". Por favor, recarga o contacta con Jefatura.`);
                 }
             } else {
                 setSession(null);

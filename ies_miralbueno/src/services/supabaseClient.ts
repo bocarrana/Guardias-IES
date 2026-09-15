@@ -177,7 +177,7 @@ export const getTeacherByEmail = async (email: string): Promise<Teacher | null> 
 
         console.log('supabaseClient: Profesor encontrado:', data['nombre y apellidos']);
         return mapTeacher(data);
-    }, 30);
+    }, 300);
 };
 
 export const getTeachers = async (showInactive: boolean = false): Promise<Teacher[]> => {
@@ -477,7 +477,7 @@ export const getGuardGroupSchedules = async (): Promise<GuardGroupSchedule[]> =>
         
         // Filtramos los registros cuyos profesores están de baja (activo === false)
         return (data as any[]).filter(d => !d.teacher || d.teacher.activo !== false).map(mapGuardGroupSchedule);
-    }, 30);
+    }, 300);
 };
 
 export const createGuardGroupSchedule = async (schedule: Partial<GuardGroupSchedule>): Promise<GuardGroupSchedule> => {
@@ -536,7 +536,7 @@ export const getPersonalSchedule = async (teacherId: string): Promise<PersonalSc
                 name: entry.aula.aulas
             } : undefined
         }));
-    }, 30);
+    }, 300);
 };
 
 export const getAllPersonalSchedules = async (): Promise<PersonalScheduleEntry[]> => {
@@ -1101,7 +1101,7 @@ export const getMetaOptions = async (): Promise<MetaOptions> => {
         }));
 
         return { slots, classrooms, groups, subjects };
-    }, 60);
+    }, 600);
 };
 
 // ─── META MUTATIONS ──────────────────────────────────────
@@ -1330,7 +1330,7 @@ export const getCalendarDays = async (): Promise<CalendarDay[]> => {
             es_lectivo: d.es_lectivo,
             descripcion: d.descripcion,
         }));
-    }, 60);
+    }, 600);
 };
 
 export const updateCalendarDay = async (fecha: string, es_lectivo: boolean, descripcion?: string): Promise<void> => {
@@ -1359,7 +1359,7 @@ export const isSchoolDay = async (dateStr: string): Promise<boolean> => {
         // If no entry exists (e.g. summer), treat as non-school day
         if (!data) return false;
         return data.es_lectivo;
-    }, 60);
+    }, 600);
 };
 
 // ─── CALENDAR EVENTS ───────────────────────────────────
@@ -1383,7 +1383,7 @@ export const getCalendarEvents = async (): Promise<CalendarEvent[]> => {
             ...e,
             creator: e.creator ? mapTeacher(e.creator) : undefined
         }));
-    }, 10);
+    }, 120);
 };
 
 export const createCalendarEvent = async (event: Partial<CalendarEvent>): Promise<void> => {
@@ -1477,7 +1477,7 @@ export const getRoomReservations = async (): Promise<RoomReservation[]> => {
                 };
             })
             .filter((d: any) => !d.teacher || d.teacher.active !== false);
-    }, 5);
+    }, 60);
 };
 
 export const createRoomReservation = async (reservation: Partial<RoomReservation>): Promise<void> => {
@@ -1533,7 +1533,7 @@ export const getQuickReservationsForDate = async (fecha: string): Promise<RoomRe
                 location: d.classroom['ubicación']
             } : undefined
         }));
-    }, 5);
+    }, 60);
 };
 
 export const createQuickReservation = async (
@@ -1622,7 +1622,7 @@ export const getLibreDisposicion = async (): Promise<LibreDisposicion[]> => {
             creado_at: d.creado_at,
             teacher: d.teacher ? mapTeacher(d.teacher) : undefined,
         }));
-    }, 5);
+    }, 180);
 };
 
 /**
