@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Guard, GuardType, MetaOptions, TaskStatus, Teacher } from '../types';
+import { Guard, GuardType, MetaOptions, TaskStatus, Teacher, getGuardTaskType } from '../types';
 import CustomDatePicker from './CustomDatePicker';
 import { uploadTaskFile, getPersonalSchedule, isSchoolDay } from '../services/supabaseClient';
 import { toast } from 'sonner';
@@ -21,6 +21,12 @@ interface GuardModalProps {
 const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser, teachers, onSubmit, onClose }) => {
     const isAdmin = canAccessAdminPanel(currentUser);
 
+    const initialTaskType = editingGuard ? getGuardTaskType(editingGuard) : 'none';
+    const initialTaskStatus = initialTaskType === 'both' ? TaskStatus.AMBAS
+        : initialTaskType === 'file' ? TaskStatus.ARCHIVO
+        : initialTaskType === 'tray' ? TaskStatus.BANDEJA
+        : TaskStatus.NO;
+
     const [formData, setFormData] = useState({
         date: editingGuard?.date || new Date().toISOString().split('T')[0],
         time_slot_id: editingGuard?.time_slot_id || meta.slots[0]?.id || '',
@@ -28,7 +34,7 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
         group_id: editingGuard?.group_id || '',
         subject_id: editingGuard?.subject_id || '',
         type: editingGuard?.type || GuardType.ORDINARY,
-        has_task: editingGuard?.has_task || TaskStatus.NO,
+        has_task: editingGuard ? initialTaskStatus : TaskStatus.NO,
         observations: editingGuard?.observations || '',
         requesting_teacher_id: editingGuard?.requesting_teacher_id || currentUser?.id || '',
         covering_teacher_id: editingGuard?.covering_teacher_id || '',
@@ -162,6 +168,12 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
             if (selectedScheduleEntries.length > 1) {
                 const payloads = selectedScheduleEntries.map(entry => {
                     const isGuard = entry.tipo === 'Guardia';
+                    let computedHasTask = formData.has_task;
+                    if (uploadedFileUrl) {
+                        computedHasTask = (formData.has_task === TaskStatus.BANDEJA || formData.has_task === TaskStatus.AMBAS) 
+                            ? TaskStatus.AMBAS 
+                            : TaskStatus.ARCHIVO;
+                    }
                     return {
                         date: formData.date,
                         time_slot_id: entry.franja_id,
@@ -169,7 +181,7 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
                         group_id: isGuard ? '' : (entry.grupo_id || ''),
                         subject_id: isGuard ? 'M_GUARDIA' : (entry.materia_id || ''),
                         type: formData.type,
-                        has_task: uploadedFileUrl ? TaskStatus.YES : formData.has_task,
+                        has_task: computedHasTask,
                         observations: formData.observations,
                         requesting_teacher_id: formData.requesting_teacher_id || currentUser?.id || '',
                         covering_teacher_id: formData.covering_teacher_id || null,
@@ -181,7 +193,9 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
                 let finalFormData: any = { ...formData };
                 if (uploadedFileUrl) {
                     finalFormData.task_file_url = uploadedFileUrl;
-                    finalFormData.has_task = TaskStatus.YES;
+                    finalFormData.has_task = (formData.has_task === TaskStatus.BANDEJA || formData.has_task === TaskStatus.AMBAS) 
+                        ? TaskStatus.AMBAS 
+                        : TaskStatus.ARCHIVO;
                 }
                 if (!finalFormData.covering_teacher_id) {
                     finalFormData.covering_teacher_id = null;
@@ -512,43 +526,66 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
                         </select>
                     </div>
 
-                    {/* Task Radio Buttons */}
+                    {/* Task Location / Format Selection */}
                     <div>
-                        <label className="label">¿Tarea Dejada?</label>
-                        <div style={{ display: 'flex', gap: 24, paddingTop: 10, paddingBottom: 4 }}>
+                        <label className="label">¿Se deja tarea para los alumnos?</label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 8 }}>
                             {[
-                                { label: 'Sí', value: TaskStatus.YES },
-                                { label: 'No', value: TaskStatus.NO },
-                            ].map((item) => (
-                                <label
-                                    key={item.value}
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 10,
-                                        fontSize: '0.9rem',
-                                        fontWeight: 600,
-                                        color: formData.has_task === item.value ? 'var(--brand-400)' : 'var(--text-muted)',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s',
-                                    }}
-                                >
-                                    <input
-                                        type="radio"
-                                        name="has_task"
-                                        value={item.value}
-                                        checked={formData.has_task === item.value}
-                                        onChange={() => setFormData({ ...formData, has_task: item.value })}
-                                        style={{
-                                            accentColor: 'var(--brand-500)',
-                                            width: 18,
-                                            height: 18,
-                                            cursor: 'pointer'
+                                { 
+                                    label: 'Sin tarea', 
+                                    value: TaskStatus.NO,
+                                    icon: '⚪',
+                                    desc: 'No se requiere tarea'
+                                },
+                                { 
+                                    label: 'En bandeja física', 
+                                    value: TaskStatus.BANDEJA,
+                                    icon: '📥',
+                                    desc: 'Fotocopias bajo el TV'
+                                },
+                                { 
+                                    label: 'En archivo digital', 
+                                    value: TaskStatus.ARCHIVO,
+                                    icon: '📎',
+                                    desc: 'Documento adjunto'
+                                },
+                                { 
+                                    label: 'Bandeja + Archivo', 
+                                    value: TaskStatus.AMBAS,
+                                    icon: '📦',
+                                    desc: 'Papel y documento'
+                                },
+                            ].map((item) => {
+                                const isSelected = formData.has_task === item.value || (item.value === TaskStatus.BANDEJA && formData.has_task === TaskStatus.YES);
+                                return (
+                                    <div
+                                        key={item.value}
+                                        onClick={() => {
+                                            setFormData({ ...formData, has_task: item.value });
                                         }}
-                                    />
-                                    {item.label}
-                                </label>
-                            ))}
+                                        style={{
+                                            padding: '10px 12px',
+                                            borderRadius: 'var(--radius-lg)',
+                                            border: isSelected ? '1.5px solid var(--brand-400)' : '1px solid var(--slate-700)',
+                                            background: isSelected ? 'rgba(6, 182, 212, 0.12)' : 'rgba(30, 41, 59, 0.35)',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: 2,
+                                            boxShadow: isSelected ? '0 0 12px rgba(6, 182, 212, 0.15)' : 'none'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', fontWeight: 700, color: isSelected ? 'white' : 'var(--text-secondary)' }}>
+                                            <span>{item.icon}</span>
+                                            <span>{item.label}</span>
+                                        </div>
+                                        <span style={{ fontSize: '0.68rem', color: isSelected ? 'var(--brand-300)' : 'var(--text-muted)' }}>
+                                            {item.desc}
+                                        </span>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -558,19 +595,31 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
                         <div style={{
                             marginTop: 8,
                             padding: '12px 16px',
-                            border: '2px dashed var(--slate-700)',
+                            border: (formData.has_task === TaskStatus.ARCHIVO || formData.has_task === TaskStatus.AMBAS || selectedFile) 
+                                ? '2px dashed var(--brand-400)' 
+                                : '2px dashed var(--slate-700)',
                             borderRadius: 'var(--radius-lg)',
                             display: 'flex',
                             alignItems: 'center',
                             gap: 12,
-                            background: selectedFile ? 'rgba(34, 211, 238, 0.05)' : 'transparent',
+                            background: selectedFile ? 'rgba(34, 211, 238, 0.08)' : 'transparent',
                             transition: 'all 0.2s',
                         }}>
                             <div style={{ flex: 1 }}>
                                 <input
                                     type="file"
                                     id="task-file"
-                                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0] || null;
+                                        setSelectedFile(file);
+                                        if (file) {
+                                            if (formData.has_task === TaskStatus.BANDEJA) {
+                                                setFormData(prev => ({ ...prev, has_task: TaskStatus.AMBAS }));
+                                            } else if (formData.has_task === TaskStatus.NO) {
+                                                setFormData(prev => ({ ...prev, has_task: TaskStatus.ARCHIVO }));
+                                            }
+                                        }
+                                    }}
                                     style={{ display: 'none' }}
                                     accept="image/*,.pdf,.doc,.docx,.txt"
                                 />
@@ -593,7 +642,7 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
                                     ) : (
                                         <>
                                             <span style={{ fontSize: '1.1rem' }}>📎</span>
-                                            Seleccionar archivo...
+                                            {formData.task_file_url ? 'Archivo actual adjunto (clic para cambiar)' : 'Seleccionar archivo...'}
                                         </>
                                     )}
                                 </label>

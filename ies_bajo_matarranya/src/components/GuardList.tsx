@@ -1,13 +1,13 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Guard, GuardStatus, GuardType, Teacher, MetaOptions, GuardGroupSchedule } from '../types';
+import { Guard, GuardStatus, GuardType, Teacher, MetaOptions, GuardGroupSchedule, getGuardTaskType } from '../types';
 import {
     User, Calendar, Clock, MapPin, CheckCircle, Zap,
     BookOpen, Shield, Pencil, Trash2, FileText, Search, Loader2, AlertTriangle,
-    ChevronLeft, ChevronRight, X, Dices, ChevronDown, MessageSquare, FileCheck, RotateCw
+    ChevronLeft, ChevronRight, X, Dices, ChevronDown, MessageSquare, FileCheck, RotateCw,
+    Inbox, Paperclip, Layers, ExternalLink, Download
 } from 'lucide-react';
 import { getStorageUrl, getTaskFileUrl } from '../services/supabaseClient';
-import { Download } from 'lucide-react';
 import TeacherAvatar from './TeacherAvatar';
 import CrownLogo from './CrownLogo';
 import ClassroomMapModal from './ClassroomMapModal';
@@ -230,6 +230,31 @@ const GuardList: React.FC<GuardListProps> = ({
     const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
     const [onlyCompatible, setOnlyCompatible] = useState(false);
     const [openModeMenuSlotId, setOpenModeMenuSlotId] = useState<string | null>(null);
+    const [highlightedGuardId, setHighlightedGuardId] = useState<string | null>(null);
+
+    const handleScrollToGuard = (guard: Guard) => {
+        setSelectedObservationGuard(null);
+        if (selectedDate && selectedDate !== guard.date) {
+            setSelectedDate(guard.date);
+        }
+        if (selectedSlotId && selectedSlotId !== guard.time_slot_id) {
+            setSelectedSlotId(null);
+        }
+        if (filter === 'history' && guard.status !== GuardStatus.COMPLETED) {
+            setFilter('today');
+        }
+        setHighlightedGuardId(guard.id);
+        setTimeout(() => {
+            const el = document.getElementById(`guard-card-${guard.id}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 250);
+
+        setTimeout(() => {
+            setHighlightedGuardId(null);
+        }, 4500);
+    };
 
     // Floating teacher tooltip state for TV / kiosk mode
     const [activeTeacherTooltip, setActiveTeacherTooltip] = useState<{
@@ -1242,12 +1267,50 @@ const GuardList: React.FC<GuardListProps> = ({
                                                                         if (isCoexistence) return null;
 
                                                                         const hasNotes = Boolean(g.observations && g.observations.trim().length > 0);
-                                                                        const hasTask = Boolean(g.has_task === 'Sí' || g.has_task === 'SÍ' || g.has_task === 'si' || g.has_task === 'SI' || g.task_file_url);
+                                                                        const taskType = getGuardTaskType(g);
+                                                                        const hasTask = taskType !== 'none';
                                                                         if (!hasNotes && !hasTask) return null;
 
                                                                         const isTV = isPantallaRole(currentUser?.role);
                                                                         const size = isTV ? 20 : 16;
                                                                         const iconSize = isTV ? 11 : 9;
+
+                                                                        let badgeColor = '#f97316';
+                                                                        let badgeBg = 'rgba(249, 115, 22, 0.15)';
+                                                                        let badgeBorder = '#f97316';
+                                                                        let badgeShadow = '0 0 6px rgba(249, 115, 22, 0.4)';
+                                                                        let badgeTitle = 'Tarea en bandeja física';
+                                                                        let IconComponent = Inbox;
+
+                                                                        if (taskType === 'both') {
+                                                                            badgeColor = '#a855f7';
+                                                                            badgeBg = 'rgba(168, 85, 247, 0.15)';
+                                                                            badgeBorder = '#a855f7';
+                                                                            badgeShadow = '0 0 6px rgba(168, 85, 247, 0.4)';
+                                                                            badgeTitle = 'Tarea en bandeja física y archivo adjunto';
+                                                                            IconComponent = Layers;
+                                                                        } else if (taskType === 'file') {
+                                                                            badgeColor = '#06b6d4';
+                                                                            badgeBg = 'rgba(6, 182, 212, 0.15)';
+                                                                            badgeBorder = '#06b6d4';
+                                                                            badgeShadow = '0 0 6px rgba(6, 182, 212, 0.4)';
+                                                                            badgeTitle = 'Tarea en archivo digital';
+                                                                            IconComponent = Paperclip;
+                                                                        } else if (taskType === 'tray') {
+                                                                            badgeColor = '#f97316';
+                                                                            badgeBg = 'rgba(249, 115, 22, 0.15)';
+                                                                            badgeBorder = '#f97316';
+                                                                            badgeShadow = '0 0 6px rgba(249, 115, 22, 0.4)';
+                                                                            badgeTitle = 'Tarea en bandeja física';
+                                                                            IconComponent = Inbox;
+                                                                        } else if (hasNotes) {
+                                                                            badgeColor = '#10b981';
+                                                                            badgeBg = 'rgba(16, 185, 129, 0.15)';
+                                                                            badgeBorder = '#10b981';
+                                                                            badgeShadow = '0 0 6px rgba(16, 185, 129, 0.4)';
+                                                                            badgeTitle = 'Observaciones del docente';
+                                                                            IconComponent = MessageSquare;
+                                                                        }
 
                                                                         return (
                                                                             <motion.button 
@@ -1264,7 +1327,7 @@ const GuardList: React.FC<GuardListProps> = ({
                                                                                     e.preventDefault(); 
                                                                                     setSelectedObservationGuard(g); 
                                                                                 }}
-                                                                                title="Ver observaciones / tarea"
+                                                                                title={badgeTitle}
                                                                                 style={{ 
                                                                                     display: 'inline-flex',
                                                                                     alignItems: 'center',
@@ -1277,10 +1340,10 @@ const GuardList: React.FC<GuardListProps> = ({
                                                                                     maxHeight: `${size}px`,
                                                                                     aspectRatio: '1 / 1',
                                                                                     borderRadius: '50%',
-                                                                                    color: '#f97316',
-                                                                                    background: 'rgba(249, 115, 22, 0.15)',
-                                                                                    border: '1.5px solid #f97316',
-                                                                                    boxShadow: '0 0 6px rgba(249, 115, 22, 0.4)',
+                                                                                    color: badgeColor,
+                                                                                    background: badgeBg,
+                                                                                    border: `1.5px solid ${badgeBorder}`,
+                                                                                    boxShadow: badgeShadow,
                                                                                     cursor: 'pointer',
                                                                                     padding: 0,
                                                                                     margin: 0,
@@ -1289,7 +1352,7 @@ const GuardList: React.FC<GuardListProps> = ({
                                                                                     lineHeight: 0
                                                                                 }}
                                                                             >
-                                                                                <FileText size={iconSize} strokeWidth={2.4} />
+                                                                                <IconComponent size={iconSize} strokeWidth={2.4} />
                                                                             </motion.button>
                                                                         );
                                                                     })()}
@@ -2142,18 +2205,31 @@ const GuardList: React.FC<GuardListProps> = ({
                                 canManage = isAdmin && !isPantallaRole(currentUser?.role);
                             }
 
+                            const cardTaskType = getGuardTaskType(guard);
+                            const isHighlighted = highlightedGuardId === guard.id;
+
                             return (
                                 <motion.div
                                     key={guard.id}
+                                    id={`guard-card-${guard.id}`}
                                     layout
                                     initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
+                                    animate={{ 
+                                        opacity: 1, 
+                                        x: 0,
+                                        scale: isHighlighted ? 1.02 : 1
+                                    }}
                                     exit={{ opacity: 0, x: -20 }}
-                                    transition={{ delay: idx * 0.03 }}
+                                    transition={{ delay: idx * 0.03, duration: 0.25 }}
                                     className="card"
                                     style={{
                                         borderLeft: `4px solid ${guard.type === GuardType.COEXISTENCE ? 'var(--brand-500)' : getBorderColor(guard.status)}`,
                                         ...(guard.type === GuardType.COEXISTENCE ? { border: '2px solid var(--brand-500)', boxShadow: '0 4px 20px rgba(6, 182, 212, 0.15)' } : {}),
+                                        ...(isHighlighted ? {
+                                            border: '2px solid #06b6d4',
+                                            boxShadow: '0 0 0 4px rgba(6, 182, 212, 0.35), 0 10px 30px rgba(6, 182, 212, 0.3)',
+                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                                        } : {}),
                                         borderRadius: '4px var(--radius-lg) var(--radius-lg) 4px',
                                         padding: 24,
                                         position: 'relative',
@@ -2247,9 +2323,40 @@ const GuardList: React.FC<GuardListProps> = ({
                                             {guard.type === GuardType.COEXISTENCE && (
                                                 <span className="badge badge-coexistence">Convivencia</span>
                                             )}
-                                            {guard.has_task === 'Sí' && (
-                                                <span className="badge badge-task">
-                                                    <FileText style={{ width: 10, height: 10 }} /> Tarea
+                                            {cardTaskType === 'tray' && (
+                                                <span className="badge" style={{
+                                                    background: 'rgba(249, 115, 22, 0.15)',
+                                                    color: '#fdba74',
+                                                    border: '1px solid rgba(249, 115, 22, 0.4)',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: 5
+                                                }}>
+                                                    <Inbox style={{ width: 11, height: 11 }} /> Tarea en bandeja
+                                                </span>
+                                            )}
+                                            {cardTaskType === 'file' && (
+                                                <span className="badge" style={{
+                                                    background: 'rgba(6, 182, 212, 0.15)',
+                                                    color: '#67e8f9',
+                                                    border: '1px solid rgba(6, 182, 212, 0.4)',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: 5
+                                                }}>
+                                                    <Paperclip style={{ width: 11, height: 11 }} /> Tarea en archivo
+                                                </span>
+                                            )}
+                                            {cardTaskType === 'both' && (
+                                                <span className="badge" style={{
+                                                    background: 'rgba(168, 85, 247, 0.15)',
+                                                    color: '#d8b4fe',
+                                                    border: '1px solid rgba(168, 85, 247, 0.4)',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: 5
+                                                }}>
+                                                    <Layers style={{ width: 11, height: 11 }} /> Bandeja + Archivo
                                                 </span>
                                             )}
                                             {guard.task_file_url && (
@@ -2263,25 +2370,25 @@ const GuardList: React.FC<GuardListProps> = ({
                                                         gap: 6,
                                                         fontSize: '0.7rem',
                                                         fontWeight: 700,
-                                                        color: 'var(--brand-400)',
+                                                        color: '#22d3ee',
                                                         textDecoration: 'none',
-                                                        background: 'rgba(34, 211, 238, 0.1)',
+                                                        background: 'rgba(6, 182, 212, 0.15)',
                                                         padding: '2px 10px',
                                                         borderRadius: 'var(--radius-full)',
-                                                        border: '1px solid rgba(34, 211, 238, 0.2)',
+                                                        border: '1px solid rgba(6, 182, 212, 0.35)',
                                                         transition: 'all 0.2s',
                                                     }}
                                                     onMouseEnter={(e) => {
-                                                        e.currentTarget.style.background = 'rgba(34, 211, 238, 0.2)';
+                                                        e.currentTarget.style.background = 'rgba(6, 182, 212, 0.25)';
                                                         e.currentTarget.style.transform = 'translateY(-1px)';
                                                     }}
                                                     onMouseLeave={(e) => {
-                                                        e.currentTarget.style.background = 'rgba(34, 211, 238, 0.1)';
+                                                        e.currentTarget.style.background = 'rgba(6, 182, 212, 0.15)';
                                                         e.currentTarget.style.transform = 'translateY(0)';
                                                     }}
                                                 >
                                                     <Download style={{ width: 12, height: 12 }} />
-                                                    VER ADJUNTO
+                                                    DESCARGAR TAREA
                                                 </a>
                                             )}
                                         </div>
@@ -2596,114 +2703,267 @@ const GuardList: React.FC<GuardListProps> = ({
                             }
                         }}
                     >
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.92, y: 10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.92, y: 10 }}
-                            transition={{ duration: 0.18, ease: 'easeOut' }}
-                            onClick={(e) => e.stopPropagation()}
-                            onTouchStart={(e) => e.stopPropagation()}
-                            onTouchEnd={(e) => e.stopPropagation()}
-                            style={{
-                                background: '#0f172a',
-                                border: '1.5px solid rgba(249, 115, 22, 0.6)',
-                                borderRadius: 14,
-                                padding: '16px 18px',
-                                maxWidth: 420,
-                                width: '100%',
-                                boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.9), 0 0 20px rgba(249, 115, 22, 0.25)',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: 12,
-                                color: '#f8fafc',
-                                position: 'relative'
-                            }}
-                        >
-                            {/* Close button */}
-                            <button
-                                onClick={() => setSelectedObservationGuard(null)}
-                                style={{
-                                    position: 'absolute',
-                                    top: 10,
-                                    right: 10,
-                                    background: 'rgba(255, 255, 255, 0.06)',
-                                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                                    color: 'var(--text-muted, #94a3b8)',
-                                    borderRadius: '50%',
-                                    width: 26,
-                                    height: 26,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    cursor: 'pointer',
-                                }}
-                            >
-                                <X size={15} />
-                            </button>
+                        {(() => {
+                            const obsTaskType = getGuardTaskType(selectedObservationGuard);
+                            const isTV = isPantallaRole(currentUser?.role);
+                            const modalBorder = obsTaskType === 'file' 
+                                ? 'rgba(6, 182, 212, 0.6)' 
+                                : obsTaskType === 'both' 
+                                ? 'rgba(168, 85, 247, 0.6)' 
+                                : 'rgba(249, 115, 22, 0.6)';
+                            const modalGlow = obsTaskType === 'file' 
+                                ? 'rgba(6, 182, 212, 0.25)' 
+                                : obsTaskType === 'both' 
+                                ? 'rgba(168, 85, 247, 0.25)' 
+                                : 'rgba(249, 115, 22, 0.25)';
 
-                            {/* Task notice (if attached file or task left) */}
-                            {(selectedObservationGuard.has_task === 'Sí' || selectedObservationGuard.has_task === 'SÍ' || selectedObservationGuard.has_task === 'si' || selectedObservationGuard.has_task === 'SI' || selectedObservationGuard.task_file_url) && (
-                                <div style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 8,
-                                    padding: '8px 12px',
-                                    borderRadius: 8,
-                                    background: 'rgba(249, 115, 22, 0.15)',
-                                    border: '1px solid rgba(249, 115, 22, 0.45)',
-                                    color: '#fdba74',
-                                    fontSize: '0.85rem',
-                                    fontWeight: 700,
-                                    marginRight: 28
-                                }}>
-                                    <FileCheck size={16} color="#f97316" strokeWidth={2.5} />
-                                    <span>{selectedObservationGuard.task_file_url ? 'Tarea dejada en archivo adjunto' : 'Tarea dejada por el profesor'}</span>
-                                </div>
-                            )}
-
-                            {/* Observation text */}
-                            {selectedObservationGuard.observations?.trim() ? (
-                                <div style={{
-                                    background: 'rgba(2, 6, 23, 0.6)',
-                                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                                    borderRadius: 8,
-                                    padding: '12px 14px',
-                                    fontSize: '0.92rem',
-                                    lineHeight: 1.5,
-                                    color: '#f8fafc',
-                                    whiteSpace: 'pre-wrap',
-                                    wordBreak: 'break-word',
-                                    maxHeight: 220,
-                                    overflowY: 'auto'
-                                }}>
-                                    {selectedObservationGuard.observations.trim()}
-                                </div>
-                            ) : !(selectedObservationGuard.has_task === 'Sí' || selectedObservationGuard.has_task === 'SÍ' || selectedObservationGuard.has_task === 'si' || selectedObservationGuard.has_task === 'SI' || selectedObservationGuard.task_file_url) ? (
-                                <div style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic', padding: 8 }}>
-                                    Sin observaciones registradas.
-                                </div>
-                            ) : null}
-
-                            {/* 8-second auto-close animated line at bottom */}
-                            <div style={{
-                                width: '100%',
-                                height: 3,
-                                background: 'rgba(255, 255, 255, 0.08)',
-                                borderRadius: 2,
-                                overflow: 'hidden',
-                                marginTop: 2
-                            }}>
+                            return (
                                 <motion.div
-                                    initial={{ width: '100%' }}
-                                    animate={{ width: '0%' }}
-                                    transition={{ duration: 8, ease: 'linear' }}
+                                    initial={{ opacity: 0, scale: 0.92, y: 10 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.92, y: 10 }}
+                                    transition={{ duration: 0.18, ease: 'easeOut' }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onTouchStart={(e) => e.stopPropagation()}
+                                    onTouchEnd={(e) => e.stopPropagation()}
                                     style={{
-                                        height: '100%',
-                                        background: 'linear-gradient(90deg, #ea580c, #f97316)'
+                                        background: '#0f172a',
+                                        border: `1.5px solid ${modalBorder}`,
+                                        borderRadius: 14,
+                                        padding: '18px 20px',
+                                        maxWidth: 460,
+                                        width: '100%',
+                                        boxShadow: `0 20px 40px -10px rgba(0, 0, 0, 0.9), 0 0 24px ${modalGlow}`,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 14,
+                                        color: '#f8fafc',
+                                        position: 'relative'
                                     }}
-                                />
-                            </div>
-                        </motion.div>
+                                >
+                                    {/* Close button */}
+                                    <button
+                                        onClick={() => setSelectedObservationGuard(null)}
+                                        style={{
+                                            position: 'absolute',
+                                            top: 12,
+                                            right: 12,
+                                            background: 'rgba(255, 255, 255, 0.08)',
+                                            border: '1px solid rgba(255, 255, 255, 0.12)',
+                                            color: 'var(--text-muted, #94a3b8)',
+                                            borderRadius: '50%',
+                                            width: 28,
+                                            height: 28,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            cursor: 'pointer',
+                                        }}
+                                    >
+                                        <X size={15} />
+                                    </button>
+
+                                    {/* Guard Brief Header */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingRight: 32 }}>
+                                        <div style={{
+                                            fontWeight: 800,
+                                            fontSize: '1rem',
+                                            color: '#f1f5f9'
+                                        }}>
+                                            {selectedObservationGuard.subject?.name || 'Guardia'}
+                                        </div>
+                                        {selectedObservationGuard.group?.name && (
+                                            <span style={{
+                                                fontSize: '0.75rem',
+                                                padding: '2px 8px',
+                                                borderRadius: 6,
+                                                background: 'rgba(255, 255, 255, 0.08)',
+                                                color: '#cbd5e1',
+                                                fontWeight: 600
+                                            }}>
+                                                {selectedObservationGuard.group.name}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Differentiated Task Banners */}
+                                    {obsTaskType !== 'none' && (
+                                        <div style={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: 6,
+                                            padding: '10px 14px',
+                                            borderRadius: 10,
+                                            background: obsTaskType === 'file' 
+                                                ? 'rgba(6, 182, 212, 0.12)' 
+                                                : obsTaskType === 'both' 
+                                                ? 'rgba(168, 85, 247, 0.12)' 
+                                                : 'rgba(249, 115, 22, 0.12)',
+                                            border: obsTaskType === 'file' 
+                                                ? '1px solid rgba(6, 182, 212, 0.35)' 
+                                                : obsTaskType === 'both' 
+                                                ? '1px solid rgba(168, 85, 247, 0.35)' 
+                                                : '1px solid rgba(249, 115, 22, 0.35)',
+                                        }}>
+                                            <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 8,
+                                                fontWeight: 700,
+                                                fontSize: '0.85rem',
+                                                color: obsTaskType === 'file' 
+                                                    ? '#67e8f9' 
+                                                    : obsTaskType === 'both' 
+                                                    ? '#d8b4fe' 
+                                                    : '#fdba74'
+                                            }}>
+                                                {obsTaskType === 'tray' && <Inbox size={17} />}
+                                                {obsTaskType === 'file' && <Paperclip size={17} />}
+                                                {obsTaskType === 'both' && <Layers size={17} />}
+                                                <span>
+                                                    {obsTaskType === 'tray' && 'Tarea en bandeja física'}
+                                                    {obsTaskType === 'file' && 'Tarea en archivo digital'}
+                                                    {obsTaskType === 'both' && 'Bandeja física + Archivo adjunto'}
+                                                </span>
+                                            </div>
+
+                                            {/* Subtitle instructions based on mode */}
+                                            {isTV ? (
+                                                <div style={{
+                                                    fontSize: '0.78rem',
+                                                    color: '#cbd5e1',
+                                                    lineHeight: 1.4
+                                                }}>
+                                                    {obsTaskType === 'tray' && 'Hay fotocopias y material disponible en la bandeja física de profesores (bajo el televisor).'}
+                                                    {obsTaskType === 'file' && 'Inicia sesión con tu cuenta de profesor en tu móvil o portátil para ver o descargar el archivo adjunto.'}
+                                                    {obsTaskType === 'both' && 'Recoge las fotocopias en la bandeja física y entra con tu cuenta para consultar el documento adjunto.'}
+                                                </div>
+                                            ) : (
+                                                <div style={{
+                                                    fontSize: '0.78rem',
+                                                    color: '#94a3b8',
+                                                    lineHeight: 1.4
+                                                }}>
+                                                    {obsTaskType === 'tray' && 'El profesor ausente ha dejado material impreso en la bandeja física de la sala de profesores.'}
+                                                    {obsTaskType === 'file' && 'El profesor ha subido un documento con instrucciones para el aula.'}
+                                                    {obsTaskType === 'both' && 'Material disponible en bandeja física y documento digital adjunto.'}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Observation text */}
+                                    {selectedObservationGuard.observations?.trim() ? (
+                                        <div style={{
+                                            background: 'rgba(2, 6, 23, 0.65)',
+                                            border: '1px solid rgba(255, 255, 255, 0.08)',
+                                            borderRadius: 8,
+                                            padding: '12px 14px',
+                                            fontSize: '0.9rem',
+                                            lineHeight: 1.5,
+                                            color: '#f8fafc',
+                                            whiteSpace: 'pre-wrap',
+                                            wordBreak: 'break-word',
+                                            maxHeight: 200,
+                                            overflowY: 'auto'
+                                        }}>
+                                            {selectedObservationGuard.observations.trim()}
+                                        </div>
+                                    ) : obsTaskType === 'none' ? (
+                                        <div style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic', padding: 8 }}>
+                                            Sin observaciones registradas.
+                                        </div>
+                                    ) : null}
+
+                                    {/* Action buttons (Teachers / Mobile view) */}
+                                    {!isTV && (
+                                        <div style={{
+                                            display: 'flex',
+                                            flexWrap: 'wrap',
+                                            gap: 8,
+                                            marginTop: 2
+                                        }}>
+                                            {selectedObservationGuard.task_file_url && (
+                                                <a
+                                                    href={getTaskFileUrl(selectedObservationGuard.task_file_url)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    style={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: 6,
+                                                        background: 'linear-gradient(135deg, #0891b2, #06b6d4)',
+                                                        color: '#ffffff',
+                                                        textDecoration: 'none',
+                                                        padding: '7px 14px',
+                                                        borderRadius: 8,
+                                                        fontSize: '0.78rem',
+                                                        fontWeight: 700,
+                                                        boxShadow: '0 4px 12px rgba(6, 182, 212, 0.35)',
+                                                        transition: 'all 0.2s',
+                                                        flex: '1 1 auto',
+                                                        justifyContent: 'center'
+                                                    }}
+                                                >
+                                                    <Download size={14} /> Descargar archivo adjunto
+                                                </a>
+                                            )}
+                                            <button
+                                                onClick={() => handleScrollToGuard(selectedObservationGuard)}
+                                                style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: 6,
+                                                    background: 'rgba(255, 255, 255, 0.07)',
+                                                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                                                    color: '#f1f5f9',
+                                                    padding: '7px 14px',
+                                                    borderRadius: 8,
+                                                    fontSize: '0.78rem',
+                                                    fontWeight: 600,
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s',
+                                                    flex: '1 1 auto',
+                                                    justifyContent: 'center'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.07)';
+                                                }}
+                                            >
+                                                <ExternalLink size={13} /> Ir a la tarjeta de guardia
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* 8-second auto-close animated line at bottom */}
+                                    <div style={{
+                                        width: '100%',
+                                        height: 3,
+                                        background: 'rgba(255, 255, 255, 0.08)',
+                                        borderRadius: 2,
+                                        overflow: 'hidden',
+                                        marginTop: 4
+                                    }}>
+                                        <motion.div
+                                            initial={{ width: '100%' }}
+                                            animate={{ width: '0%' }}
+                                            transition={{ duration: 8, ease: 'linear' }}
+                                            style={{
+                                                height: '100%',
+                                                background: obsTaskType === 'file' 
+                                                    ? 'linear-gradient(90deg, #0891b2, #06b6d4)' 
+                                                    : obsTaskType === 'both' 
+                                                    ? 'linear-gradient(90deg, #9333ea, #a855f7)' 
+                                                    : 'linear-gradient(90deg, #ea580c, #f97316)'
+                                            }}
+                                        />
+                                    </div>
+                                </motion.div>
+                            );
+                        })()}
                     </div>
                 )}
             </AnimatePresence>

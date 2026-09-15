@@ -16,9 +16,33 @@ export enum GuardType {
 }
 
 export enum TaskStatus {
-    YES = 'SÍ',
     NO = 'NO',
+    BANDEJA = 'BANDEJA',
+    ARCHIVO = 'ARCHIVO',
+    AMBAS = 'AMBAS',
+    YES = 'SÍ',
 }
+
+export type GuardTaskType = 'none' | 'tray' | 'file' | 'both';
+
+export const getGuardTaskType = (guard: { has_task?: string; task_file_url?: string }): GuardTaskType => {
+    const raw = (guard.has_task || '').toUpperCase();
+    const hasFile = Boolean(guard.task_file_url && guard.task_file_url.trim().length > 0);
+
+    if (raw === 'AMBAS' || (raw === 'BANDEJA' && hasFile) || ((raw === 'SÍ' || raw === 'SI') && hasFile)) {
+        return 'both';
+    }
+    if (raw === 'ARCHIVO' || (hasFile && (raw === 'NO' || !raw))) {
+        return 'file';
+    }
+    if (raw === 'BANDEJA' || raw === 'SÍ' || raw === 'SI') {
+        return 'tray';
+    }
+    if (hasFile) {
+        return 'file';
+    }
+    return 'none';
+};
 
 // --- Interfaces ---
 export interface Teacher {
