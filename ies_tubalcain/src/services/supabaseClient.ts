@@ -910,7 +910,7 @@ export const createGuard = async (guard: Partial<Guard>): Promise<any> => {
         'Profesor ausente': guard.requesting_teacher_id !== undefined ? guard.requesting_teacher_id : null,
         'Estado': guard.status || GuardStatus.AVAILABLE,
         'Tipo de Guardia': guard.type,
-        'Tarea dejada': guard.has_task || 'NO',
+        'Tarea dejada': (guard.has_task === 'NO' || !guard.has_task) ? 'NO' : 'S\u00cd',
         'Observaciones': sanitizeInput(guard.observations) || null,
         'Archivo de tarea': guard.task_file_url || null,
     };
@@ -1023,7 +1023,7 @@ export const updateGuardDetails = async (guardId: string, guard: Partial<Guard>)
         'Grupo atendido': guard.group_id,
         'Materia ausente': guard.subject_id,
         'Tipo de Guardia': guard.type,
-        'Tarea dejada': guard.has_task,
+        'Tarea dejada': guard.has_task ? ((guard.has_task === 'NO' || !guard.has_task) ? 'NO' : 'S\u00cd') : undefined,
         'Observaciones': sanitizeInput(guard.observations),
         'Archivo de tarea': guard.task_file_url,
     };

@@ -592,9 +592,10 @@ const App: React.FC = () => {
             }
             await refetch();
             setIsModalOpen(false);
-        } catch (err) {
-            console.error(err);
-            toast.error('Error guardando. Revisa la consola.');
+        } catch (err: any) {
+            console.error('Error guardando guardia:', err);
+            const msg = err?.message || err?.details || 'Error desconocido al guardar';
+            toast.error('Error guardando la guardia', { description: msg });
         }
     };
 
