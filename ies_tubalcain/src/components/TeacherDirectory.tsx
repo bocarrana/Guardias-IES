@@ -17,6 +17,8 @@ interface TeacherDirectoryProps {
     initialSearchQuery?: string;
 }
 
+type SortOption = 'name' | 'ranking' | 'department';
+
 const RankMedal = ({ rank }: { rank: number }) => {
     const colors = [
         { main: '#fbbf24', stroke: '#b45309', ribbon1: '#6366f1', ribbon2: '#4338ca', text: '#fff' }, // Oro
@@ -48,6 +50,7 @@ const RankMedal = ({ rank }: { rank: number }) => {
 const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, guards, meta, currentUser, onRefresh, initialSearchQuery }) => {
     const [searchQuery, setSearchQuery] = useState(initialSearchQuery || '');
     const [selectedDepartment, setSelectedDepartment] = useState<string>('');
+    const [sortBy, setSortBy] = useState<SortOption>('name');
     const [viewingTeacher, setViewingTeacher] = useState<Teacher | null>(null);
 
     const departments = useMemo(() => {
@@ -67,7 +70,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, guards, m
             return matchesSearch && matchesDept;
         });
 
-        return visibleTeachers.map((t) => {
+        const withStats = visibleTeachers.map((t) => {
             const myGuards = guards.filter(
                 (g) => g.covering_teacher_id === t.id || g.requesting_teacher_id === t.id
             );
@@ -80,14 +83,31 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, guards, m
             const requested = myGuards.filter((g) => g.requesting_teacher_id === t.id).length;
 
             return { ...t, ordinary, coexistence, requested, total: ordinary + coexistence };
-        }).sort((a, b) => b.ordinary - a.ordinary);
-    }, [teachers, guards, searchQuery, selectedDepartment]);
+        });
+
+        return withStats.sort((a, b) => {
+            if (sortBy === 'ranking') {
+                if (b.ordinary !== a.ordinary) return b.ordinary - a.ordinary;
+                if (b.coexistence !== a.coexistence) return b.coexistence - a.coexistence;
+                return a.name.localeCompare(b.name, 'es', { sensitivity: 'base' });
+            }
+            if (sortBy === 'department') {
+                const deptA = a.department || 'zzz';
+                const deptB = b.department || 'zzz';
+                const deptDiff = deptA.localeCompare(deptB, 'es', { sensitivity: 'base' });
+                if (deptDiff !== 0) return deptDiff;
+                return a.name.localeCompare(b.name, 'es', { sensitivity: 'base' });
+            }
+            // Default: 'name'
+            return a.name.localeCompare(b.name, 'es', { sensitivity: 'base' });
+        });
+    }, [teachers, guards, searchQuery, selectedDepartment, sortBy]);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             {/* Search & Filters */}
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                <div style={{ position: 'relative', minWidth: 260, flex: 1 }}>
+                <div style={{ position: 'relative', minWidth: 240, flex: 1 }}>
                     <Search style={{
                         position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
                         width: 16, height: 16, color: 'var(--slate-500)',
@@ -102,7 +122,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, guards, m
                     />
                 </div>
 
-                <div style={{ minWidth: 200 }}>
+                <div style={{ minWidth: 190 }}>
                     <select
                         className="select"
                         value={selectedDepartment}
@@ -113,6 +133,19 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, guards, m
                         {departments.map((dept) => (
                             <option key={dept} value={dept}>{dept}</option>
                         ))}
+                    </select>
+                </div>
+
+                <div style={{ minWidth: 190 }}>
+                    <select
+                        className="select"
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as SortOption)}
+                        style={{ width: '100%', height: '42px', color: 'var(--text-primary)', fontWeight: 600 }}
+                    >
+                        <option value="name">🔤 Ordenar: Nombre (A-Z)</option>
+                        <option value="ranking">🏆 Ordenar: Ranking Guardias</option>
+                        <option value="department">🏢 Ordenar: Departamento</option>
                     </select>
                 </div>
             </div>
@@ -144,7 +177,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, guards, m
                             ? getStorageUrl(teacher.avatar_url, 'Fotos')
                             : `https://ui-avatars.com/api/?name=${encodeURIComponent(teacher.name)}&background=0f172a&color=22d3ee&size=80`;
 
-                        const rankMedal = idx < 3 ? (
+                        const rankMedal = (sortBy === 'ranking' && idx < 3 && teacher.ordinary > 0) ? (
                             <RankMedal rank={idx} />
                         ) : null;
 
