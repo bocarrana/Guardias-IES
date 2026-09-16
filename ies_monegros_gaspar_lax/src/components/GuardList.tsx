@@ -1987,42 +1987,41 @@ const GuardList: React.FC<GuardListProps> = ({
                                     display: 'flex',
                                     gap: 8,
                                     overflowX: 'auto',
-                                    padding: '4px 2px 6px 2px',
+                                    padding: '8px 4px 6px 4px',
                                     scrollbarWidth: 'none',
                                     WebkitOverflowScrolling: 'touch'
                                 }} className="hide-scrollbar">
-                                    {/* Option "Todas las fechas" */}
+                                    {/* Option "Todos" */}
                                     <motion.button
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
+                                        whileHover={{ scale: 1.03 }}
+                                        whileTap={{ scale: 0.97 }}
                                         onClick={() => setSelectedDate(null)}
                                         style={{
-                                            display: 'inline-flex',
+                                            display: 'flex',
+                                            flexDirection: 'column',
                                             alignItems: 'center',
-                                            gap: 7,
-                                            padding: '6px 14px',
-                                            borderRadius: 'var(--radius-full)',
-                                            fontSize: '0.78rem',
-                                            fontWeight: 700,
-                                            cursor: 'pointer',
+                                            justifyContent: 'center',
+                                            minWidth: '64px',
+                                            height: '74px',
+                                            borderRadius: 'var(--radius-lg)',
                                             border: selectedDate === null
-                                                ? '1px solid var(--brand-400)'
+                                                ? '2px solid var(--brand-400)'
                                                 : '1px solid rgba(255, 255, 255, 0.08)',
                                             background: selectedDate === null
-                                                ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(8, 145, 178, 0.35))'
-                                                : 'rgba(30, 41, 59, 0.45)',
-                                            color: selectedDate === null ? '#fff' : 'var(--text-secondary)',
+                                                ? 'rgba(6, 182, 212, 0.15)'
+                                                : 'rgba(30, 41, 59, 0.35)',
+                                            color: selectedDate === null ? 'var(--brand-400)' : 'var(--text-secondary)',
+                                            cursor: 'pointer',
                                             transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                            boxShadow: selectedDate === null ? '0 0 12px rgba(6, 182, 212, 0.25)' : 'none',
-                                            whiteSpace: 'nowrap',
+                                            boxShadow: selectedDate === null ? '0 0 15px rgba(6, 182, 212, 0.25)' : 'none',
                                             flexShrink: 0
                                         }}
                                     >
-                                        <Calendar size={13} style={{ opacity: selectedDate === null ? 1 : 0.7 }} />
-                                        <span>Todas las fechas</span>
+                                        <Calendar size={18} style={{ marginBottom: 4 }} />
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 800 }}>Todos</span>
                                     </motion.button>
 
-                                    {/* Date pills */}
+                                    {/* Date sheet cards (hojas de calendario) */}
                                     {availableDates.map((dateStr) => {
                                         const { dayName, dayNum, monthName, isToday } = getFormattedDateParts(dateStr, todayDateStr);
                                         const isSelected = selectedDate === dateStr;
@@ -2031,58 +2030,77 @@ const GuardList: React.FC<GuardListProps> = ({
                                         return (
                                             <motion.button
                                                 key={dateStr}
-                                                whileHover={{ scale: 1.02 }}
-                                                whileTap={{ scale: 0.98 }}
+                                                whileHover={{ scale: 1.03 }}
+                                                whileTap={{ scale: 0.97 }}
                                                 onClick={() => setSelectedDate(dateStr)}
                                                 style={{
-                                                    display: 'inline-flex',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
                                                     alignItems: 'center',
-                                                    gap: 7,
-                                                    padding: '6px 14px',
-                                                    borderRadius: 'var(--radius-full)',
-                                                    fontSize: '0.78rem',
-                                                    fontWeight: 700,
-                                                    cursor: 'pointer',
+                                                    justifyContent: 'center',
+                                                    minWidth: '64px',
+                                                    height: '74px',
+                                                    borderRadius: 'var(--radius-lg)',
                                                     border: isSelected
-                                                        ? '1px solid var(--brand-400)'
-                                                        : '1px solid rgba(255, 255, 255, 0.08)',
+                                                ? '2px solid var(--brand-400)'
+                                                : '1px solid rgba(255, 255, 255, 0.08)',
                                                     background: isSelected
-                                                        ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(8, 145, 178, 0.35))'
-                                                        : 'rgba(30, 41, 59, 0.45)',
-                                                    color: isSelected ? '#fff' : 'var(--text-secondary)',
+                                                        ? 'rgba(6, 182, 212, 0.15)'
+                                                        : 'rgba(30, 41, 59, 0.35)',
+                                                    color: isSelected ? 'var(--brand-400)' : 'var(--text-secondary)',
+                                                    cursor: 'pointer',
                                                     transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                                    boxShadow: isSelected ? '0 0 12px rgba(6, 182, 212, 0.25)' : 'none',
-                                                    whiteSpace: 'nowrap',
+                                                    boxShadow: isSelected ? '0 0 15px rgba(6, 182, 212, 0.25)' : 'none',
+                                                    position: 'relative',
                                                     flexShrink: 0
                                                 }}
                                             >
-                                                {isToday && (
-                                                    <span style={{
-                                                        width: 6,
-                                                        height: 6,
-                                                        borderRadius: '50%',
-                                                        background: 'var(--warning)',
-                                                        boxShadow: '0 0 6px var(--warning)',
-                                                        display: 'inline-block'
-                                                    }} />
-                                                )}
-                                                <span>
-                                                    {isToday ? 'Hoy · ' : ''}{dayName} {dayNum} {monthName}
+                                                <span style={{
+                                                    fontSize: '0.6rem',
+                                                    fontWeight: 800,
+                                                    textTransform: 'uppercase',
+                                                    opacity: isSelected ? 1 : 0.6,
+                                                    color: isToday ? 'var(--warning)' : undefined,
+                                                    letterSpacing: '0.05em'
+                                                }}>
+                                                    {dayName} {isToday && '•'}
+                                                </span>
+                                                <span style={{
+                                                    fontSize: '1.25rem',
+                                                    fontWeight: 900,
+                                                    lineHeight: 1,
+                                                    margin: '3px 0'
+                                                }}>
+                                                    {dayNum}
+                                                </span>
+                                                <span style={{
+                                                    fontSize: '0.6rem',
+                                                    fontWeight: 800,
+                                                    textTransform: 'uppercase',
+                                                    opacity: isSelected ? 1 : 0.6,
+                                                    letterSpacing: '0.05em'
+                                                }}>
+                                                    {monthName}
                                                 </span>
 
                                                 {/* Guard Count Badge */}
                                                 {count > 0 && (
                                                     <span style={{
-                                                        background: isSelected ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.08)',
+                                                        position: 'absolute',
+                                                        top: -4,
+                                                        right: -4,
+                                                        background: isSelected ? 'var(--brand-500)' : 'rgba(15, 23, 42, 0.8)',
+                                                        border: '1.5px solid ' + (isSelected ? 'var(--brand-400)' : 'rgba(255,255,255,0.15)'),
                                                         color: isSelected ? '#fff' : 'var(--brand-400)',
-                                                        fontSize: '0.68rem',
-                                                        fontWeight: 800,
-                                                        padding: '1px 6px',
-                                                        borderRadius: 'var(--radius-full)',
-                                                        border: isSelected ? '1px solid rgba(255, 255, 255, 0.4)' : '1px solid rgba(255, 255, 255, 0.06)',
-                                                        minWidth: '18px',
-                                                        textAlign: 'center',
-                                                        boxShadow: isSelected ? '0 0 8px rgba(255, 255, 255, 0.2)' : 'none'
+                                                        fontSize: '0.55rem',
+                                                        fontWeight: 900,
+                                                        borderRadius: '50%',
+                                                        width: 17,
+                                                        height: 17,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
                                                     }}>
                                                         {count}
                                                     </span>
