@@ -755,3 +755,18 @@ button,
   visibility: visible;
   transform: translateY(-50%) translateX(0);
 }
+
+/* --- Smooth Hidden Scrollbars --- */
+.sidebar-nav-scroll,
+.hide-scrollbar {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.sidebar-nav-scroll::-webkit-scrollbar,
+.hide-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+

@@ -154,15 +154,19 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, view, onViewChange, onCrea
 
             {/* Navigation */}
             {!isPantallaRole(currentUser?.role) && (
-                <nav style={{
-                    padding: collapsed ? '16px 8px' : '16px',
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 4,
-                    overflowY: 'auto',
-                    overflowX: 'hidden',
-                }}>
+                <nav
+                    className="sidebar-nav-scroll"
+                    style={{
+                        padding: collapsed ? '16px 8px' : '16px',
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 4,
+                        overflowY: 'auto',
+                        overflowX: 'hidden',
+                        scrollbarWidth: 'none',
+                    }}
+                >
                     {navItems
                     .filter(item => {
                         if (isPantallaRole(currentUser?.role)) {
