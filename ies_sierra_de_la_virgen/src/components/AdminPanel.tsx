@@ -179,11 +179,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
     const [filterDayPersonal, setFilterDayPersonal] = useState<string>('');
     const [filterSlotPersonal, setFilterSlotPersonal] = useState<string>('');
 
-    // Sort state: { key: column key, dir: 'asc' | 'desc' | null }
     const [sortTeachers, setSortTeachers] = useState<{ key: string; dir: 'asc' | 'desc' | null }>({ key: '', dir: null });
     const [sortSchedules, setSortSchedules] = useState<{ key: string; dir: 'asc' | 'desc' | null }>({ key: '', dir: null });
     const [sortPersonal, setSortPersonal] = useState<{ key: string; dir: 'asc' | 'desc' | null }>({ key: '', dir: null });
     const [sortAudit, setSortAudit] = useState<{ key: string; dir: 'asc' | 'desc' | null }>({ key: 'name', dir: 'asc' });
+    const [sortGuards, setSortGuards] = useState<{ key: string; dir: 'asc' | 'desc' | null }>({ key: 'date', dir: 'desc' });
 
     const toggleSort = (setter: React.Dispatch<React.SetStateAction<{ key: string; dir: 'asc' | 'desc' | null }>>, key: string) => {
         setter(prev => {
@@ -347,11 +347,64 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
         return matchesSearch && (isRegularUser || isSelf);
     });
 
-    const filteredGuards = guards.filter(g =>
-        (g.id.toLowerCase().includes(search.toLowerCase()) ||
-            (g.requesting_teacher?.name || '').toLowerCase().includes(search.toLowerCase())) &&
-        g.type !== GuardType.RECREO
-    );
+    const getSlotNumberOrLabel = (slotId?: string) => {
+        if (!slotId) return '-';
+        const slot = meta.slots.find(s => s.id === slotId);
+        if (!slot) return slotId;
+        const l = slot.label.toLowerCase();
+        if (l.includes('primer') && l.includes('recreo')) return '1º Recreo';
+        if (l.includes('segund') && l.includes('recreo')) return '2º Recreo';
+        if (l.includes('recreo') || l.includes('patio')) return 'Recreo';
+        if (l.includes('primera') || l.includes('1ª') || l.includes('1a')) return '1ª Hora (1)';
+        if (l.includes('segunda') || l.includes('2ª') || l.includes('2a')) return '2ª Hora (2)';
+        if (l.includes('tercera') || l.includes('3ª') || l.includes('3a')) return '3ª Hora (3)';
+        if (l.includes('cuarta') || l.includes('4ª') || l.includes('4a')) return '4ª Hora (4)';
+        if (l.includes('quinta') || l.includes('5ª') || l.includes('5a')) return '5ª Hora (5)';
+        if (l.includes('sexta') || l.includes('6ª') || l.includes('6a')) return '6ª Hora (6)';
+        if (l.includes('séptima') || l.includes('septima') || l.includes('7ª')) return '7ª Hora (7)';
+        return slot.label;
+    };
+
+    const filteredGuards = guards
+        .filter(g => {
+            const q = search.toLowerCase();
+            const slotName = meta.slots.find(s => s.id === g.time_slot_id)?.label || '';
+            const slotDisplay = getSlotNumberOrLabel(g.time_slot_id);
+            return (
+                g.id.toLowerCase().includes(q) ||
+                (g.date || '').toLowerCase().includes(q) ||
+                (g.requesting_teacher?.name || '').toLowerCase().includes(q) ||
+                (g.covering_teacher?.name || '').toLowerCase().includes(q) ||
+                (g.status || '').toLowerCase().includes(q) ||
+                slotName.toLowerCase().includes(q) ||
+                slotDisplay.toLowerCase().includes(q)
+            ) && g.type !== GuardType.RECREO;
+        })
+        .sort((a, b) => {
+            if (!sortGuards.key || !sortGuards.dir) return 0;
+            let va = '', vb = '';
+            if (sortGuards.key === 'id') {
+                va = a.id; vb = b.id;
+            } else if (sortGuards.key === 'date') {
+                va = a.date; vb = b.date;
+            } else if (sortGuards.key === 'slot') {
+                const idxA = meta.slots.findIndex(s => s.id === a.time_slot_id);
+                const idxB = meta.slots.findIndex(s => s.id === b.time_slot_id);
+                const diff = (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
+                return sortGuards.dir === 'asc' ? diff : -diff;
+            } else if (sortGuards.key === 'requesting_teacher') {
+                va = a.requesting_teacher?.name || '';
+                vb = b.requesting_teacher?.name || '';
+            } else if (sortGuards.key === 'covering_teacher') {
+                va = a.covering_teacher?.name || 'zzzz';
+                vb = b.covering_teacher?.name || 'zzzz';
+            } else if (sortGuards.key === 'status') {
+                va = a.status || '';
+                vb = b.status || '';
+            }
+            const cmp = va.localeCompare(vb, 'es', { numeric: true });
+            return sortGuards.dir === 'asc' ? cmp : -cmp;
+        });
 
     const auditResults = teachers
         .filter(t => {
@@ -1376,10 +1429,24 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                                     }}
                                                 />
                                             </th>
-                                            <th style={thStyle}>ID</th>
-                                            <th style={thStyle}>Fecha</th>
-                                            <th style={thStyle}>Profesor</th>
-                                            <th style={thStyle}>Estado</th>
+                                            <th style={{ ...thStyle, cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort(setSortGuards, 'id')}>
+                                                ID <SortIcon active={sortGuards.key === 'id'} dir={sortGuards.dir} />
+                                            </th>
+                                            <th style={{ ...thStyle, cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort(setSortGuards, 'date')}>
+                                                Fecha <SortIcon active={sortGuards.key === 'date'} dir={sortGuards.dir} />
+                                            </th>
+                                            <th style={{ ...thStyle, cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort(setSortGuards, 'slot')}>
+                                                Franja <SortIcon active={sortGuards.key === 'slot'} dir={sortGuards.dir} />
+                                            </th>
+                                            <th style={{ ...thStyle, cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort(setSortGuards, 'requesting_teacher')}>
+                                                Profesor Ausente <SortIcon active={sortGuards.key === 'requesting_teacher'} dir={sortGuards.dir} />
+                                            </th>
+                                            <th style={{ ...thStyle, cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort(setSortGuards, 'covering_teacher')}>
+                                                Realizada por <SortIcon active={sortGuards.key === 'covering_teacher'} dir={sortGuards.dir} />
+                                            </th>
+                                            <th style={{ ...thStyle, cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort(setSortGuards, 'status')}>
+                                                Estado <SortIcon active={sortGuards.key === 'status'} dir={sortGuards.dir} />
+                                            </th>
                                             <th style={{ ...thStyle, textAlign: 'right' }}>Acciones</th>
                                         </>
                                     )}
@@ -1549,7 +1616,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                                             }}
                                                         />
                                                     </td>
-                                                    <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--brand-400)' }}>{g.id}</td>
+
+                                                    {/* ID */}
+                                                    <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--brand-400)', fontWeight: 700 }}>
+                                                        {g.id}
+                                                    </td>
+
+                                                    {/* FECHA */}
                                                     <td style={tdStyle}>
                                                         {editingGuardId === g.id ? (
                                                             <MonthDayPicker 
@@ -1557,8 +1630,45 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                                                 onChange={dateVal => setEditGuardForm({ ...editGuardForm, date: dateVal })} 
                                                                 style={{ minWidth: 120 }}
                                                             />
-                                                        ) : g.date}
+                                                        ) : (
+                                                            <span style={{ fontWeight: 600 }}>{g.date}</span>
+                                                        )}
                                                     </td>
+
+                                                    {/* FRANJA HORARIA */}
+                                                    <td style={tdStyle}>
+                                                        {editingGuardId === g.id ? (
+                                                            <select 
+                                                                className="select" 
+                                                                value={editGuardForm.time_slot_id} 
+                                                                onChange={e => setEditGuardForm({ ...editGuardForm, time_slot_id: e.target.value })} 
+                                                                style={smallInput}
+                                                            >
+                                                                {meta.slots.map(s => (
+                                                                    <option key={s.id} value={s.id}>{getSlotNumberOrLabel(s.id)}</option>
+                                                                ))}
+                                                            </select>
+                                                        ) : (
+                                                            <span style={{
+                                                                fontSize: '0.75rem',
+                                                                fontWeight: 700,
+                                                                padding: '3px 8px',
+                                                                borderRadius: 6,
+                                                                background: 'rgba(34, 211, 238, 0.08)',
+                                                                color: 'var(--brand-300)',
+                                                                border: '1px solid rgba(34, 211, 238, 0.2)',
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                gap: 4,
+                                                                whiteSpace: 'nowrap'
+                                                            }}>
+                                                                <Clock size={11} style={{ opacity: 0.7 }} />
+                                                                {getSlotNumberOrLabel(g.time_slot_id)}
+                                                            </span>
+                                                        )}
+                                                    </td>
+
+                                                    {/* PROFESOR AUSENTE */}
                                                     <td style={tdStyle}>
                                                         {editingGuardId === g.id ? (
                                                             <select className="select" value={editGuardForm.requesting_teacher_id} onChange={e => setEditGuardForm({ ...editGuardForm, requesting_teacher_id: e.target.value })} style={smallInput}>
@@ -1566,43 +1676,112 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                                             </select>
                                                         ) : (
                                                             <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                                <div style={{ fontWeight: 600 }}>{g.requesting_teacher?.name}</div>
-                                                                <a
-                                                                    href={`https://mail.google.com/mail/?view=cm&fs=1&to=${g.requesting_teacher?.email}`}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    style={{ fontSize: '0.75rem', color: 'var(--brand-400)', opacity: 0.8, display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                >
-                                                                    <Mail size={10} />
-                                                                    {g.requesting_teacher?.email}
-                                                                </a>
+                                                                <div style={{ fontWeight: 600, color: 'var(--heading-color)' }}>{g.requesting_teacher?.name || '-'}</div>
+                                                                {g.requesting_teacher?.email && (
+                                                                    <a
+                                                                        href={`https://mail.google.com/mail/?view=cm&fs=1&to=${g.requesting_teacher?.email}`}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        style={{ fontSize: '0.72rem', color: 'var(--brand-400)', opacity: 0.8, display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                    >
+                                                                        <Mail size={10} />
+                                                                        {g.requesting_teacher?.email}
+                                                                    </a>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </td>
+
+                                                    {/* QUIEN HA REALIZADO LA GUARDIA (Null si no se cubrió) */}
+                                                    <td style={tdStyle}>
+                                                        {editingGuardId === g.id ? (
+                                                            <select 
+                                                                className="select" 
+                                                                value={editGuardForm.covering_teacher_id || ''} 
+                                                                onChange={e => setEditGuardForm({ ...editGuardForm, covering_teacher_id: e.target.value || null })} 
+                                                                style={smallInput}
+                                                            >
+                                                                <option value="">Null (Sin cubrir / Automática)</option>
+                                                                {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                                            </select>
+                                                        ) : (
+                                                            g.covering_teacher?.name ? (
+                                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                                    <div style={{ fontWeight: 600, color: 'var(--brand-300)' }}>{g.covering_teacher.name}</div>
+                                                                    {g.covering_teacher.email && (
+                                                                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                                                                            {g.covering_teacher.email}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            ) : (
+                                                                <span style={{
+                                                                    fontSize: '0.75rem',
+                                                                    fontFamily: 'var(--font-mono)',
+                                                                    color: 'var(--slate-400)',
+                                                                    padding: '2px 7px',
+                                                                    borderRadius: 5,
+                                                                    background: 'rgba(255,255,255,0.03)',
+                                                                    border: '1px dashed var(--slate-700)',
+                                                                    fontStyle: 'italic',
+                                                                    fontWeight: 700
+                                                                }}>
+                                                                    Null
+                                                                </span>
+                                                            )
+                                                        )}
+                                                    </td>
+
+                                                    {/* ESTADO */}
                                                     <td style={tdStyle}>
                                                         {editingGuardId === g.id ? (
                                                             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                                                 <select className="select" value={editGuardForm.status} onChange={e => setEditGuardForm({ ...editGuardForm, status: e.target.value as any })} style={smallInput}>
-                                                                    <option value="Pendiente/disponible">Pendiente</option>
+                                                                    <option value="Pendiente/disponible">Pendiente/disponible</option>
+                                                                    <option value="Pendiente/asignada">Pendiente/asignada</option>
                                                                     <option value="Realizada">Realizada</option>
                                                                 </select>
-                                                                <textarea className="input" placeholder="Observaciones..." value={editGuardForm.observations || ''} onChange={e => setEditGuardForm({ ...editGuardForm, observations: e.target.value })} style={{ ...smallInput, minHeight: 60 }} />
+                                                                <textarea className="input" placeholder="Observaciones..." value={editGuardForm.observations || ''} onChange={e => setEditGuardForm({ ...editGuardForm, observations: e.target.value })} style={{ ...smallInput, minHeight: 50 }} />
                                                             </div>
                                                         ) : (
-                                                            <div style={{ color: g.status === 'Realizada' ? 'var(--success-400)' : 'var(--warning-400)', fontSize: '0.85rem' }}>
+                                                            <span style={{
+                                                                padding: '3px 8px',
+                                                                borderRadius: 6,
+                                                                fontSize: '0.75rem',
+                                                                fontWeight: 700,
+                                                                background: g.status === 'Realizada' 
+                                                                    ? 'rgba(34, 197, 94, 0.12)' 
+                                                                    : g.status === 'Pendiente/asignada'
+                                                                        ? 'rgba(245, 158, 11, 0.12)'
+                                                                        : 'rgba(239, 68, 68, 0.12)',
+                                                                color: g.status === 'Realizada' 
+                                                                    ? '#22c55e' 
+                                                                    : g.status === 'Pendiente/asignada'
+                                                                        ? '#f59e0b'
+                                                                        : '#f87171',
+                                                                border: `1px solid ${
+                                                                    g.status === 'Realizada' 
+                                                                        ? 'rgba(34, 197, 94, 0.25)' 
+                                                                        : g.status === 'Pendiente/asignada'
+                                                                            ? 'rgba(245, 158, 11, 0.25)'
+                                                                            : 'rgba(239, 68, 68, 0.25)'
+                                                                }`
+                                                            }}>
                                                                 {g.status}
-                                                            </div>
+                                                            </span>
                                                         )}
                                                     </td>
+
+                                                    {/* ACCIONES */}
                                                     <td style={{ ...tdStyle, textAlign: 'right' }}>
                                                         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                                                             {editingGuardId === g.id ? (
-                                                                <><button onClick={() => handleUpdateGuard(g.id)} className="btn btn-success" style={iconBtnStyle}><Check size={14} /></button>
-                                                                    <button onClick={() => setEditingGuardId(null)} className="btn btn-ghost" style={iconBtnStyle}><X size={14} /></button></>
+                                                                <><button onClick={() => handleUpdateGuard(g.id)} className="btn btn-success" style={iconBtnStyle} title="Guardar"><Check size={14} /></button>
+                                                                    <button onClick={() => setEditingGuardId(null)} className="btn btn-ghost" style={iconBtnStyle} title="Cancelar"><X size={14} /></button></>
                                                             ) : (
-                                                                <><button onClick={() => { setEditingGuardId(g.id); setEditGuardForm(g); }} className="btn btn-ghost" style={iconBtnStyle}><Edit2 size={14} /></button>
-                                                                    <button onClick={() => handleDeleteGuard(g.id)} className="btn btn-danger-subtle" style={iconBtnStyle}><Trash2 size={14} /></button></>
+                                                                <><button onClick={() => { setEditingGuardId(g.id); setEditGuardForm(g); }} className="btn btn-ghost" style={iconBtnStyle} title="Editar"><Edit2 size={14} /></button>
+                                                                    <button onClick={() => handleDeleteGuard(g.id)} className="btn btn-danger-subtle" style={iconBtnStyle} title="Eliminar"><Trash2 size={14} /></button></>
                                                             )}
                                                         </div>
                                                     </td>
