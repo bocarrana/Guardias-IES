@@ -1671,25 +1671,45 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                                     {/* PROFESOR AUSENTE */}
                                                     <td style={tdStyle}>
                                                         {editingGuardId === g.id ? (
-                                                            <select className="select" value={editGuardForm.requesting_teacher_id} onChange={e => setEditGuardForm({ ...editGuardForm, requesting_teacher_id: e.target.value })} style={smallInput}>
+                                                            <select className="select" value={editGuardForm.requesting_teacher_id || ''} onChange={e => setEditGuardForm({ ...editGuardForm, requesting_teacher_id: e.target.value })} style={smallInput}>
+                                                                <option value="">-- Guardia de Convivencia (Sin ausente) --</option>
                                                                 {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                                                             </select>
                                                         ) : (
-                                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                                <div style={{ fontWeight: 600, color: 'var(--heading-color)' }}>{g.requesting_teacher?.name || '-'}</div>
-                                                                {g.requesting_teacher?.email && (
-                                                                    <a
-                                                                        href={`https://mail.google.com/mail/?view=cm&fs=1&to=${g.requesting_teacher?.email}`}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        style={{ fontSize: '0.72rem', color: 'var(--brand-400)', opacity: 0.8, display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}
-                                                                        onClick={(e) => e.stopPropagation()}
-                                                                    >
-                                                                        <Mail size={10} />
-                                                                        {g.requesting_teacher?.email}
-                                                                    </a>
-                                                                )}
-                                                            </div>
+                                                            g.requesting_teacher?.name ? (
+                                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                                    <div style={{ fontWeight: 600, color: 'var(--heading-color)' }}>{g.requesting_teacher.name}</div>
+                                                                    {g.requesting_teacher.email && (
+                                                                        <a
+                                                                            href={`https://mail.google.com/mail/?view=cm&fs=1&to=${g.requesting_teacher.email}`}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            style={{ fontSize: '0.72rem', color: 'var(--brand-400)', opacity: 0.8, display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                        >
+                                                                            <Mail size={10} />
+                                                                            {g.requesting_teacher.email}
+                                                                        </a>
+                                                                    )}
+                                                                </div>
+                                                            ) : (
+                                                                <span style={{
+                                                                    fontSize: '0.75rem',
+                                                                    fontWeight: 700,
+                                                                    padding: '3px 8px',
+                                                                    borderRadius: 6,
+                                                                    background: 'rgba(168, 85, 247, 0.12)',
+                                                                    color: '#c084fc',
+                                                                    border: '1px solid rgba(168, 85, 247, 0.25)',
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    gap: 5,
+                                                                    width: 'fit-content',
+                                                                    whiteSpace: 'nowrap'
+                                                                }}>
+                                                                    <span>🛡️</span> Guardia de Convivencia
+                                                                </span>
+                                                            )
                                                         )}
                                                     </td>
 
