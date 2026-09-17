@@ -8,6 +8,8 @@
 2. **Verificación de Build:**
    - Siempre verificar que `npm run build` en `_plantilla_base` compila sin errores antes de finalizar.
 
-3. **Auto-Push para Despliegue en Producción (Vercel):**
+3. **Auto-Push y Despliegue en Producción (Vercel):**
    - El usuario requiere visualizar siempre los cambios en sus apps desplegadas sin tener que pedirlo.
-   - Una vez finalizados y verificados los cambios, el agente DEBE realizar automáticamente el `git add`, `git commit -m "..."` y `git push origin main` en el repositorio para que Vercel despliegue la actualización inmediatamente.
+   - Una vez finalizados y verificados los cambios, el agente DEBE realizar:
+     1. `git add .`, `git commit -m "..."` y `git push origin main` en `guardias-ies-aragon`.
+     2. Despliegue directo en `ies_reyes_catolicos` con `npx vercel --prod --yes` (asociado al proyecto `project-kwzf8` de Vercel que sirve el dominio oficial `guardias.iesreyescatolicos.com`).
