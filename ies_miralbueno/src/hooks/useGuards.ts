@@ -26,6 +26,9 @@ export const useGuards = (isAuthenticated: boolean) => {
                 invalidateCache('meta_options');
                 invalidateCache('auto_guard_groups');
             }
+            // Sincronización automática de permisos de Libre Disposición inminentes (<= 24h)
+            await syncImminentLibreDisposicionGuards().catch(console.error);
+
             const [guardsData, teachersData, metaData, schedulesData] = await Promise.all([
                 getGuards(),
                 getTeachers(true),
@@ -55,6 +58,7 @@ export const useGuards = (isAuthenticated: boolean) => {
         if (!isAuthenticated) return;
         const interval = setInterval(() => {
             if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+                syncImminentLibreDisposicionGuards().catch(console.error);
                 getGuards().then(setGuards).catch(console.error);
             }
         }, 90000);

@@ -1,11 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Guard, GuardType, MetaOptions, TaskStatus, Teacher, getGuardTaskType } from '../types';
+import { Guard, GuardType, MetaOptions, TaskStatus, Teacher, getGuardTaskType, PersonalScheduleEntry } from '../types';
 import CustomDatePicker from './CustomDatePicker';
 import { uploadTaskFile, getPersonalSchedule, isSchoolDay } from '../services/supabaseClient';
 import { toast } from 'sonner';
-import { PersonalScheduleEntry } from '../types';
-import { useEffect } from 'react';
 import { canAccessAdminPanel } from '../utils/roles';
 import { HelpBadge } from './help';
 
@@ -29,7 +27,7 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
 
     const [formData, setFormData] = useState({
         date: editingGuard?.date || new Date().toISOString().split('T')[0],
-        time_slot_id: editingGuard?.time_slot_id || meta.slots[0]?.id || '',
+        time_slot_id: editingGuard?.time_slot_id || '',
         classroom_id: editingGuard?.classroom_id || '',
         group_id: editingGuard?.group_id || '',
         subject_id: editingGuard?.subject_id || '',
@@ -40,9 +38,14 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
         covering_teacher_id: editingGuard?.covering_teacher_id || '',
         task_file_url: editingGuard?.task_file_url || '',
     });
+
     const [personalSchedule, setPersonalSchedule] = useState<PersonalScheduleEntry[]>([]);
     const [loadingSchedule, setLoadingSchedule] = useState(false);
     const [selectedScheduleEntries, setSelectedScheduleEntries] = useState<PersonalScheduleEntry[]>([]);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [submitting, setSubmitting] = useState(false);
+    const [dateBlocked, setDateBlocked] = useState(false);
+    const [dateBlockReason, setDateBlockReason] = useState('');
 
     const getDayName = (dateStr: string) => {
         const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -50,22 +53,40 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
     };
 
     const currentDay = getDayName(formData.date);
-    const daySchedule = personalSchedule.filter(s => {
-        if (s.dia_semana !== currentDay) return false;
-        if (s.tipo === 'Guardia') return false;
-        if (s.materia_id === 'M_GUARDIA') return false;
-        const slot = meta.slots.find(sl => sl.id === s.franja_id);
-        if (slot && (slot.label.toLowerCase().includes('recreo') || slot.label.toLowerCase().includes('patio'))) return false;
-        return true;
-    });
 
+    // Filter personal schedule for selected day (including both classes and guards)
+    const daySchedule = useMemo(() => {
+        return personalSchedule.filter(s => s.dia_semana === currentDay);
+    }, [personalSchedule, currentDay]);
+
+    // Sort schedule entries chronologically by slot order in meta.slots
+    const sortedDaySchedule = useMemo(() => {
+        return [...daySchedule].sort((a, b) => {
+            const indexA = meta.slots.findIndex(s => s.id === a.franja_id);
+            const indexB = meta.slots.findIndex(s => s.id === b.franja_id);
+            return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+        });
+    }, [daySchedule, meta.slots]);
+
+    // Available slots: For admins, all regular slots. For teachers, ONLY slots present in their day schedule.
+    const availableSlots = useMemo(() => {
+        if (isAdmin) {
+            return meta.slots.filter((s) => !s.label.toLowerCase().includes('recreo'));
+        }
+        return meta.slots.filter((s) => sortedDaySchedule.some(entry => entry.franja_id === s.id));
+    }, [isAdmin, meta.slots, sortedDaySchedule]);
+
+    // Load teacher schedule
     useEffect(() => {
         if (formData.requesting_teacher_id) {
             setLoadingSchedule(true);
             getPersonalSchedule(formData.requesting_teacher_id).then(data => {
-                setPersonalSchedule(data);
+                setPersonalSchedule(data || []);
                 setLoadingSchedule(false);
                 setSelectedScheduleEntries([]);
+            }).catch(() => {
+                setPersonalSchedule([]);
+                setLoadingSchedule(false);
             });
         } else {
             setPersonalSchedule([]);
@@ -73,14 +94,55 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
         }
     }, [formData.requesting_teacher_id]);
 
+    // Reset multi-select when date changes
     useEffect(() => {
         setSelectedScheduleEntries([]);
     }, [formData.date]);
 
+    // When day schedule or date changes for non-admin, ensure valid slot selection & auto-fill
+    useEffect(() => {
+        if (!isAdmin && !editingGuard && !loadingSchedule) {
+            if (sortedDaySchedule.length > 0) {
+                // If current selected slot is valid, find its entry; otherwise select first entry
+                const currentEntry = sortedDaySchedule.find(e => e.franja_id === formData.time_slot_id);
+                const targetEntry = currentEntry || sortedDaySchedule[0];
+                
+                if (targetEntry) {
+                    if (targetEntry.tipo === 'Guardia' || targetEntry.materia_id === 'M_GUARDIA') {
+                        setFormData(prev => ({
+                            ...prev,
+                            time_slot_id: targetEntry.franja_id,
+                            classroom_id: '',
+                            group_id: '',
+                            subject_id: 'M_GUARDIA'
+                        }));
+                    } else {
+                        setFormData(prev => ({
+                            ...prev,
+                            time_slot_id: targetEntry.franja_id,
+                            classroom_id: targetEntry.aula_id || '',
+                            group_id: targetEntry.grupo_id || '',
+                            subject_id: targetEntry.materia_id || ''
+                        }));
+                    }
+                }
+            } else {
+                setFormData(prev => ({
+                    ...prev,
+                    time_slot_id: '',
+                    classroom_id: '',
+                    group_id: '',
+                    subject_id: ''
+                }));
+            }
+        }
+    }, [formData.date, sortedDaySchedule, isAdmin, editingGuard, loadingSchedule]);
+
+    // Update formData when exactly 1 schedule entry is selected
     useEffect(() => {
         if (selectedScheduleEntries.length === 1) {
             const entry = selectedScheduleEntries[0];
-            if (entry.tipo === 'Guardia') {
+            if (entry.tipo === 'Guardia' || entry.materia_id === 'M_GUARDIA') {
                 setFormData(prev => ({
                     ...prev,
                     time_slot_id: entry.franja_id,
@@ -100,6 +162,41 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
         }
     }, [selectedScheduleEntries]);
 
+    // Handle slot dropdown change
+    const handleSlotChange = (slotId: string) => {
+        if (!slotId) {
+            setFormData(prev => ({ ...prev, time_slot_id: '' }));
+            return;
+        }
+
+        if (!isAdmin) {
+            const matching = sortedDaySchedule.find(e => e.franja_id === slotId);
+            if (matching) {
+                setSelectedScheduleEntries([matching]);
+                if (matching.tipo === 'Guardia' || matching.materia_id === 'M_GUARDIA') {
+                    setFormData(prev => ({
+                        ...prev,
+                        time_slot_id: matching.franja_id,
+                        classroom_id: '',
+                        group_id: '',
+                        subject_id: 'M_GUARDIA'
+                    }));
+                } else {
+                    setFormData(prev => ({
+                        ...prev,
+                        time_slot_id: matching.franja_id,
+                        classroom_id: matching.aula_id || '',
+                        group_id: matching.grupo_id || '',
+                        subject_id: matching.materia_id || ''
+                    }));
+                }
+                return;
+            }
+        }
+
+        setFormData(prev => ({ ...prev, time_slot_id: slotId }));
+    };
+
     const handleFillFromSchedule = (entry: PersonalScheduleEntry) => {
         setSelectedScheduleEntries(prev => {
             const exists = prev.some(e => e.id === entry.id);
@@ -110,11 +207,6 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
             }
         });
     };
-
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [submitting, setSubmitting] = useState(false);
-    const [dateBlocked, setDateBlocked] = useState(false);
-    const [dateBlockReason, setDateBlockReason] = useState('');
 
     // Check if selected date is a school day
     useEffect(() => {
@@ -150,6 +242,29 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
             });
             return;
         }
+
+        // Strict validation for regular teachers: must be in their personal schedule
+        if (!isAdmin && !editingGuard) {
+            if (sortedDaySchedule.length === 0) {
+                toast.error('No tienes clases lectivas ni guardias asignadas en tu horario para este día.');
+                return;
+            }
+
+            if (selectedScheduleEntries.length > 1) {
+                const hasInvalid = selectedScheduleEntries.some(e => !sortedDaySchedule.some(s => s.id === e.id));
+                if (hasInvalid) {
+                    toast.error('Solo puedes solicitar guardias de clases dentro de tu horario personal asignado.');
+                    return;
+                }
+            } else {
+                const matchesSchedule = sortedDaySchedule.some(s => s.franja_id === formData.time_slot_id);
+                if (!matchesSchedule) {
+                    toast.error('La franja seleccionada no coincide con ninguna clase o guardia de tu horario.');
+                    return;
+                }
+            }
+        }
+
         setSubmitting(true);
         try {
             let uploadedFileUrl = '';
@@ -167,7 +282,7 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
 
             if (selectedScheduleEntries.length > 1) {
                 const payloads = selectedScheduleEntries.map(entry => {
-                    const isGuard = entry.tipo === 'Guardia';
+                    const isGuard = entry.tipo === 'Guardia' || entry.materia_id === 'M_GUARDIA';
                     let computedHasTask = formData.has_task;
                     if (uploadedFileUrl) {
                         computedHasTask = (formData.has_task === TaskStatus.BANDEJA || formData.has_task === TaskStatus.AMBAS) 
@@ -206,6 +321,8 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
             setSubmitting(false);
         }
     };
+
+    const isTeacherScheduleEmpty = !isAdmin && !loadingSchedule && sortedDaySchedule.length === 0;
 
     return (
         <div
@@ -319,12 +436,12 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
                                     ))}
                             </select>
                             <p style={{ fontSize: '0.65rem', color: 'var(--slate-500)', marginTop: 4 }}>
-                                Como administrador, puedes crear guardias para cualquier docente.
+                                Como administrador, puedes crear guardias para cualquier docente y franja.
                             </p>
                         </div>
                     )}
 
-                    {/* Admin Covering Teacher (Profesor que cubre / a posteriori) */}
+                    {/* Admin Covering Teacher */}
                     {isAdmin && (
                         <div>
                             <label className="label">Profesor que realiza/cubre la guardia (Opcional - a posteriori)</label>
@@ -359,27 +476,58 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
                             />
                         </div>
                         <div>
-                            <label className="label">Franja</label>
+                            <label className="label">
+                                Franja {(!isAdmin) && <span style={{ fontSize: '0.7rem', color: 'var(--brand-400)', fontWeight: 'normal' }}>(Horario personal)</span>}
+                            </label>
                             <select
                                 required={selectedScheduleEntries.length <= 1}
                                 className="select"
                                 value={selectedScheduleEntries.length > 1 ? '' : formData.time_slot_id}
-                                onChange={(e) => setFormData({ ...formData, time_slot_id: e.target.value })}
-                                disabled={selectedScheduleEntries.length > 1}
-                                style={{ opacity: selectedScheduleEntries.length > 1 ? 0.5 : 1 }}
+                                onChange={(e) => handleSlotChange(e.target.value)}
+                                disabled={selectedScheduleEntries.length > 1 || (!isAdmin && sortedDaySchedule.length === 0)}
+                                style={{ opacity: (selectedScheduleEntries.length > 1 || (!isAdmin && sortedDaySchedule.length === 0)) ? 0.5 : 1 }}
                             >
-                                <option value="">{selectedScheduleEntries.length > 1 ? 'Múltiple (automático)' : 'Seleccionar'}</option>
-                                {meta.slots
-                                    .filter((s) => !s.label.toLowerCase().includes('recreo'))
-                                    .map((s) => (
-                                        <option key={s.id} value={s.id}>{s.label}</option>
-                                    ))}
+                                <option value="">
+                                    {selectedScheduleEntries.length > 1 
+                                        ? 'Múltiple (automático)' 
+                                        : (!isAdmin && sortedDaySchedule.length === 0)
+                                            ? 'Sin clases este día'
+                                            : 'Seleccionar franja'}
+                                </option>
+                                {availableSlots.map((s) => (
+                                    <option key={s.id} value={s.id}>{s.label}</option>
+                                ))}
                             </select>
                         </div>
                     </div>
 
+                    {/* Warning if no schedule entries for this day (Non-admin) */}
+                    {isTeacherScheduleEmpty && (
+                        <div style={{
+                            padding: '12px 16px',
+                            borderRadius: 'var(--radius-md)',
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            color: '#fca5a5',
+                            fontSize: '0.8rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12
+                        }}>
+                            <span style={{ fontSize: '1.3rem' }}>⚠️</span>
+                            <div>
+                                <strong style={{ display: 'block', marginBottom: 2 }}>Sin horario lectivo/guardias para {currentDay}</strong>
+                                <span style={{ fontSize: '0.72rem', color: 'var(--slate-300)' }}>
+                                    {personalSchedule.length === 0
+                                        ? 'No se ha encontrado tu horario personal cargado en el sistema. Contacta con Jefatura para importarlo.'
+                                        : `No tienes clases lectivas ni guardias asignadas en tu horario para los ${currentDay.toLowerCase()}s.`}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Sugerencias de Horario Personal */}
-                    {!editingGuard && daySchedule.length > 0 && (
+                    {!editingGuard && sortedDaySchedule.length > 0 && (
                         <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
@@ -395,20 +543,20 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
                                 <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--brand-400)', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
-                                    ⚡ Selección de clases del día ({daySchedule.length}):
+                                    ⚡ Clases y guardias de tu horario ({sortedDaySchedule.length}):
                                     <HelpBadge helpKey="guard_multi_select" size="sm" />
                                 </p>
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        if (selectedScheduleEntries.length === daySchedule.length) {
+                                        if (selectedScheduleEntries.length === sortedDaySchedule.length) {
                                             setSelectedScheduleEntries([]);
                                         } else {
-                                            setSelectedScheduleEntries([...daySchedule]);
+                                            setSelectedScheduleEntries([...sortedDaySchedule]);
                                         }
                                     }}
                                     style={{
-                                        background: selectedScheduleEntries.length === daySchedule.length ? 'rgba(34, 211, 238, 0.2)' : 'rgba(255, 255, 255, 0.06)',
+                                        background: selectedScheduleEntries.length === sortedDaySchedule.length ? 'rgba(34, 211, 238, 0.2)' : 'rgba(255, 255, 255, 0.06)',
                                         border: '1px solid var(--brand-400)',
                                         borderRadius: 6,
                                         padding: '3px 9px',
@@ -419,12 +567,13 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
                                         transition: 'all 0.15s',
                                     }}
                                 >
-                                    {selectedScheduleEntries.length === daySchedule.length ? 'Deseleccionar todo' : 'Seleccionar toda la jornada'}
+                                    {selectedScheduleEntries.length === sortedDaySchedule.length ? 'Deseleccionar todo' : 'Seleccionar toda la jornada'}
                                 </button>
                             </div>
                             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                                {daySchedule.map(entry => {
-                                    const isSelected = selectedScheduleEntries.some(e => e.id === entry.id);
+                                {sortedDaySchedule.map(entry => {
+                                    const isSelected = selectedScheduleEntries.some(e => e.id === entry.id) || 
+                                        (selectedScheduleEntries.length <= 1 && formData.time_slot_id === entry.franja_id);
                                     return (
                                         <button
                                             key={entry.id}
@@ -444,7 +593,7 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
                                             }}
                                         >
                                             {isSelected && <span>✓</span>}
-                                            {entry.tipo === 'Guardia'
+                                            {entry.tipo === 'Guardia' || entry.materia_id === 'M_GUARDIA'
                                                 ? `Guardia - ${meta.slots.find(s => s.id === entry.franja_id)?.label}`
                                                 : `${entry.materia?.name || 'Materia'} (${entry.grupo?.name || ''}) - ${meta.slots.find(s => s.id === entry.franja_id)?.label}`
                                             }
@@ -475,32 +624,48 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
                     {/* Classroom + Group */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                         <div>
-                            <label className="label" style={{ opacity: (selectedScheduleEntries.length > 1) || formData.subject_id === 'M_GUARDIA' ? 0.5 : 1 }}>Aula</label>
+                            <label className="label" style={{ opacity: (selectedScheduleEntries.length > 1) || formData.subject_id === 'M_GUARDIA' ? 0.5 : 1 }}>
+                                Aula {!isAdmin && <span style={{ fontSize: '0.65rem', color: 'var(--slate-500)' }}>🔒</span>}
+                            </label>
                             <select
                                 required={selectedScheduleEntries.length <= 1 && formData.subject_id !== 'M_GUARDIA'}
-                                disabled={(selectedScheduleEntries.length > 1) || formData.subject_id === 'M_GUARDIA'}
+                                disabled={!isAdmin || (selectedScheduleEntries.length > 1) || formData.subject_id === 'M_GUARDIA'}
                                 className="select"
                                 value={selectedScheduleEntries.length > 1 ? '' : formData.classroom_id}
                                 onChange={(e) => setFormData({ ...formData, classroom_id: e.target.value })}
-                                style={{ opacity: (selectedScheduleEntries.length > 1) || formData.subject_id === 'M_GUARDIA' ? 0.5 : 1 }}
+                                style={{ opacity: (!isAdmin || selectedScheduleEntries.length > 1 || formData.subject_id === 'M_GUARDIA') ? 0.6 : 1 }}
                             >
-                                <option value="">{selectedScheduleEntries.length > 1 ? 'Múltiple (automático)' : formData.subject_id === 'M_GUARDIA' ? 'No requiere' : 'Seleccionar'}</option>
+                                <option value="">
+                                    {selectedScheduleEntries.length > 1 
+                                        ? 'Múltiple (automático)' 
+                                        : formData.subject_id === 'M_GUARDIA' 
+                                            ? 'No requiere' 
+                                            : 'Seleccionar aula'}
+                                </option>
                                 {meta.classrooms.map((c) => (
                                     <option key={c.id} value={c.id}>{c.name}</option>
                                 ))}
                             </select>
                         </div>
                         <div>
-                            <label className="label" style={{ opacity: (selectedScheduleEntries.length > 1) || formData.subject_id === 'M_GUARDIA' ? 0.5 : 1 }}>Grupo</label>
+                            <label className="label" style={{ opacity: (selectedScheduleEntries.length > 1) || formData.subject_id === 'M_GUARDIA' ? 0.5 : 1 }}>
+                                Grupo {!isAdmin && <span style={{ fontSize: '0.65rem', color: 'var(--slate-500)' }}>🔒</span>}
+                            </label>
                             <select
                                 required={selectedScheduleEntries.length <= 1 && formData.subject_id !== 'M_GUARDIA'}
-                                disabled={(selectedScheduleEntries.length > 1) || formData.subject_id === 'M_GUARDIA'}
+                                disabled={!isAdmin || (selectedScheduleEntries.length > 1) || formData.subject_id === 'M_GUARDIA'}
                                 className="select"
                                 value={selectedScheduleEntries.length > 1 ? '' : formData.group_id}
                                 onChange={(e) => setFormData({ ...formData, group_id: e.target.value })}
-                                style={{ opacity: (selectedScheduleEntries.length > 1) || formData.subject_id === 'M_GUARDIA' ? 0.5 : 1 }}
+                                style={{ opacity: (!isAdmin || selectedScheduleEntries.length > 1 || formData.subject_id === 'M_GUARDIA') ? 0.6 : 1 }}
                             >
-                                <option value="">{selectedScheduleEntries.length > 1 ? 'Múltiple (automático)' : formData.subject_id === 'M_GUARDIA' ? 'No requiere' : 'Seleccionar'}</option>
+                                <option value="">
+                                    {selectedScheduleEntries.length > 1 
+                                        ? 'Múltiple (automático)' 
+                                        : formData.subject_id === 'M_GUARDIA' 
+                                            ? 'No requiere' 
+                                            : 'Seleccionar grupo'}
+                                </option>
                                 {meta.groups.map((g) => (
                                     <option key={g.id} value={g.id}>{g.name}</option>
                                 ))}
@@ -510,16 +675,27 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
 
                     {/* Subject */}
                     <div>
-                        <label className="label" style={{ opacity: (selectedScheduleEntries.length > 1) ? 0.5 : 1 }}>Materia</label>
+                        <label className="label" style={{ opacity: (selectedScheduleEntries.length > 1) ? 0.5 : 1 }}>
+                            Materia {!isAdmin && <span style={{ fontSize: '0.65rem', color: 'var(--slate-500)' }}>🔒</span>}
+                        </label>
                         <select
                             required={selectedScheduleEntries.length <= 1}
-                            disabled={selectedScheduleEntries.length > 1}
+                            disabled={!isAdmin || (selectedScheduleEntries.length > 1)}
                             className="select"
                             value={selectedScheduleEntries.length > 1 ? '' : formData.subject_id}
                             onChange={(e) => setFormData({ ...formData, subject_id: e.target.value })}
-                            style={{ opacity: (selectedScheduleEntries.length > 1) ? 0.5 : 1 }}
+                            style={{ opacity: (!isAdmin || selectedScheduleEntries.length > 1) ? 0.6 : 1 }}
                         >
-                            <option value="">{selectedScheduleEntries.length > 1 ? 'Múltiple (automático)' : 'Seleccionar'}</option>
+                            <option value="">
+                                {selectedScheduleEntries.length > 1 
+                                    ? 'Múltiple (automático)' 
+                                    : formData.subject_id === 'M_GUARDIA'
+                                        ? 'Guardia (Hora de Guardia)'
+                                        : 'Seleccionar materia'}
+                            </option>
+                            {formData.subject_id === 'M_GUARDIA' && (
+                                <option value="M_GUARDIA">Guardia (Hora de Guardia)</option>
+                            )}
                             {meta.subjects.map((s) => (
                                 <option key={s.id} value={s.id}>{s.name}</option>
                             ))}
@@ -695,18 +871,20 @@ const GuardModal: React.FC<GuardModalProps> = ({ editingGuard, meta, currentUser
                             whileTap={{ scale: 0.96 }}
                             type="submit"
                             className="btn btn-primary"
-                            disabled={submitting || dateBlocked}
-                            style={{ opacity: (submitting || dateBlocked) ? 0.6 : 1 }}
+                            disabled={submitting || dateBlocked || isTeacherScheduleEmpty}
+                            style={{ opacity: (submitting || dateBlocked || isTeacherScheduleEmpty) ? 0.6 : 1 }}
                         >
                             {submitting 
                                 ? 'Guardando...' 
                                 : dateBlocked 
                                     ? '⚠ DÍA NO LECTIVO' 
-                                    : editingGuard 
-                                        ? 'GUARDAR CAMBIOS' 
-                                        : (selectedScheduleEntries.length > 1) 
-                                            ? `CREAR ${selectedScheduleEntries.length} GUARDIAS` 
-                                            : 'CREAR GUARDIA'}
+                                    : isTeacherScheduleEmpty
+                                        ? 'SIN HORARIO ESTE DÍA'
+                                        : editingGuard 
+                                            ? 'GUARDAR CAMBIOS' 
+                                            : (selectedScheduleEntries.length > 1) 
+                                                ? `CREAR ${selectedScheduleEntries.length} GUARDIAS` 
+                                                : 'CREAR GUARDIA'}
                         </motion.button>
                     </div>
                 </form>
