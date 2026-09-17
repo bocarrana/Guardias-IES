@@ -347,6 +347,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
         return matchesSearch && (isRegularUser || isSelf);
     });
 
+    const formatDateDMY = (dateStr?: string) => {
+        if (!dateStr) return '-';
+        const parts = dateStr.split('-');
+        if (parts.length === 3 && parts[0].length === 4) {
+            return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+        return dateStr;
+    };
+
     const getSlotNumberOrLabel = (slotId?: string) => {
         if (!slotId) return '-';
         const slot = meta.slots.find(s => s.id === slotId);
@@ -355,13 +364,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
         if (l.includes('primer') && l.includes('recreo')) return '1º Recreo';
         if (l.includes('segund') && l.includes('recreo')) return '2º Recreo';
         if (l.includes('recreo') || l.includes('patio')) return 'Recreo';
-        if (l.includes('primera') || l.includes('1ª') || l.includes('1a')) return '1ª Hora (1)';
-        if (l.includes('segunda') || l.includes('2ª') || l.includes('2a')) return '2ª Hora (2)';
-        if (l.includes('tercera') || l.includes('3ª') || l.includes('3a')) return '3ª Hora (3)';
-        if (l.includes('cuarta') || l.includes('4ª') || l.includes('4a')) return '4ª Hora (4)';
-        if (l.includes('quinta') || l.includes('5ª') || l.includes('5a')) return '5ª Hora (5)';
-        if (l.includes('sexta') || l.includes('6ª') || l.includes('6a')) return '6ª Hora (6)';
-        if (l.includes('séptima') || l.includes('septima') || l.includes('7ª')) return '7ª Hora (7)';
+        if (l.includes('primera') || l.includes('1ª') || l.includes('1a')) return '1ª Hora';
+        if (l.includes('segunda') || l.includes('2ª') || l.includes('2a')) return '2ª Hora';
+        if (l.includes('tercera') || l.includes('3ª') || l.includes('3a')) return '3ª Hora';
+        if (l.includes('cuarta') || l.includes('4ª') || l.includes('4a')) return '4ª Hora';
+        if (l.includes('quinta') || l.includes('5ª') || l.includes('5a')) return '5ª Hora';
+        if (l.includes('sexta') || l.includes('6ª') || l.includes('6a')) return '6ª Hora';
+        if (l.includes('séptima') || l.includes('septima') || l.includes('7ª')) return '7ª Hora';
         return slot.label;
     };
 
@@ -370,9 +379,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
             const q = search.toLowerCase();
             const slotName = meta.slots.find(s => s.id === g.time_slot_id)?.label || '';
             const slotDisplay = getSlotNumberOrLabel(g.time_slot_id);
+            const dateDMY = formatDateDMY(g.date);
             return (
                 g.id.toLowerCase().includes(q) ||
                 (g.date || '').toLowerCase().includes(q) ||
+                dateDMY.toLowerCase().includes(q) ||
                 (g.requesting_teacher?.name || '').toLowerCase().includes(q) ||
                 (g.covering_teacher?.name || '').toLowerCase().includes(q) ||
                 (g.status || '').toLowerCase().includes(q) ||
@@ -1631,7 +1642,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                                                                 style={{ minWidth: 120 }}
                                                             />
                                                         ) : (
-                                                            <span style={{ fontWeight: 600 }}>{g.date}</span>
+                                                            <span style={{ fontWeight: 600 }}>{formatDateDMY(g.date)}</span>
                                                         )}
                                                     </td>
 
