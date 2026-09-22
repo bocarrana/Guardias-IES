@@ -64,8 +64,6 @@ const ClassroomMapModal: React.FC<ClassroomMapModalProps> = ({ roomId, meta, tea
         fetchData();
     }, [roomId]);
 
-    if (!roomId) return null;
-
     // Use current time to find who is effectively there right now or the current slot logic
     const now = new Date();
     const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -91,7 +89,7 @@ const ClassroomMapModal: React.FC<ClassroomMapModalProps> = ({ roomId, meta, tea
         entry.aula_id === roomId
     );
 
-    const room = meta.classrooms.find(c => c.id === roomId);
+    const room = roomId ? meta.classrooms.find(c => c.id === roomId) : undefined;
     const activeGuardInfo: RoomGuardInfo | null = useMemo(() => {
         if (!room) return null;
         if (occupancy) {
@@ -114,7 +112,7 @@ const ClassroomMapModal: React.FC<ClassroomMapModalProps> = ({ roomId, meta, tea
         };
     }, [room, occupancy, teachers, currentSlot]);
 
-    const loc = findLocationForRoom(roomId);
+    const loc = roomId ? findLocationForRoom(roomId) : { b: 'general' as BuildingKey, f: 0 };
     const selectedBuilding = loc.b;
     const selectedFloor = loc.f;
 
@@ -138,6 +136,8 @@ const ClassroomMapModal: React.FC<ClassroomMapModalProps> = ({ roomId, meta, tea
         }
         return base;
     };
+
+    if (!roomId) return null;
 
     return createPortal(
         <AnimatePresence>
