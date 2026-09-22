@@ -34,7 +34,8 @@ export const HelpBadge: React.FC<HelpBadgeProps> = ({
     const updatePosition = useCallback(() => {
         if (!badgeRef.current) return;
         const rect = badgeRef.current.getBoundingClientRect();
-        const CARD_WIDTH = Math.min(320, window.innerWidth - 32);
+        const targetWidth = helpData?.pages && helpData.pages.length > 0 ? 350 : 320;
+        const CARD_WIDTH = Math.min(targetWidth, window.innerWidth - 32);
         
         // Calculate horizontal position clamped to viewport
         const badgeCenterX = rect.left + rect.width / 2;

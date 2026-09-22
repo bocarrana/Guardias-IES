@@ -291,14 +291,43 @@ export const HelpCenterModal: React.FC<HelpCenterModalProps> = ({
                                             {guide.description}
                                         </p>
 
-                                        {guide.bullets && (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 2 }}>
-                                                {guide.bullets.map((b, idx) => (
-                                                    <div key={idx} style={{ fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.35 }}>
-                                                        {b}
+                                        {guide.pages && guide.pages.length > 0 ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
+                                                {guide.pages.map((p, pIdx) => (
+                                                    <div key={pIdx} style={{
+                                                        background: 'rgba(255, 255, 255, 0.02)',
+                                                        border: '1px solid rgba(255, 255, 255, 0.05)',
+                                                        borderRadius: 8,
+                                                        padding: '8px 10px'
+                                                    }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginBottom: 4 }}>
+                                                            <strong style={{ fontSize: '0.78rem', color: '#e2e8f0' }}>{p.title}</strong>
+                                                            {p.badge && (
+                                                                <span style={{ fontSize: '0.6rem', color: '#22d3ee', fontWeight: 700 }}>{p.badge}</span>
+                                                            )}
+                                                        </div>
+                                                        {p.bullets && (
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                                                {p.bullets.map((b, bIdx) => (
+                                                                    <div key={bIdx} style={{ fontSize: '0.72rem', color: '#94a3b8', lineHeight: 1.35 }}>
+                                                                        {b}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
+                                        ) : (
+                                            guide.bullets && (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 2 }}>
+                                                    {guide.bullets.map((b, idx) => (
+                                                        <div key={idx} style={{ fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.35 }}>
+                                                            {b}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )
                                         )}
 
                                         {guide.tip && (

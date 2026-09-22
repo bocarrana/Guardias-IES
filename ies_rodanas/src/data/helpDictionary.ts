@@ -1,3 +1,11 @@
+export interface HelpPage {
+    title?: string;
+    badge?: string;
+    description?: string;
+    bullets?: string[];
+    tip?: string;
+}
+
 export interface HelpItem {
     id: string;
     title: string;
@@ -7,6 +15,7 @@ export interface HelpItem {
     badge?: string;
     icon?: string; // Icon identifier
     category?: 'docentes' | 'tv' | 'jefatura' | 'general';
+    pages?: HelpPage[];
 }
 
 export const HELP_ITEMS: Record<string, HelpItem> = {
@@ -55,16 +64,60 @@ export const HELP_ITEMS: Record<string, HelpItem> = {
     // ─── PANTALLA TV SALA DE PROFESORES ──────────────────────
     'tv_instructions': {
         id: 'tv_instructions',
-        title: 'Uso de la Pantalla de Sala de Profesores',
-        description: 'Gestión táctil rápida desde la pantalla central del instituto:',
-        bullets: [
-            '👆 Toque rápido en "PEND": Al pulsar sobre una guardia disponible en azul, se abre la lista de docentes para asignártela al instante.',
-            '⏰ Margen de 25 minutos: Puedes recoger guardias de la siguiente franja con hasta 25 min de antelación sin que salte aviso (ideal en recreos).',
-            '⚠️ Aviso de franja horaria: Si intentas recoger una guardia de una hora muy alejada, el sistema te pedirá confirmación para evitar errores.',
-        ],
-        tip: 'Pulsa F11 en el teclado del televisor/pantalla para activar el modo quiosco a pantalla completa sin barras del navegador.',
+        title: 'Panel Táctil de Sala de Profesores',
+        description: 'Guía interactiva de uso y acciones para la pantalla táctil de TV:',
         badge: 'Pantalla táctil TV',
         category: 'tv',
+        pages: [
+            {
+                badge: '1/4 · Recogida y Asignación',
+                title: 'Recogida Rápida de Guardias',
+                description: 'Asignación táctil inmediata al pasar por la sala:',
+                bullets: [
+                    '👆 Toque en "PEND": Pulsa sobre una guardia disponible en azul para abrir la lista de docentes y asignártela en 1 solo toque.',
+                    '⏰ Margen de 25 minutos: Puedes recoger guardias de la siguiente hora durante los minutos previos o recreo sin avisos.',
+                    '❌ Soltar guardia: Pulsa el botón "SOLTAR" o "✕" en la guardia asignada si te equivocaste de nombre al pulsar.',
+                    '🎲 Modo Recomendado / Azar: Botón circular junto a "Prof. Guardia" para alternar asignación por equidad o aleatoria.',
+                ],
+                tip: 'El selector recomienda primero a los profesores con menos guardias en ese tramo para garantizar el reparto equitativo.',
+            },
+            {
+                badge: '2/4 · Franjas y Tipos de Guardia',
+                title: 'Diferenciación de Franjas y Alertas',
+                description: 'Identificación visual rápida de cada tipo de hora:',
+                bullets: [
+                    '☕ Recreos en Ámbar: Las franjas de recreo se distinguen en color ámbar/dorado con icono de café y etiqueta RECREO.',
+                    '🟣 Convivencia: Identificadas con chapa púrpura CONVIVENCIA (con su propio cómputo y turno independiente).',
+                    '⚡ Franja actual (AHORA): La columna de la hora en curso aparece iluminada con borde brillante cian.',
+                    '🚨 Aviso Jefatura: Alerta roja parpadeante si hay más ausencias que profesores disponibles en esa franja.',
+                ],
+                tip: 'Si intentas recoger una guardia de una hora muy lejana, el sistema te pedirá confirmación para evitar errores de toque.',
+            },
+            {
+                badge: '3/4 · Profesores de Guardia',
+                title: 'Avatares e Información Docente',
+                description: 'Consulta el estado y guardias del claustro en la franja:',
+                bullets: [
+                    '👤 Toque en el Avatar: Pulsa sobre la foto de cualquier profesor para desplegar su tarjeta con información detallada.',
+                    '🔢 Contadores de Grupo: Muestra las guardias de aula (chapa cian) y convivencia (chapa púrpura) realizadas en ese tramo horario.',
+                    '🟢 Estado en tiempo real: Indica si el profesor está libre, cubriendo una guardia ("Cubriendo aula X") o si ya la ha completado ("✓ Realizada").',
+                    '↔️ Carrusel táctil: Si hay muchos profesores asignados, puedes deslizar los avatares horizontalmente con el dedo.',
+                ],
+                tip: 'Los contadores mostrados en la tarjeta del docente corresponden a ese turno específico (día y franja) para máxima transparencia.',
+            },
+            {
+                badge: '4/4 · Tareas, Plano y Pantalla Completa',
+                title: 'Tareas, Plano de Aula y Modo TV',
+                description: 'Acceso a materiales, mapas y visualización:',
+                bullets: [
+                    '📎 Iconos de Tarea: Bandeja naranja (tarea física en conserjería), clip cian (archivo digital adjunto) o capas (ambas).',
+                    '💬 Observaciones: Pulsa el bocadillo verde para leer las indicaciones pedagógicas dejadas por el docente ausente.',
+                    '📍 Plano de Aula: Toca sobre el nombre del aula para ver el mapa del centro y la ubicación exacta de la clase.',
+                    '🖥️ Modo Quiosco Pantalla Completa: Pulsa F11 en el teclado del televisor para ocultar barras del navegador.',
+                ],
+                tip: 'El botón rojo flotante de la esquina inferior derecha permite cerrar la sesión táctil de la pantalla TV de forma segura.',
+            },
+        ],
     },
 
     // ─── DIRECTORIO DE PROFESORADO ───────────────────────────
