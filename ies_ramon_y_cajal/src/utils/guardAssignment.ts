@@ -103,3 +103,33 @@ export function rankTeachers(
         };
     });
 }
+
+/**
+ * Gets the Spanish day name from a YYYY-MM-DD date string.
+ */
+export function getSpanishDayName(dateStr: string): string {
+    if (!dateStr) return '';
+    const DAYS_ES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const parts = dateStr.split('-');
+    if (parts.length < 3) return '';
+    const [year, month, day] = parts.map(Number);
+    const dateObj = new Date(year, month - 1, day);
+    return DAYS_ES[dateObj.getDay()];
+}
+
+/**
+ * Filters guards for a specific guard group (matching time_slot_id and day of week).
+ */
+export function filterGuardsForSlot(
+    guards: Guard[],
+    timeSlotId?: string,
+    dateStr?: string
+): Guard[] {
+    if (!timeSlotId || !dateStr) return guards;
+    const targetDay = getSpanishDayName(dateStr);
+    return guards.filter(g => 
+        g.time_slot_id === timeSlotId && 
+        getSpanishDayName(g.date) === targetDay
+    );
+}
+

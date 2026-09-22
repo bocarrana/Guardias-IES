@@ -13,7 +13,7 @@ import CrownLogo from './CrownLogo';
 import ClassroomMapModal from './ClassroomMapModal';
 import { toast } from 'sonner';
 import { canAccessAdminPanel, isAdministracionRole, isPantallaRole, isAdminRole, isJefaturaRole } from '../utils/roles';
-import { rankTeachers } from '../utils/guardAssignment';
+import { rankTeachers, filterGuardsForSlot } from '../utils/guardAssignment';
 import { LOGO_DARK_URL } from '../config/supabase';
 import { HelpBadge } from './help';
 
@@ -1492,7 +1492,8 @@ const GuardList: React.FC<GuardListProps> = ({
                                                                             slot.label?.toLowerCase().includes('descanso');
                                                         const slotMode = assignmentModes[slot.id] || 'recommended';
                                                         const shouldRank = !isRecreoSlot && slotMode === 'recommended';
-                                                        const ranked = shouldRank ? rankTeachers(groupTeachers, guards) : null;
+                                                        const slotGuards = filterGuardsForSlot(guards, slot.id, date);
+                                                        const ranked = shouldRank ? rankTeachers(groupTeachers, slotGuards) : null;
 
                                                         const hueMap = new Map<string, number>();
                                                         if (ranked) {

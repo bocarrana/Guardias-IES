@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Teacher, Guard, GuardType, GuardStatus } from '../types';
 import { X, Search, Zap, Dices, RefreshCw, AlertTriangle } from 'lucide-react';
 import TeacherAvatar from './TeacherAvatar';
-import { rankTeachers } from '../utils/guardAssignment';
+import { rankTeachers, filterGuardsForSlot } from '../utils/guardAssignment';
 import { getStorageUrl } from '../services/supabaseClient';
 
 interface TeacherSelectionModalProps {
@@ -122,23 +122,29 @@ const TeacherSelectionModal: React.FC<TeacherSelectionModalProps> = ({
         );
     }, [teachers, searchQuery]);
 
+    // Guardias relevantes para este grupo de guardia específico (misma franja y mismo día de la semana)
+    const relevantGuards = useMemo(() => {
+        if (!guard?.time_slot_id || !guard?.date) return guards;
+        return filterGuardsForSlot(guards, guard.time_slot_id, guard.date);
+    }, [guards, guard]);
+
     // Calcular el ranking y los tonos del gradiente para el grupo de guardia de esta franja
     const rankedOnDuty = useMemo(() => {
         const isRecreo = guard?.type === GuardType.RECREO || guard?.time_slot?.type?.toLowerCase() === 'recreo' || guard?.time_slot?.label?.toLowerCase().includes('recreo');
         
-        if (!guards || guards.length === 0 || isRecreo || guardGroupTeachers.length === 0) {
+        if (!relevantGuards || relevantGuards.length === 0 || isRecreo || guardGroupTeachers.length === 0) {
             return guardGroupTeachers.map(t => ({
                 teacher: t,
                 hue: undefined
             }));
         }
         
-        const ranked = rankTeachers(guardGroupTeachers, guards);
+        const ranked = rankTeachers(guardGroupTeachers, relevantGuards);
         return ranked.map(rt => ({
             teacher: rt.teacher,
             hue: rt.hue
         }));
-    }, [guardGroupTeachers, guards, guard]);
+    }, [guardGroupTeachers, relevantGuards, guard]);
 
     // Separar los profesores del grupo de guardia que coinciden con los filtrados (manteniendo el orden del ranking)
     const onDutyFiltered = useMemo(() => {
@@ -781,10 +787,10 @@ const TeacherSelectionModal: React.FC<TeacherSelectionModalProps> = ({
                                     }}>
                                         {onDutyFiltered.map(({ teacher: t, hue }) => {
                                             const glowColor = hue !== undefined ? `hsl(${hue}, 85%, 55%)` : undefined;
-                                            const ordinaryCount = guards.filter(
+                                            const ordinaryCount = relevantGuards.filter(
                                                 (g) => g.status === GuardStatus.COMPLETED && g.covering_teacher_id === t.id && g.type === GuardType.ORDINARY
                                             ).length;
-                                            const coexistenceCount = guards.filter(
+                                            const coexistenceCount = relevantGuards.filter(
                                                 (g) => g.status === GuardStatus.COMPLETED && g.covering_teacher_id === t.id && g.type === GuardType.COEXISTENCE
                                             ).length;
 
