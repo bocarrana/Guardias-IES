@@ -57,6 +57,10 @@ interface InteractiveFloorMapProps {
      * Mapeo de roomId -> 'free' | 'occupied' | 'warning' | 'interactive'
      */
     roomStates?: Record<string, 'free' | 'occupied' | 'warning' | 'interactive'>;
+    /** Escala inicial del plano (por defecto 0.4 para vista panorámica completa) */
+    initialScale?: number;
+    /** Escala mínima de alejamiento (por defecto 0.3) */
+    minScale?: number;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -233,6 +237,8 @@ const InteractiveFloorMap: React.FC<InteractiveFloorMapProps> = ({
     onRoomClick,
     guardInfo,
     roomStates,
+    initialScale = 0.4,
+    minScale = 0.3,
 }) => {
     const transformRef = useRef<ReactZoomPanPinchRef>(null);
     const svgContainerRef = useRef<HTMLDivElement>(null);
@@ -250,6 +256,9 @@ const InteractiveFloorMap: React.FC<InteractiveFloorMapProps> = ({
         if (!highlightedRoomId) {
             setActiveRoom(undefined);
             setShowPanel(false);
+        }
+        if (transformRef.current) {
+            transformRef.current.resetTransform();
         }
     }, [svgMarkup, highlightedRoomId]);
 
@@ -640,7 +649,9 @@ const InteractiveFloorMap: React.FC<InteractiveFloorMapProps> = ({
             {/* ── Área zoom / pan ────────────────────────────────────────── */}
             <TransformWrapper
                 ref={transformRef}
-                initialScale={1} minScale={0.4} maxScale={6}
+                initialScale={initialScale}
+                minScale={minScale}
+                maxScale={6}
                 centerOnInit={true}
                 doubleClick={{ mode: 'zoomIn' }}
                 smooth={true}
