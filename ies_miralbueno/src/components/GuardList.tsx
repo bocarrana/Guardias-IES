@@ -1595,66 +1595,123 @@ const GuardList: React.FC<GuardListProps> = ({
 
                                             {/* Floating teacher info card in TV mode */}
                                             <AnimatePresence>
-                                                {isPantallaRole(currentUser?.role) && activeTeacherTooltip && activeTeacherTooltip.slotId === slot.id && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                        transition={{ duration: 0.15 }}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        onTouchStart={(e) => e.stopPropagation()}
-                                                        onTouchEnd={(e) => e.stopPropagation()}
-                                                        style={{
-                                                            position: 'absolute',
-                                                            bottom: 80,
-                                                            left: 10,
-                                                            right: 10,
-                                                            zIndex: 100,
-                                                            background: 'rgba(15, 23, 42, 0.96)',
-                                                            backdropFilter: 'blur(16px)',
-                                                            WebkitBackdropFilter: 'blur(16px)',
-                                                            border: '1.5px solid rgba(6, 182, 212, 0.5)',
-                                                            borderRadius: 12,
-                                                            padding: '10px 14px',
-                                                            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.8), 0 0 16px rgba(6, 182, 212, 0.3)',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: 12,
-                                                            pointerEvents: 'auto'
-                                                        }}
-                                                    >
-                                                        <div style={{ flexShrink: 0 }}>
-                                                            <TeacherAvatar
-                                                                teacher={activeTeacherTooltip.teacher}
-                                                                size={42}
-                                                                showViewer={false}
-                                                                isAbsent={activeTeacherTooltip.isAbsent}
-                                                            />
-                                                        </div>
-                                                        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1, textAlign: 'left' }}>
-                                                            <span style={{ 
-                                                                fontSize: '0.95rem', 
-                                                                fontWeight: 800, 
-                                                                color: '#f8fafc',
-                                                                lineHeight: 1.2,
-                                                                whiteSpace: 'nowrap',
-                                                                overflow: 'hidden',
-                                                                textOverflow: 'ellipsis'
-                                                            }}>
-                                                                {activeTeacherTooltip.teacher.name}
-                                                            </span>
-                                                            <span style={{ 
-                                                                fontSize: '0.8rem', 
-                                                                fontWeight: 600, 
-                                                                color: 'var(--brand-400)',
-                                                                marginTop: 3,
-                                                                whiteSpace: 'nowrap',
-                                                                overflow: 'hidden',
-                                                                textOverflow: 'ellipsis'
-                                                            }}>
-                                                                {activeTeacherTooltip.teacher.department || 'Sin departamento'}
-                                                            </span>
-                                                            {activeTeacherTooltip.coveredGuards && activeTeacherTooltip.coveredGuards.length > 0 && (
+                                                {isPantallaRole(currentUser?.role) && activeTeacherTooltip && activeTeacherTooltip.slotId === slot.id && (() => {
+                                                    const slotGuards = filterGuardsForSlot(guards, slot.id, date);
+                                                    const ordinaryCount = slotGuards.filter(g =>
+                                                        g.status === GuardStatus.COMPLETED &&
+                                                        g.covering_teacher_id === activeTeacherTooltip.teacher.id &&
+                                                        g.type === GuardType.ORDINARY
+                                                    ).length;
+                                                    const coexistenceCount = slotGuards.filter(g =>
+                                                        g.status === GuardStatus.COMPLETED &&
+                                                        g.covering_teacher_id === activeTeacherTooltip.teacher.id &&
+                                                        g.type === GuardType.COEXISTENCE
+                                                    ).length;
+
+                                                    return (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                            transition={{ duration: 0.15 }}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            onTouchStart={(e) => e.stopPropagation()}
+                                                            onTouchEnd={(e) => e.stopPropagation()}
+                                                            style={{
+                                                                position: 'absolute',
+                                                                bottom: 80,
+                                                                left: 10,
+                                                                right: 10,
+                                                                zIndex: 100,
+                                                                background: 'rgba(15, 23, 42, 0.96)',
+                                                                backdropFilter: 'blur(16px)',
+                                                                WebkitBackdropFilter: 'blur(16px)',
+                                                                border: '1.5px solid rgba(6, 182, 212, 0.5)',
+                                                                borderRadius: 12,
+                                                                padding: '10px 14px',
+                                                                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.8), 0 0 16px rgba(6, 182, 212, 0.3)',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: 12,
+                                                                pointerEvents: 'auto'
+                                                            }}
+                                                        >
+                                                            <div style={{ position: 'relative', width: 42, height: 42, flexShrink: 0 }}>
+                                                                <TeacherAvatar
+                                                                    teacher={activeTeacherTooltip.teacher}
+                                                                    size={42}
+                                                                    showViewer={false}
+                                                                    isAbsent={activeTeacherTooltip.isAbsent}
+                                                                />
+                                                                {ordinaryCount > 0 && (
+                                                                    <div style={{
+                                                                        position: 'absolute',
+                                                                        top: -4,
+                                                                        right: -4,
+                                                                        background: 'var(--brand-500)',
+                                                                        color: 'white',
+                                                                        fontSize: '0.62rem',
+                                                                        fontWeight: 900,
+                                                                        borderRadius: '50%',
+                                                                        width: 16,
+                                                                        height: 16,
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                                                                        border: '1.5px solid var(--bg-card)',
+                                                                        zIndex: 10
+                                                                    }}>
+                                                                        {ordinaryCount}
+                                                                    </div>
+                                                                )}
+                                                                {coexistenceCount > 0 && (
+                                                                    <div style={{
+                                                                        position: 'absolute',
+                                                                        bottom: -4,
+                                                                        right: -4,
+                                                                        background: '#a855f7',
+                                                                        color: 'white',
+                                                                        fontSize: '0.62rem',
+                                                                        fontWeight: 900,
+                                                                        borderRadius: '50%',
+                                                                        width: 16,
+                                                                        height: 16,
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                                                                        border: '1.5px solid var(--bg-card)',
+                                                                        zIndex: 10
+                                                                    }}>
+                                                                        {coexistenceCount}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1, textAlign: 'left' }}>
+                                                                <span style={{ 
+                                                                    fontSize: '0.95rem', 
+                                                                    fontWeight: 800, 
+                                                                    color: '#f8fafc',
+                                                                    lineHeight: 1.2,
+                                                                    whiteSpace: 'nowrap',
+                                                                    overflow: 'hidden',
+                                                                    textOverflow: 'ellipsis'
+                                                                }}>
+                                                                    {activeTeacherTooltip.teacher.name}
+                                                                </span>
+                                                                <span style={{ 
+                                                                    fontSize: '0.8rem', 
+                                                                    fontWeight: 600, 
+                                                                    color: 'var(--brand-400)',
+                                                                    marginTop: 3,
+                                                                    whiteSpace: 'nowrap',
+                                                                    overflow: 'hidden',
+                                                                    textOverflow: 'ellipsis'
+                                                                }}>
+                                                                    {activeTeacherTooltip.teacher.department || 'Sin departamento'}
+                                                                </span>
+                                                                {activeTeacherTooltip.coveredGuards && activeTeacherTooltip.coveredGuards.length > 0 && (
                                                                 <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
                                                                     {activeTeacherTooltip.coveredGuards.map(cg => {
                                                                         const groupInfo = cg.type === GuardType.COEXISTENCE
@@ -1706,7 +1763,8 @@ const GuardList: React.FC<GuardListProps> = ({
                                                             )}
                                                         </div>
                                                     </motion.div>
-                                                )}
+                                                );
+                                            })()}
                                             </AnimatePresence>
                                         </div>
                                     </motion.div>
