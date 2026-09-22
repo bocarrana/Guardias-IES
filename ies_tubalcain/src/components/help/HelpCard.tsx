@@ -235,28 +235,37 @@ export const HelpCard: React.FC<HelpCardProps> = ({ item, onClose, onOpenFullHel
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: 6,
-                    padding: '6px 0 10px 0'
+                    gap: 8,
+                    padding: '8px 0 12px 0'
                 }}>
                     {pages.map((_, idx) => {
                         const isActive = idx === currentPage;
                         return (
                             <button
                                 key={idx}
+                                type="button"
                                 onClick={() => goToPage(idx, idx > currentPage ? 1 : -1)}
                                 style={{
-                                    width: isActive ? 22 : 7,
-                                    height: 7,
-                                    borderRadius: 999,
+                                    display: 'block',
+                                    width: isActive ? 10 : 8,
+                                    height: isActive ? 10 : 8,
+                                    minWidth: isActive ? 10 : 8,
+                                    minHeight: isActive ? 10 : 8,
+                                    maxWidth: isActive ? 10 : 8,
+                                    maxHeight: isActive ? 10 : 8,
+                                    borderRadius: '50%',
                                     background: isActive
-                                        ? 'linear-gradient(90deg, #22d3ee, #06b6d4)'
-                                        : 'rgba(255, 255, 255, 0.22)',
+                                        ? '#22d3ee'
+                                        : 'rgba(255, 255, 255, 0.28)',
                                     border: 'none',
                                     padding: 0,
+                                    margin: 0,
                                     cursor: 'pointer',
-                                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    boxShadow: isActive ? '0 0 10px rgba(34, 211, 238, 0.75)' : 'none',
-                                    outline: 'none'
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: isActive ? '0 0 10px rgba(34, 211, 238, 0.9)' : 'none',
+                                    outline: 'none',
+                                    flexShrink: 0,
+                                    boxSizing: 'border-box'
                                 }}
                                 title={`Página ${idx + 1} de ${totalPages}`}
                                 aria-label={`Ir a la página ${idx + 1}`}
