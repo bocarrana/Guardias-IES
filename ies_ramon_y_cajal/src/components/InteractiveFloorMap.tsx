@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
-import { ZoomIn, ZoomOut, Maximize2, X, Eye, User, Clock, Shield } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, X, User, Clock, Shield } from 'lucide-react';
 import TeacherAvatar from './TeacherAvatar';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -130,18 +130,32 @@ const GuardInfoPanel: React.FC<{
                  <button
                     onClick={onClose}
                     title="Cerrar panel"
+                    aria-label="Cerrar panel"
                     style={{
-                        background: 'rgba(255, 255, 255, 0.1)', 
-                        border: '1px solid rgba(255, 255, 255, 0.2)', 
+                        background: 'rgba(255, 255, 255, 0.08)', 
+                        border: '1px solid rgba(255, 255, 255, 0.18)', 
                         cursor: 'pointer',
                         color: 'var(--text-primary)', 
-                        width: 44, height: 44, borderRadius: '14px',
+                        width: 38, height: 38, borderRadius: '12px',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        transition: 'all 0.2s',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.25)'
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+                        flexShrink: 0
+                    }}
+                    onMouseEnter={e => {
+                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)';
+                        e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+                        e.currentTarget.style.color = '#f87171';
+                        e.currentTarget.style.transform = 'scale(1.06)';
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.18)';
+                        e.currentTarget.style.color = 'var(--text-primary)';
+                        e.currentTarget.style.transform = 'scale(1)';
                     }}
                 >
-                    <Eye size={26} />
+                    <X size={20} strokeWidth={2.5} />
                 </button>
             </div>
 
