@@ -5,7 +5,7 @@ import {
     User, Calendar, Clock, MapPin, CheckCircle, Zap,
     BookOpen, Shield, Pencil, Trash2, FileText, Search, Loader2, AlertTriangle,
     ChevronLeft, ChevronRight, X, Dices, ChevronDown, MessageSquare, FileCheck, RotateCw,
-    Inbox, Paperclip, Layers, ExternalLink, Download, Filter, RotateCcw
+    Inbox, Paperclip, Layers, ExternalLink, Download, Filter, RotateCcw, Coffee
 } from 'lucide-react';
 import { getStorageUrl, getTaskFileUrl } from '../services/supabaseClient';
 import TeacherAvatar from './TeacherAvatar';
@@ -1042,9 +1042,13 @@ const GuardList: React.FC<GuardListProps> = ({
                                         transition={{ duration: 0.2 }}
                                         style={{
                                             padding: isPantallaRole(currentUser?.role) ? 16 : 16,
-                                            background: isCurrent ? 'rgba(6, 182, 212, 0.08)' : 'var(--bg-card)',
+                                            background: isRecreoSlot 
+                                                ? (isCurrent ? 'rgba(251, 191, 36, 0.12)' : 'rgba(251, 191, 36, 0.04)')
+                                                : (isCurrent ? 'rgba(6, 182, 212, 0.08)' : 'var(--bg-card)'),
                                             borderRadius: 'var(--radius-md)',
-                                            border: isCurrent ? '2px solid var(--brand-500)' : '1px solid var(--border-subtle)',
+                                            border: isRecreoSlot
+                                                ? (isCurrent ? '2px solid #fbbf24' : '1px solid rgba(251, 191, 36, 0.35)')
+                                                : (isCurrent ? '2px solid var(--brand-500)' : '1px solid var(--border-subtle)'),
                                             minWidth: 260,
                                             height: isPantallaRole(currentUser?.role) ? '100%' : 'auto',
                                             display: 'flex',
@@ -1056,15 +1060,36 @@ const GuardList: React.FC<GuardListProps> = ({
                                     >
                                         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexShrink: 0 }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                    <Clock size={isPantallaRole(currentUser?.role) ? 18 : 14} style={{ color: isCurrent ? 'var(--brand-400)' : 'var(--text-muted)' }} />
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                                                    {isRecreoSlot ? (
+                                                        <Coffee size={isPantallaRole(currentUser?.role) ? 18 : 14} style={{ color: isCurrent ? '#fde047' : '#fbbf24', flexShrink: 0 }} />
+                                                    ) : (
+                                                        <Clock size={isPantallaRole(currentUser?.role) ? 18 : 14} style={{ color: isCurrent ? 'var(--brand-400)' : 'var(--text-muted)', flexShrink: 0 }} />
+                                                    )}
                                                     <span style={{
                                                         fontSize: isPantallaRole(currentUser?.role) ? '1.1rem' : '0.8rem',
                                                         fontWeight: 800,
-                                                        color: isCurrent ? 'var(--brand-400)' : 'var(--text-secondary)'
+                                                        color: isRecreoSlot
+                                                            ? (isCurrent ? '#fde047' : '#fbbf24')
+                                                            : (isCurrent ? 'var(--brand-400)' : 'var(--text-secondary)')
                                                     }}>
                                                         {slot.label} {isCurrent && '(AHORA)'}
                                                     </span>
+                                                    {isRecreoSlot && (
+                                                        <span style={{
+                                                            background: 'rgba(251, 191, 36, 0.2)',
+                                                            color: '#fef08a',
+                                                            border: '1px solid rgba(251, 191, 36, 0.45)',
+                                                            borderRadius: 6,
+                                                            padding: '1px 6px',
+                                                            fontSize: isPantallaRole(currentUser?.role) ? '0.72rem' : '0.62rem',
+                                                            fontWeight: 800,
+                                                            letterSpacing: '0.04em',
+                                                            textTransform: 'uppercase'
+                                                        }}>
+                                                            Recreo
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 {showRiskWarning && (
                                                     <motion.div 
@@ -1092,10 +1117,10 @@ const GuardList: React.FC<GuardListProps> = ({
 
                                             <div style={{ 
                                                 fontSize: isPantallaRole(currentUser?.role) ? '0.85rem' : '0.65rem', 
-                                                color: 'var(--brand-500)', 
+                                                color: isRecreoSlot ? '#fbbf24' : 'var(--brand-500)', 
                                                 fontWeight: 700, 
                                                 marginBottom: 10, 
-                                                opacity: 0.8,
+                                                opacity: isRecreoSlot ? 0.95 : 0.8,
                                                 flexShrink: 0
                                             }}>
                                                 {day}, {new Date(date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
@@ -1413,9 +1438,9 @@ const GuardList: React.FC<GuardListProps> = ({
                                                      fontSize: isTV ? '0.95rem' : '0.75rem', 
                                                      fontWeight: 800, 
                                                      textTransform: 'uppercase', 
-                                                     color: 'var(--text-muted)'
+                                                     color: isRecreoSlot ? '#fbbf24' : 'var(--text-muted)'
                                                  }}>
-                                                     Prof. Guardia
+                                                     {isRecreoSlot ? 'Prof. Recreo' : 'Prof. Guardia'}
                                                  </span>
                                                  {isTV && !isRecreoSlot && slotSchedules.length > 0 && (
                                                      <motion.div
@@ -2250,6 +2275,7 @@ const GuardList: React.FC<GuardListProps> = ({
 
                                     {availableSlots.map(slot => {
                                         const isSelected = selectedSlotId === slot.id;
+                                        const isRecreo = slot.label?.toLowerCase().includes('recreo') || slot.label?.toLowerCase().includes('descanso');
                                         // Count how many guards in this slot
                                         const slotCount = guards.filter(g => {
                                             if (g.type === GuardType.RECREO || g.subject_id === 'M_GUARDIA') return false;
@@ -2281,28 +2307,35 @@ const GuardList: React.FC<GuardListProps> = ({
                                                     fontWeight: 700,
                                                     cursor: 'pointer',
                                                     border: isSelected
-                                                        ? '1px solid var(--brand-400)'
-                                                        : '1px solid rgba(255, 255, 255, 0.08)',
+                                                        ? (isRecreo ? '1px solid #fbbf24' : '1px solid var(--brand-400)')
+                                                        : (isRecreo ? '1px solid rgba(251, 191, 36, 0.35)' : '1px solid rgba(255, 255, 255, 0.08)'),
                                                     background: isSelected
-                                                        ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(8, 145, 178, 0.35))'
-                                                        : 'rgba(30, 41, 59, 0.45)',
-                                                    color: isSelected ? '#fff' : 'var(--text-secondary)',
+                                                        ? (isRecreo ? 'linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(217, 119, 6, 0.4))' : 'linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(8, 145, 178, 0.35))')
+                                                        : (isRecreo ? 'rgba(251, 191, 36, 0.08)' : 'rgba(30, 41, 59, 0.45)'),
+                                                    color: isSelected ? '#fff' : (isRecreo ? '#fde047' : 'var(--text-secondary)'),
                                                     transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                                    boxShadow: isSelected ? '0 0 12px rgba(6, 182, 212, 0.25)' : 'none',
+                                                    boxShadow: isSelected 
+                                                        ? (isRecreo ? '0 0 12px rgba(251, 191, 36, 0.35)' : '0 0 12px rgba(6, 182, 212, 0.25)') 
+                                                        : 'none',
                                                     whiteSpace: 'nowrap',
                                                     flexShrink: 0
                                                 }}
                                             >
+                                                {isRecreo ? (
+                                                    <Coffee size={13} style={{ color: isSelected ? '#fff' : '#fbbf24' }} />
+                                                ) : (
+                                                    <Clock size={13} style={{ opacity: isSelected ? 1 : 0.7 }} />
+                                                )}
                                                 <span>{slot.label}</span>
                                                 {slotCount > 0 && (
                                                     <span style={{
-                                                        background: isSelected ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.08)',
-                                                        color: isSelected ? '#fff' : 'var(--brand-400)',
+                                                        background: isSelected ? 'rgba(255, 255, 255, 0.25)' : (isRecreo ? 'rgba(251, 191, 36, 0.2)' : 'rgba(255, 255, 255, 0.08)'),
+                                                        color: isSelected ? '#fff' : (isRecreo ? '#fef08a' : 'var(--brand-400)'),
                                                         fontSize: '0.68rem',
                                                         fontWeight: 800,
                                                         padding: '1px 6px',
                                                         borderRadius: 'var(--radius-full)',
-                                                        border: isSelected ? '1px solid rgba(255, 255, 255, 0.4)' : '1px solid rgba(255, 255, 255, 0.06)',
+                                                        border: isSelected ? '1px solid rgba(255, 255, 255, 0.4)' : (isRecreo ? '1px solid rgba(251, 191, 36, 0.4)' : '1px solid rgba(255, 255, 255, 0.06)'),
                                                         minWidth: '18px',
                                                         textAlign: 'center',
                                                         boxShadow: isSelected ? '0 0 8px rgba(255, 255, 255, 0.2)' : 'none'
