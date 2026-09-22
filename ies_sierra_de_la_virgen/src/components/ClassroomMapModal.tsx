@@ -92,12 +92,11 @@ const ClassroomMapModal: React.FC<ClassroomMapModalProps> = ({ roomId, meta, tea
     );
 
     const room = meta.classrooms.find(c => c.id === roomId);
-    let activeGuardInfo: RoomGuardInfo | null = null;
-    
-    if (room) {
+    const activeGuardInfo: RoomGuardInfo | null = useMemo(() => {
+        if (!room) return null;
         if (occupancy) {
             const teacher = teachers.find(t => t.id === occupancy.profesor_id);
-            activeGuardInfo = {
+            return {
                 roomId: room.id,
                 roomLabel: room.name,
                 guardTeacher: teacher ? teacher.name : 'Profesor',
@@ -106,15 +105,14 @@ const ClassroomMapModal: React.FC<ClassroomMapModalProps> = ({ roomId, meta, tea
                 teacher: teacher,
                 groupLabel: occupancy.grupo?.name
             };
-        } else {
-            activeGuardInfo = {
-                roomId: room.id,
-                roomLabel: room.name,
-                guardTeacher: null,
-                timeSlot: `${currentSlot?.start_time || ''} - ${currentSlot?.end_time || ''}`
-            };
         }
-    }
+        return {
+            roomId: room.id,
+            roomLabel: room.name,
+            guardTeacher: null,
+            timeSlot: `${currentSlot?.start_time || ''} - ${currentSlot?.end_time || ''}`
+        };
+    }, [room, occupancy, teachers, currentSlot]);
 
     const loc = findLocationForRoom(roomId);
     const selectedBuilding = loc.b;

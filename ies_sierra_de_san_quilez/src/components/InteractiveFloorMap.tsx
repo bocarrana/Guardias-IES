@@ -259,10 +259,12 @@ const InteractiveFloorMap: React.FC<InteractiveFloorMapProps> = ({
 
     const [activeRoom, setActiveRoom] = useState<string | undefined>(highlightedRoomId);
     const [showPanel, setShowPanel] = useState(false);
+    const userDismissedRoomRef = useRef<string | null>(null);
 
     // Sync prop highlightedRoomId → estado local
     useEffect(() => {
         setActiveRoom(highlightedRoomId);
+        userDismissedRoomRef.current = null;
     }, [highlightedRoomId]);
 
     // Reset state when SVG changes (navigating between buildings)
@@ -270,15 +272,20 @@ const InteractiveFloorMap: React.FC<InteractiveFloorMapProps> = ({
         if (!highlightedRoomId) {
             setActiveRoom(undefined);
             setShowPanel(false);
+            userDismissedRoomRef.current = null;
         }
         if (transformRef.current) {
             transformRef.current.resetTransform();
         }
     }, [svgMarkup, highlightedRoomId]);
 
-    // Abrir panel automáticamente cuando llega guardInfo
+    // Abrir panel automáticamente cuando llega guardInfo si el usuario no lo ha cerrado explícitamente para esta aula
     useEffect(() => {
-        if (guardInfo) setShowPanel(true);
+        if (guardInfo) {
+            if (userDismissedRoomRef.current !== guardInfo.roomId) {
+                setShowPanel(true);
+            }
+        }
     }, [guardInfo]);
 
     // ── CSS-based persistent styles (injected directly into SVG markup) ──
@@ -513,6 +520,7 @@ const InteractiveFloorMap: React.FC<InteractiveFloorMapProps> = ({
             if (!roomId) return;
 
             const isInteractive = roomStates && roomStates[roomId] === 'interactive';
+            userDismissedRoomRef.current = null;
 
             setActiveRoom(prev => {
                 const next = prev === roomId ? undefined : roomId;
@@ -723,7 +731,11 @@ const InteractiveFloorMap: React.FC<InteractiveFloorMapProps> = ({
             {showPanel && (
                 <GuardInfoPanel
                     info={guardInfo}
-                    onClose={() => { setShowPanel(false); setActiveRoom(undefined); }}
+                    onClose={() => {
+                        userDismissedRoomRef.current = guardInfo?.roomId || activeRoom || null;
+                        setShowPanel(false);
+                        setActiveRoom(undefined);
+                    }}
                 />
             )}
 
