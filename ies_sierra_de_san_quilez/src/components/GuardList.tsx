@@ -1712,45 +1712,48 @@ const GuardList: React.FC<GuardListProps> = ({
                                                                     {activeTeacherTooltip.teacher.department || 'Sin departamento'}
                                                                 </span>
                                                                 {activeTeacherTooltip.coveredGuards && activeTeacherTooltip.coveredGuards.length > 0 && (
-                                                                <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                                                    {activeTeacherTooltip.coveredGuards.map(cg => {
-                                                                        const groupInfo = cg.type === GuardType.COEXISTENCE
-                                                                            ? 'Convivencia'
-                                                                            : (cg.group?.name ? cg.group.name : (cg.subject?.name || 'Guardia'));
-                                                                        const classroomInfo = cg.classroom?.name ? ` · ${cg.classroom.name}` : '';
-                                                                        return (
-                                                                            <span 
-                                                                                key={cg.id}
-                                                                                style={{
-                                                                                    fontSize: '0.75rem',
-                                                                                    fontWeight: 700,
-                                                                                    color: '#34d399',
-                                                                                    display: 'flex',
-                                                                                    alignItems: 'center',
-                                                                                    gap: 4,
-                                                                                    whiteSpace: 'nowrap',
-                                                                                    overflow: 'hidden',
-                                                                                    textOverflow: 'ellipsis'
-                                                                                }}
-                                                                            >
-                                                                                <span style={{ 
-                                                                                    background: 'rgba(52, 211, 153, 0.2)', 
-                                                                                    padding: '1px 5px', 
-                                                                                    borderRadius: 4, 
-                                                                                    border: '1px solid rgba(52, 211, 153, 0.4)',
-                                                                                    fontSize: '0.68rem',
-                                                                                    flexShrink: 0
-                                                                                }}>
-                                                                                    Cubriendo
+                                                                    <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                                                        {activeTeacherTooltip.coveredGuards.map(cg => {
+                                                                            const groupInfo = cg.type === GuardType.COEXISTENCE
+                                                                                ? 'Convivencia'
+                                                                                : (cg.group?.name ? cg.group.name : (cg.subject?.name || 'Guardia'));
+                                                                            const classroomInfo = cg.classroom?.name ? ` · ${cg.classroom.name}` : '';
+                                                                            const isDone = cg.status === GuardStatus.COMPLETED;
+
+                                                                            return (
+                                                                                <span 
+                                                                                    key={cg.id}
+                                                                                    style={{
+                                                                                        fontSize: '0.75rem',
+                                                                                        fontWeight: 700,
+                                                                                        color: isDone ? '#c084fc' : '#34d399',
+                                                                                        display: 'flex',
+                                                                                        alignItems: 'center',
+                                                                                        gap: 5,
+                                                                                        whiteSpace: 'nowrap',
+                                                                                        overflow: 'hidden',
+                                                                                        textOverflow: 'ellipsis'
+                                                                                    }}
+                                                                                >
+                                                                                    <span style={{ 
+                                                                                        background: isDone ? 'rgba(168, 85, 247, 0.2)' : 'rgba(52, 211, 153, 0.2)', 
+                                                                                        color: isDone ? '#d8b4fe' : '#34d399',
+                                                                                        padding: '1px 5px', 
+                                                                                        borderRadius: 4, 
+                                                                                        border: isDone ? '1px solid rgba(168, 85, 247, 0.4)' : '1px solid rgba(52, 211, 153, 0.4)',
+                                                                                        fontSize: '0.68rem',
+                                                                                        flexShrink: 0
+                                                                                    }}>
+                                                                                        {isDone ? '✓ Realizada' : 'Cubriendo'}
+                                                                                    </span>
+                                                                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                                                        {groupInfo}{classroomInfo}
+                                                                                    </span>
                                                                                 </span>
-                                                                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                                                    {groupInfo}{classroomInfo}
-                                                                                </span>
-                                                                            </span>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                            )}
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                )}
                                                             {activeTeacherTooltip.isAbsent && (
                                                                 <span style={{
                                                                     fontSize: '0.72rem',
