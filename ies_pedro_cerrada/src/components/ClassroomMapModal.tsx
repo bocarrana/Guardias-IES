@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Map as MapIcon } from 'lucide-react';
+import { X } from 'lucide-react';
 import InteractiveFloorMap, { RoomGuardInfo } from './InteractiveFloorMap';
 import { MetaOptions, Teacher, PersonalScheduleEntry } from '../types';
 import { getAllPersonalSchedules } from '../services/supabaseClient';
@@ -228,37 +228,10 @@ const ClassroomMapModal: React.FC<ClassroomMapModalProps> = ({ roomId, meta, tea
                         <X size={22} />
                     </button>
 
-                    {/* Building / Floor label badge - bottom left */}
-                    <div style={{
-                        position: 'absolute',
-                        bottom: 16,
-                        left: 16,
-                        zIndex: 60,
-                        background: 'rgba(15,23,42,0.95)',
-                        border: '1px solid rgba(255,255,255,0.12)',
-                        borderRadius: 12,
-                        padding: '8px 14px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                    }}>
-                        <MapIcon size={14} style={{ color: '#22d3ee', flexShrink: 0 }} />
-                        <span style={{
-                            fontSize: '0.7rem',
-                            fontWeight: 800,
-                            color: 'rgba(255,255,255,0.7)',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.08em',
-                        }}>
-                            {room?.name} · {getFloorLabel()}
-                        </span>
-                    </div>
-
                     {/* Map Content */}
                     <div style={{ flex: 1, position: 'relative', background: '#0b1628', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                         <InteractiveFloorMap
-                            floorLabel="" 
+                            floorLabel={room?.name ? `${room.name} · ${getFloorLabel()}` : getFloorLabel()}
                             highlightedRoomId={roomId}
                             highlightedRoomLabel={room?.name}
                             svgMarkup={getSvgMarkup()}

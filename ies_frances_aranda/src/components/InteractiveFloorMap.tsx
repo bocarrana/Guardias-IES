@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
-import { ZoomIn, ZoomOut, Maximize2, X, User, Clock, Shield } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, X, User, Clock, Shield, Map as MapIcon } from 'lucide-react';
 import TeacherAvatar from './TeacherAvatar';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -727,29 +727,66 @@ const InteractiveFloorMap: React.FC<InteractiveFloorMapProps> = ({
                 />
             )}
 
-            {/* ── Occupancy Legend (Bottom Left) ── */}
+            {/* ── Bottom Info & Legend Bar (Bottom Left) ── */}
             <div style={{
                 position: 'absolute',
-                bottom: 24,
-                left: 24, // Moved to left for better balance
+                bottom: 20,
+                left: 20,
                 display: 'flex',
-                gap: 16,
+                gap: 12,
                 alignItems: 'center',
-                padding: '10px 18px',
-                background: 'var(--bg-card)',
-                backdropFilter: 'blur(16px)',
-                borderRadius: 18,
-                border: '1px solid var(--border-subtle)',
-                boxShadow: 'var(--shadow-lg)',
-                zIndex: 60
+                flexWrap: 'wrap',
+                zIndex: 60,
+                pointerEvents: 'none'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--warning)', boxShadow: '0 0 10px var(--warning)' }} />
-                    <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-primary)', textTransform: 'uppercase' }}>Ocupada</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 10px var(--success)' }} />
-                    <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-primary)', textTransform: 'uppercase' }}>Libre</span>
+                {/* Optional Floor/Building/Room Label */}
+                {floorLabel && floorLabel.trim() !== '' && (
+                    <div style={{
+                        pointerEvents: 'auto',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '9px 15px',
+                        background: 'rgba(15, 23, 42, 0.92)',
+                        backdropFilter: 'blur(16px)',
+                        borderRadius: 16,
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        boxShadow: 'var(--shadow-lg)'
+                    }}>
+                        <MapIcon size={14} style={{ color: '#22d3ee', flexShrink: 0 }} />
+                        <span style={{
+                            fontSize: '0.7rem',
+                            fontWeight: 800,
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.06em'
+                        }}>
+                            {floorLabel}
+                        </span>
+                    </div>
+                )}
+
+                {/* Occupancy Legend */}
+                <div style={{
+                    pointerEvents: 'auto',
+                    display: 'flex',
+                    gap: 14,
+                    alignItems: 'center',
+                    padding: '9px 16px',
+                    background: 'rgba(15, 23, 42, 0.92)',
+                    backdropFilter: 'blur(16px)',
+                    borderRadius: 16,
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    boxShadow: 'var(--shadow-lg)'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--warning)', boxShadow: '0 0 8px var(--warning)' }} />
+                        <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgba(255, 255, 255, 0.85)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Ocupada</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 8px var(--success)' }} />
+                        <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgba(255, 255, 255, 0.85)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Libre</span>
+                    </div>
                 </div>
             </div>
 
