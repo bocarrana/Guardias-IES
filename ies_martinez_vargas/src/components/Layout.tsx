@@ -55,8 +55,16 @@ const SIDEBAR_EXPANDED = 260;
 const SIDEBAR_COLLAPSED = 68;
 
 const Layout: React.FC<LayoutProps> = ({ currentUser, view, onViewChange, onCreateGuard, onRefresh, children }) => {
-    const { logout, refreshUser, canSwitchRole, switchRole } = useAuth();
+    const { logout, refreshUser, canSwitchRole, switchRole, realUser } = useAuth();
     const { theme } = useTheme();
+
+    const handleTvExit = () => {
+        if (canSwitchRole && realUser && !isPantallaRole(realUser.role)) {
+            switchRole(realUser.role || 'Admin');
+        } else {
+            logout();
+        }
+    };
     const [isAboutOpen, setIsAboutOpen] = React.useState(false);
     const [isPrivacyOpen, setIsPrivacyOpen] = React.useState(false);
     const [isHelpOpen, setIsHelpOpen] = React.useState(false);
@@ -640,10 +648,10 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, view, onViewChange, onCrea
 
             {isPantallaRole(currentUser?.role) && (
                 <div
-                    onClick={logout}
+                    onClick={handleTvExit}
                     role="button"
                     tabIndex={0}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') logout(); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleTvExit(); }}
                     style={{
                         position: 'fixed',
                         bottom: 20,
@@ -675,7 +683,7 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, view, onViewChange, onCrea
                         e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
                         e.currentTarget.style.transform = 'scale(1)';
                     }}
-                    title="Cerrar Sesión"
+                    title={canSwitchRole && realUser && !isPantallaRole(realUser.role) ? "Volver al panel de administración" : "Cerrar Sesión"}
                 >
                     <LogOut size={20} />
                 </div>
