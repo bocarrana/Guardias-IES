@@ -116,14 +116,6 @@ const TeacherAvatar: React.FC<TeacherAvatarProps> = ({
                         setViewedTeacher(teacher);
                         setIsViewerOpen(true);
                     } : undefined}
-                    onTouchStart={showViewer ? (e) => e.stopPropagation() : undefined}
-                    onTouchEnd={showViewer ? (e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        setPreviewSeed(null);
-                        setViewedTeacher(teacher);
-                        setIsViewerOpen(true);
-                    } : undefined}
                     style={{
                         width: size,
                         height: size,
@@ -189,12 +181,6 @@ const TeacherAvatar: React.FC<TeacherAvatarProps> = ({
                             e.stopPropagation();
                             onRevert();
                         }}
-                        onTouchStart={(e) => e.stopPropagation()}
-                        onTouchEnd={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            onRevert();
-                        }}
                         style={{
                             position: 'absolute',
                             top: -2,
@@ -243,23 +229,34 @@ const TeacherAvatar: React.FC<TeacherAvatarProps> = ({
             {createPortal(
                 <AnimatePresence>
                     {isViewerOpen && (
-                        <div style={{
-                            position: 'fixed', inset: 0, zIndex: 10000,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            padding: 20, pointerEvents: 'auto'
-                        }}>
+                        <motion.div
+                            key="teacher-avatar-modal-overlay"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.18, ease: 'easeInOut' }}
+                            onClick={() => setIsViewerOpen(false)}
+                            style={{
+                                position: 'fixed',
+                                inset: 0,
+                                zIndex: 10000,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: 20,
+                                pointerEvents: 'auto',
+                                background: 'rgba(2, 6, 23, 0.88)',
+                                backdropFilter: 'blur(8px)',
+                                WebkitBackdropFilter: 'blur(8px)'
+                            }}
+                        >
                             <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                onClick={() => setIsViewerOpen(false)}
-                                style={{ position: 'absolute', inset: 0, background: 'rgba(2, 6, 23, 0.9)', backdropFilter: 'blur(8px)' }}
-                            />
-
-                            <motion.div
-                                initial={{ scale: 0.9, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.9, opacity: 0 }}
+                                key="teacher-avatar-modal-content"
+                                initial={{ scale: 0.94, opacity: 0, y: 6 }}
+                                animate={{ scale: 1, opacity: 1, y: 0 }}
+                                exit={{ scale: 0.94, opacity: 0, y: 6 }}
+                                transition={{ duration: 0.18, ease: 'easeOut' }}
+                                onClick={(e) => e.stopPropagation()}
                                 className="no-scrollbar"
                                 style={{
                                     position: 'relative', width: '95%', maxWidth: 460, maxHeight: '90vh',
@@ -304,10 +301,10 @@ const TeacherAvatar: React.FC<TeacherAvatarProps> = ({
                                             <motion.img
                                                 key={viewedTeacher.id + (previewSeed || '')}
                                                 src={photoUrl}
-                                                initial={{ opacity: 0, scale: 0.9, x: 20 }}
-                                                animate={{ opacity: 1, scale: 1, x: 0 }}
-                                                exit={{ opacity: 0, scale: 1.1, x: -20 }}
-                                                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                transition={{ duration: 0.15 }}
                                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                                 onError={(e: any) => {
                                                     const target = e.currentTarget;
@@ -530,7 +527,7 @@ const TeacherAvatar: React.FC<TeacherAvatarProps> = ({
                                     )}
                                 </AnimatePresence>
                             </motion.div>
-                        </div>
+                        </motion.div>
                     )}
                 </AnimatePresence>,
                 document.body
