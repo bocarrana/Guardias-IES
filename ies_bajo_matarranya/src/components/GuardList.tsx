@@ -2820,17 +2820,6 @@ const GuardList: React.FC<GuardListProps> = ({
                                                                 </motion.button>
                                                             ) : null;
                                                         })()}
-                                                        {guard.type === GuardType.COEXISTENCE && (guard.covering_teacher_id === currentUser.id || isPantallaRole(currentUser?.role)) && (
-                                                            <motion.button
-                                                                whileHover={{ scale: 1.03 }}
-                                                                whileTap={{ scale: 0.96 }}
-                                                                onClick={() => onRelease(guard.id)}
-                                                                className="btn btn-ghost"
-                                                                style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}
-                                                            >
-                                                                SOLTAR
-                                                            </motion.button>
-                                                        )}
                                                     </div>
                                                 )}
                                         </div>
