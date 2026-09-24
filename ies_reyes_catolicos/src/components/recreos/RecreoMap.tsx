@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { RECREO_ZONES, TodayRecreoAssignment } from '../../services/recreoZonesService';
 import TeacherAvatar from '../TeacherAvatar';
-import InteractiveFloorMap, { RoomGuardInfo } from '../InteractiveFloorMap';
+import InteractiveFloorMap from '../InteractiveFloorMap';
 import General_SVG from '../../assets/maps/General.svg?raw';
 
 interface RecreoMapProps {
@@ -111,99 +111,23 @@ export const RecreoMap: React.FC<RecreoMapProps> = ({
         }
     };
 
-    const guardInfo: RoomGuardInfo = useMemo(() => ({
-        roomId: activeZone.id,
-        roomLabel: activeZone.name,
-        guardTeacher: activeDuty?.teacherName || null,
-        timeSlot: recreoTitle,
-        teacher: activeDuty?.teacher,
-        groupLabel: activeZone.shortName,
-    }), [activeZone, activeDuty, recreoTitle]);
-
     return (
         <div style={{
             background: 'var(--bg-card)',
             borderRadius: '24px',
-            padding: '20px 24px 24px',
+            padding: '16px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '16px',
-            minHeight: '600px',
+            gap: '14px',
         }}>
-            {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, paddingRight: 40 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: 12,
-                        background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(6, 182, 212, 0.05))',
-                        border: '1px solid rgba(6, 182, 212, 0.3)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}>
-                        <MapPin size={20} color="#06b6d4" />
-                    </div>
-                    <div>
-                        <h3 style={{ margin: 0, fontSize: '1.08rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                            Plano General del Centro · Zonas de Recreo
-                        </h3>
-                        <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                            Distribución de vigilancia de patio · {recreoTitle}
-                        </p>
-                    </div>
-                </div>
-
-                {/* Quick Zone selector buttons */}
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {RECREO_ZONES.map(z => {
-                        const isSelected = activeZone.id === z.id;
-                        const duty = getAssignedForZone(z.id);
-                        return (
-                            <button
-                                key={z.id}
-                                onClick={() => onSelectZone?.(z.id)}
-                                onMouseEnter={() => setHoveredZone(z.id)}
-                                onMouseLeave={() => setHoveredZone(null)}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 6,
-                                    padding: '5px 11px',
-                                    borderRadius: '10px',
-                                    fontSize: '0.74rem',
-                                    fontWeight: 700,
-                                    background: isSelected ? z.color : 'rgba(255,255,255,0.04)',
-                                    color: isSelected ? '#ffffff' : 'var(--text-secondary)',
-                                    border: `1px solid ${isSelected ? z.color : 'rgba(255,255,255,0.1)'}`,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    transform: isSelected ? 'scale(1.05)' : 'none',
-                                    boxShadow: isSelected ? `0 0 14px ${z.color}60` : 'none',
-                                }}
-                            >
-                                <span style={{ width: 8, height: 8, borderRadius: '50%', background: isSelected ? '#fff' : z.color }} />
-                                <span>{z.shortName}</span>
-                                {duty?.teacherName && (
-                                    <span style={{ opacity: 0.85, fontWeight: 500, fontSize: '0.7rem' }}>
-                                        ({duty.teacherName.split(' ')[0]})
-                                    </span>
-                                )}
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
-
             {/* Map Graphic Container using InteractiveFloorMap & General_SVG */}
             <div style={{
                 position: 'relative',
                 background: '#0b1628',
-                borderRadius: '20px',
+                borderRadius: '18px',
                 border: '1px solid rgba(255,255,255,0.08)',
                 overflow: 'hidden',
-                height: '460px',
+                height: '520px',
                 display: 'flex',
                 flexDirection: 'column',
             }}>
@@ -211,8 +135,7 @@ export const RecreoMap: React.FC<RecreoMapProps> = ({
                     floorLabel={`PLANO GENERAL · ${activeZone.name.toUpperCase()}`}
                     svgMarkup={processedSvgMarkup}
                     onRoomClick={handleMapElementClick}
-                    guardInfo={guardInfo}
-                    initialScale={0.7}
+                    initialScale={0.75}
                     minScale={0.35}
                 />
             </div>
@@ -228,19 +151,19 @@ export const RecreoMap: React.FC<RecreoMapProps> = ({
                         background: 'rgba(255, 255, 255, 0.03)',
                         border: `1px solid ${activeZone.color}60`,
                         borderRadius: '16px',
-                        padding: '14px 18px',
+                        padding: '12px 18px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         flexWrap: 'wrap',
-                        gap: 16,
+                        gap: 14,
                         boxShadow: `0 4px 20px ${activeZone.color}15`,
                     }}
                 >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                         <div style={{
                             width: 8,
-                            height: 44,
+                            height: 42,
                             borderRadius: 4,
                             background: activeZone.color,
                             boxShadow: `0 0 10px ${activeZone.color}`,
