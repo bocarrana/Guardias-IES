@@ -194,6 +194,35 @@ export const HELP_ITEMS: Record<string, HelpItem> = {
         badge: 'Gestión de sustitutos',
         category: 'jefatura',
     },
+
+    // ─── GUARDIA DE RECREO Y CUADRANTES ───────────────────────
+    'recreo_schedule': {
+        id: 'recreo_schedule',
+        title: 'Cuadrante Mensual de Vigilancias de Recreo',
+        description: 'Gestión ágil y rotativa de zonas de vigilancia de patio para Jefatura y Administración:',
+        bullets: [
+            '📅 Matriz Mensual: Configura de forma independiente el 1.er Recreo y 2.º Recreo para cada día de la semana (Lunes a Viernes).',
+            '👥 Filtro Inteligente de Profesores: En el desplegable de cada casilla solo aparecen los docentes que tienen asignado ese recreo en su horario.',
+            '📋 Clonar y Rotar Meses: Duplica la distribución de un mes a otro con un solo clic para mantener o rotar los turnos.',
+            '🖨️ Formato de Impresión: Genera el documento oficial en cuadrícula listo para imprimir o publicar en tablón.',
+        ],
+        tip: 'El nombre se muestra de forma compacta (Nombre + 1.er Apellido) para optimizar el espacio en cuadrante y pantallas.',
+        badge: 'Cuadrante de recreos',
+        category: 'jefatura',
+    },
+    'recreo_zone_map': {
+        id: 'recreo_zone_map',
+        title: 'Plano General y Zonas de Vigilancia',
+        description: 'Visualización interactiva de las zonas de recreo en el plano general del centro:',
+        bullets: [
+            '🗺️ Icono de Mapa Cuadrado: Pulsa el icono junto a cualquier zona en el panel dinámico para abrir el plano.',
+            '✨ Resaltado Dinámico: El área correspondiente (Edificio Principal, Pistas, Edificio Secundario, Agraria/Rugby) se ilumina con resplandor en su color.',
+            '👤 Docente Asignado: La tarjeta inferior muestra el profesor en servicio y la descripción de los espacios comprendidos.',
+        ],
+        tip: 'Puedes hacer clic directamente en las zonas del plano para consultar quién vigila cada sector.',
+        badge: 'Plano de zonas',
+        category: 'docentes',
+    },
 };
 
 // ─── PREGUNTAS FRECUENTES GENERALES ─────────────────────────
