@@ -21,6 +21,7 @@ import FloorMap from './components/FloorMap';
 import PrivacyPage from './components/PrivacyPage';
 import SchoolCalendar from './components/SchoolCalendar';
 import LibreDisposicionPanel from './components/LibreDisposicionPanel';
+import { RecreoZonesManager } from './components/recreos/RecreoZonesManager';
 
 import {
     updateGuardStatus,
@@ -644,6 +645,12 @@ const App: React.FC = () => {
                     currentUser={currentUser}
                     onRefetch={refetch}
                     guards={guards}
+                />
+            )}
+            {view === 'recreo_zones' && (
+                <RecreoZonesManager
+                    currentUser={currentUser}
+                    teachers={teachers}
                 />
             )}
             {view === 'dashboard' && canAccessDashboard(currentUser) && (

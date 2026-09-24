@@ -155,7 +155,7 @@ export interface MetaOptions {
     subjects: Subject[];
 }
 
-export type ViewType = 'guards' | 'guard_groups' | 'teachers' | 'dashboard' | 'my_schedule' | 'admin' | 'free_classrooms' | 'floor_plan' | 'calendar' | 'libre_disposicion';
+export type ViewType = 'guards' | 'guard_groups' | 'recreo_zones' | 'teachers' | 'dashboard' | 'my_schedule' | 'admin' | 'free_classrooms' | 'floor_plan' | 'calendar' | 'libre_disposicion';
 
 export interface CalendarEvent {
     id: string;

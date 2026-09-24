@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, ListTodo, Users, Plus, LogOut, Database, Clock, Info, Menu, CalendarRange, MapPin, Map, CalendarDays, Bookmark, ChevronsLeft, ChevronsRight, HelpCircle } from 'lucide-react';
+import { LayoutDashboard, ListTodo, Users, Plus, LogOut, Database, Clock, Info, Menu, CalendarRange, MapPin, Map, CalendarDays, Bookmark, ChevronsLeft, ChevronsRight, HelpCircle, Coffee } from 'lucide-react';
 import { Teacher, ViewType } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { LOGO_DARK_URL, LOGO_LIGHT_URL } from '../config/supabase';
@@ -28,6 +28,7 @@ interface LayoutProps {
 const navItems = [
     { id: 'guards' as ViewType, label: 'Panel de Guardias', icon: ListTodo },
     { id: 'guard_groups' as ViewType, label: 'Grupos Guardias', icon: Clock },
+    { id: 'recreo_zones' as ViewType, label: 'Zonas Recreo', icon: Coffee },
     { id: 'teachers' as ViewType, label: 'Profesorado', icon: Users },
     { id: 'my_schedule' as ViewType, label: 'Mi Horario', icon: CalendarRange, hideForAdministracion: true },
     { id: 'dashboard' as ViewType, label: 'Estadísticas', icon: LayoutDashboard, hideForAdministracion: true },
@@ -41,6 +42,7 @@ const navItems = [
 const viewTitles: Record<ViewType, string> = {
     guards: 'Gestión de Guardias',
     guard_groups: 'Grupos por Franjas',
+    recreo_zones: 'Zonas de Recreo Mensual',
     teachers: 'Directorio de Personal',
     dashboard: 'Estadísticas',
     calendar: 'Calendario Escolar',
