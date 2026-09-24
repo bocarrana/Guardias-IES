@@ -37,6 +37,7 @@ import {
     copyMonthlyRecreoGrid,
     findTeacherByName,
     normalizeText,
+    formatShortTeacherName,
 } from '../../services/recreoZonesService';
 import { RecreoPrintView } from './RecreoPrintView';
 import { toast } from 'sonner';
@@ -732,7 +733,7 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                                                                     overflow: 'hidden',
                                                                     textOverflow: 'ellipsis',
                                                                 }}>
-                                                                    {teacherName}
+                                                                    {formatShortTeacherName(teacherName)}
                                                                 </span>
                                                             </div>
                                                         ) : (
@@ -981,7 +982,7 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                                         return (
                                             <button
                                                 key={t.id}
-                                                onClick={() => handleAssignTeacher(editingCell.zoneId, editingCell.day, t.name)}
+                                                onClick={() => handleAssignTeacher(editingCell.zoneId, editingCell.day, formatShortTeacherName(t.name))}
                                                 style={{
                                                     display: 'flex',
                                                     alignItems: 'center',

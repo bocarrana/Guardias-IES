@@ -16,7 +16,7 @@ import { canAccessAdminPanel, isAdministracionRole, isPantallaRole, isAdminRole,
 import { rankTeachers, filterGuardsForSlot } from '../utils/guardAssignment';
 import { LOGO_DARK_URL } from '../config/supabase';
 import { HelpBadge } from './help';
-import { RECREO_ZONES, getMonthlyRecreoGrid, findTeacherByName, normalizeText } from '../services/recreoZonesService';
+import { RECREO_ZONES, getMonthlyRecreoGrid, findTeacherByName, normalizeText, formatShortTeacherName } from '../services/recreoZonesService';
 
 interface ScrollableAvatarsProps {
     children: React.ReactNode;
@@ -1214,7 +1214,7 @@ const GuardList: React.FC<GuardListProps> = ({
                                                                                 overflow: 'hidden',
                                                                                 textOverflow: 'ellipsis',
                                                                             }}>
-                                                                                {teacherName || '—'}
+                                                                                {formatShortTeacherName(teacherName) || '—'}
                                                                             </span>
                                                                         </div>
                                                                     </div>

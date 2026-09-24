@@ -289,3 +289,18 @@ export const getTeacherTodayRecreoDuty = (
         dayName,
     };
 };
+
+/** Formats a teacher's full name to only show First Name + First Surname (Nombre + 1.er Apellido) */
+export const formatShortTeacherName = (fullName: string): string => {
+    if (!fullName) return '';
+    const clean = fullName.trim();
+    if (clean.includes(',')) {
+        const [apellidos, nombre] = clean.split(',').map(s => s.trim());
+        const primerApellido = apellidos.split(/\s+/)[0] || '';
+        const primerNombre = (nombre || '').split(/\s+/)[0] || '';
+        return `${primerNombre} ${primerApellido}`.trim();
+    }
+    const parts = clean.split(/\s+/);
+    if (parts.length <= 2) return clean;
+    return `${parts[0]} ${parts[1]}`;
+};

@@ -1,5 +1,4 @@
-import React from 'react';
-import { RECREO_ZONES, DAYS_OF_WEEK, RecreoGrid } from '../../services/recreoZonesService';
+import { RECREO_ZONES, DAYS_OF_WEEK, RecreoGrid, formatShortTeacherName } from '../../services/recreoZonesService';
 import { Printer, X } from 'lucide-react';
 
 interface RecreoPrintViewProps {
@@ -223,7 +222,7 @@ export const RecreoPrintView: React.FC<RecreoPrintViewProps> = ({
                                             fontSize: '0.85rem',
                                         }}
                                     >
-                                        {grid1[`${zone.id}_${day}`] || '—'}
+                                        {formatShortTeacherName(grid1[`${zone.id}_${day}`] || '') || '—'}
                                     </td>
                                 ))}
                             </tr>
@@ -324,7 +323,7 @@ export const RecreoPrintView: React.FC<RecreoPrintViewProps> = ({
                                             fontSize: '0.85rem',
                                         }}
                                     >
-                                        {grid2[`${zone.id}_${day}`] || '—'}
+                                        {formatShortTeacherName(grid2[`${zone.id}_${day}`] || '') || '—'}
                                     </td>
                                 ))}
                             </tr>
