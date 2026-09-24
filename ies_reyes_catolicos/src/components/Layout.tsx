@@ -28,7 +28,6 @@ interface LayoutProps {
 const navItems = [
     { id: 'guards' as ViewType, label: 'Panel de Guardias', icon: ListTodo },
     { id: 'guard_groups' as ViewType, label: 'Grupos Guardias', icon: Clock },
-    { id: 'recreo_zones' as ViewType, label: 'Zonas Recreo', icon: Coffee },
     { id: 'teachers' as ViewType, label: 'Profesorado', icon: Users },
     { id: 'my_schedule' as ViewType, label: 'Mi Horario', icon: CalendarRange, hideForAdministracion: true },
     { id: 'dashboard' as ViewType, label: 'Estadísticas', icon: LayoutDashboard, hideForAdministracion: true },

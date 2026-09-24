@@ -25,7 +25,7 @@ import {
     Users,
     X,
 } from 'lucide-react';
-import { Teacher } from '../../types';
+import { Teacher, MetaOptions, GuardGroupSchedule } from '../../types';
 import { canAccessAdminPanel } from '../../utils/roles';
 import TeacherAvatar from '../TeacherAvatar';
 import {
@@ -48,6 +48,8 @@ import { toast } from 'sonner';
 interface RecreoZonesManagerProps {
     currentUser: Teacher | null;
     teachers: Teacher[];
+    meta?: MetaOptions;
+    guardGroupSchedules?: GuardGroupSchedule[];
 }
 
 const MONTH_NAMES = [
@@ -58,6 +60,8 @@ const MONTH_NAMES = [
 export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
     currentUser,
     teachers,
+    meta,
+    guardGroupSchedules = [],
 }) => {
     const isAdmin = canAccessAdminPanel(currentUser);
 
@@ -78,6 +82,7 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
     // Modal state for editing a cell
     const [editingCell, setEditingCell] = useState<{ zoneId: string; day: DayOfWeek } | null>(null);
     const [teacherSearch, setTeacherSearch] = useState<string>('');
+    const [showAllTeachersInModal, setShowAllTeachersInModal] = useState<boolean>(false);
 
     // Teacher highlight filter
     const [filterTeacherId, setFilterTeacherId] = useState<string>('');
@@ -97,6 +102,19 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
     const activeGrid = activeRecreoTab === '1' ? grid1 : grid2;
     const setActiveGrid = activeRecreoTab === '1' ? setGrid1 : setGrid2;
 
+    // Helper to find the matching recreo slot ID
+    const targetRecreoSlot = useMemo(() => {
+        if (!meta?.slots?.length) return undefined;
+        const recreoSlots = meta.slots.filter(s =>
+            s.label?.toLowerCase().includes('recreo') || s.label?.toLowerCase().includes('descanso')
+        );
+        if (activeRecreoTab === '1') {
+            return recreoSlots.find(s => s.label.toLowerCase().includes('1') || s.label.toLowerCase().includes('primer') || (s.start_time && parseInt(s.start_time) < 13)) || recreoSlots[0];
+        } else {
+            return recreoSlots.find(s => s.label.toLowerCase().includes('2') || s.label.toLowerCase().includes('segund') || (s.start_time && parseInt(s.start_time) >= 13)) || recreoSlots[1] || recreoSlots[0];
+        }
+    }, [meta, activeRecreoTab]);
+
     // Handle teacher assignment to cell
     const handleAssignTeacher = (zoneId: string, day: DayOfWeek, teacherName: string) => {
         const cellKey = `${zoneId}_${day}`;
@@ -110,6 +128,7 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
         setHasUnsavedChanges(true);
         setEditingCell(null);
         setTeacherSearch('');
+        setShowAllTeachersInModal(false);
     };
 
     // Save current schedule
@@ -167,12 +186,24 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
         }
     };
 
+    // Teachers specifically assigned to this Recreo slot & day in the school timetable
+    const slotDutyTeachers = useMemo(() => {
+        if (!editingCell || !targetRecreoSlot) return [];
+        return guardGroupSchedules
+            .filter(s => s.dia_semana === editingCell.day && s.franja_id === targetRecreoSlot.id)
+            .map(s => s.teacher || teachers.find(t => t.id === s.profesor_id))
+            .filter(Boolean) as Teacher[];
+    }, [editingCell, targetRecreoSlot, guardGroupSchedules, teachers]);
+
     // Filtered teachers for assignment popup
-    const filteredTeachers = useMemo(() => {
-        if (!teacherSearch.trim()) return teachers;
+    const modalAvailableTeachers = useMemo(() => {
+        // By default, only show teachers destined for this recreo slot on this day
+        let pool = (slotDutyTeachers.length > 0 && !showAllTeachersInModal) ? slotDutyTeachers : teachers;
+
+        if (!teacherSearch.trim()) return pool;
         const q = normalizeText(teacherSearch);
-        return teachers.filter(t => normalizeText(t.name).includes(q) || normalizeText(t.department || '').includes(q));
-    }, [teachers, teacherSearch]);
+        return pool.filter(t => normalizeText(t.name).includes(q) || normalizeText(t.department || '').includes(q));
+    }, [slotDutyTeachers, showAllTeachersInModal, teachers, teacherSearch]);
 
     // Statistics: Count of recreo assignments per teacher in the active month
     const teacherStats = useMemo(() => {
@@ -205,7 +236,7 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
             gap: '24px',
             width: '100%',
             fontFamily: 'var(--font-sans)',
-            paddingBottom: '60px',
+            paddingBottom: '40px',
         }}>
             {/* Top Banner Header */}
             <div style={{
@@ -236,7 +267,7 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                             <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-primary)' }}>
-                                Zonas de Recreo · IES Reyes Católicos
+                                Gestión Mensual de Zonas de Recreo
                             </h2>
                             <span style={{
                                 fontSize: '0.7rem',
@@ -248,11 +279,11 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                                 color: 'var(--brand-500)',
                                 border: '1px solid rgba(6, 182, 212, 0.25)',
                             }}>
-                                Exclusivo Centro
+                                Panel de Jefatura
                             </span>
                         </div>
                         <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                            Gestión mensual y distribución de vigilancia en patios, edificios y accesos.
+                            Asigna y organiza los profesores de guardia a cada una de las 5 zonas del centro para cada mes.
                         </p>
                     </div>
                 </div>
@@ -277,7 +308,7 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                         }}
                     >
                         <Printer size={16} color="var(--brand-500)" />
-                        <span>Imprimir Cuadrante</span>
+                        <span>Imprimir / PDF</span>
                     </button>
 
                     {isAdmin && (
@@ -698,6 +729,7 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                                                             if (isAdmin) {
                                                                 setEditingCell({ zoneId: zone.id, day });
                                                                 setTeacherSearch('');
+                                                                setShowAllTeachersInModal(false);
                                                             }
                                                         }}
                                                         style={{
@@ -1036,7 +1068,7 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                                 border: '1px solid var(--border-subtle)',
                                 borderRadius: '24px',
                                 width: '100%',
-                                maxWidth: '440px',
+                                maxWidth: '460px',
                                 padding: '24px',
                                 boxShadow: 'var(--shadow-2xl)',
                                 display: 'flex',
@@ -1048,14 +1080,14 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <div>
                                     <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                                        Asignar Profesor
+                                        Asignar Profesor a Zona
                                     </h3>
                                     <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                                         {RECREO_ZONES.find(z => z.id === editingCell.zoneId)?.name} · {editingCell.day} ({activeRecreoTab === '1' ? '1.er Recreo' : '2.º Recreo'})
                                     </p>
                                 </div>
                                 <button
-                                    onClick={() => setEditingCell(null)}
+                                    onClick={() => { setEditingCell(null); setShowAllTeachersInModal(false); }}
                                     style={{
                                         background: 'none',
                                         border: 'none',
@@ -1065,6 +1097,40 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                                 >
                                     <X size={20} />
                                 </button>
+                            </div>
+
+                            {/* Guard Slot Filter Notice & Toggle */}
+                            <div style={{
+                                padding: '8px 12px',
+                                borderRadius: '10px',
+                                background: 'rgba(6, 182, 212, 0.08)',
+                                border: '1px solid rgba(6, 182, 212, 0.2)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                fontSize: '0.78rem',
+                            }}>
+                                <span style={{ color: 'var(--brand-400)', fontWeight: 600 }}>
+                                    {!showAllTeachersInModal && slotDutyTeachers.length > 0
+                                        ? `🎯 Mostrando los ${slotDutyTeachers.length} profesores asignados a este recreo`
+                                        : `👥 Mostrando todos los profesores del claustro`}
+                                </span>
+                                {slotDutyTeachers.length > 0 && (
+                                    <button
+                                        onClick={() => setShowAllTeachersInModal(!showAllTeachersInModal)}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            color: 'var(--brand-500)',
+                                            fontWeight: 700,
+                                            cursor: 'pointer',
+                                            textDecoration: 'underline',
+                                            fontSize: '0.75rem',
+                                        }}
+                                    >
+                                        {showAllTeachersInModal ? 'Filtrar por recreo' : 'Ver todo el claustro'}
+                                    </button>
+                                )}
                             </div>
 
                             {/* Search bar */}
@@ -1119,47 +1185,70 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                                     <span>Dejar celda vacía / Sin asignar</span>
                                 </button>
 
-                                {filteredTeachers.map(t => {
-                                    const currentName = activeGrid[`${editingCell.zoneId}_${editingCell.day}`] || '';
-                                    const isSelected = currentName === t.name;
+                                {modalAvailableTeachers.length === 0 ? (
+                                    <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                        No se han encontrado profesores con ese filtro.
+                                        {!showAllTeachersInModal && (
+                                            <button
+                                                onClick={() => setShowAllTeachersInModal(true)}
+                                                style={{
+                                                    display: 'block',
+                                                    margin: '8px auto 0',
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    color: 'var(--brand-500)',
+                                                    fontWeight: 700,
+                                                    cursor: 'pointer',
+                                                    textDecoration: 'underline',
+                                                }}
+                                            >
+                                                Buscar en todo el claustro
+                                            </button>
+                                        )}
+                                    </div>
+                                ) : (
+                                    modalAvailableTeachers.map(t => {
+                                        const currentName = activeGrid[`${editingCell.zoneId}_${editingCell.day}`] || '';
+                                        const isSelected = currentName === t.name;
 
-                                    return (
-                                        <button
-                                            key={t.id}
-                                            onClick={() => handleAssignTeacher(editingCell.zoneId, editingCell.day, t.name)}
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'space-between',
-                                                padding: '8px 12px',
-                                                borderRadius: '12px',
-                                                background: isSelected ? 'rgba(6, 182, 212, 0.15)' : 'rgba(255, 255, 255, 0.02)',
-                                                border: `1px solid ${isSelected ? 'var(--brand-500)' : 'var(--border-subtle)'}`,
-                                                cursor: 'pointer',
-                                                transition: 'all 0.15s ease',
-                                                textAlign: 'left',
-                                            }}
-                                        >
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                <TeacherAvatar teacher={t} size={30} showViewer={false} />
-                                                <div>
-                                                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                                                        {t.name}
-                                                    </div>
-                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                                                        {t.department || 'Profesorado'}
+                                        return (
+                                            <button
+                                                key={t.id}
+                                                onClick={() => handleAssignTeacher(editingCell.zoneId, editingCell.day, t.name)}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'space-between',
+                                                    padding: '8px 12px',
+                                                    borderRadius: '12px',
+                                                    background: isSelected ? 'rgba(6, 182, 212, 0.15)' : 'rgba(255, 255, 255, 0.02)',
+                                                    border: `1px solid ${isSelected ? 'var(--brand-500)' : 'var(--border-subtle)'}`,
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.15s ease',
+                                                    textAlign: 'left',
+                                                }}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                    <TeacherAvatar teacher={t} size={30} showViewer={false} />
+                                                    <div>
+                                                        <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                                                            {t.name}
+                                                        </div>
+                                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                                            {t.department || 'Profesorado'}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                            {isSelected && (
-                                                <span style={{ fontSize: '0.75rem', color: 'var(--brand-500)', fontWeight: 800 }}>
-                                                    Asignado
-                                                </span>
-                                            )}
-                                        </button>
-                                    );
-                                })}
+                                                {isSelected && (
+                                                    <span style={{ fontSize: '0.75rem', color: 'var(--brand-500)', fontWeight: 800 }}>
+                                                        Asignado
+                                                    </span>
+                                                )}
+                                            </button>
+                                        );
+                                    })
+                                )}
                             </div>
                         </motion.div>
                     </div>

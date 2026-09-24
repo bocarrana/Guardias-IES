@@ -593,10 +593,9 @@ const App: React.FC = () => {
             }
             await refetch();
             setIsModalOpen(false);
-        } catch (err: any) {
-            console.error('Error guardando guardia:', err);
-            const msg = err?.message || err?.details || 'Error desconocido al guardar';
-            toast.error('Error guardando la guardia', { description: msg });
+        } catch (err) {
+            console.error(err);
+            toast.error('Error guardando. Revisa la consola.');
         }
     };
 
@@ -629,6 +628,7 @@ const App: React.FC = () => {
                     assignmentModes={assignmentModes}
                     onChangeAssignmentMode={handleAssignmentModeChange}
                     onRefresh={refetch}
+                    teachers={teachers}
                 />
             )}
             {view === 'my_schedule' && currentUser && canAccessMySchedule(currentUser) && (

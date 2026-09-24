@@ -16,6 +16,7 @@ import { canAccessAdminPanel, isAdministracionRole, isPantallaRole, isAdminRole,
 import { rankTeachers, filterGuardsForSlot } from '../utils/guardAssignment';
 import { LOGO_DARK_URL } from '../config/supabase';
 import { HelpBadge } from './help';
+import { RECREO_ZONES, getMonthlyRecreoGrid, findTeacherByName, normalizeText } from '../services/recreoZonesService';
 
 interface ScrollableAvatarsProps {
     children: React.ReactNode;
@@ -126,6 +127,7 @@ interface GuardListProps {
     assignmentModes: Record<string, 'recommended' | 'random'>;
     onChangeAssignmentMode: (slotId: string, mode: 'recommended' | 'random') => void;
     onRefresh?: () => Promise<void> | void;
+    teachers?: Teacher[];
 }
 
 const getStatusBadgeClass = (status: GuardStatus) => {
@@ -185,7 +187,7 @@ export const isGuardPassed = (guard: Guard, now: Date) => {
 
 const GuardList: React.FC<GuardListProps> = ({
     guards, currentUser, loading, onPickup, onRelease, onComplete, onDelete, onEdit, meta, guardGroupSchedules,
-    assignmentModes, onChangeAssignmentMode, onRefresh
+    assignmentModes, onChangeAssignmentMode, onRefresh, teachers = []
 }) => {
     const [filter, setFilter] = useState<'today' | 'mine' | 'available' | 'history'>('today');
     const [searchQuery, setSearchQuery] = useState('');
@@ -1126,7 +1128,7 @@ const GuardList: React.FC<GuardListProps> = ({
                                                 {day}, {new Date(date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
                                             </div>
 
-                                            {/* Ausencias en esta franja */}
+                                            {/* Ausencias o Zonas de Recreo en esta franja */}
                                             <div style={{ 
                                                 display: 'flex',
                                                 flexDirection: 'column',
@@ -1134,16 +1136,104 @@ const GuardList: React.FC<GuardListProps> = ({
                                                 minHeight: 0,
                                                 overflow: 'hidden'
                                             }}>
-                                                <p style={{ 
-                                                    fontSize: isPantallaRole(currentUser?.role) ? '0.75rem' : '0.65rem', 
-                                                    fontWeight: 700, 
-                                                    textTransform: 'uppercase', 
-                                                    color: 'var(--text-muted)', 
-                                                    marginBottom: 8,
-                                                    flexShrink: 0
-                                                }}>
-                                                    Ausencias
-                                                </p>
+                                                {isRecreoSlot ? (
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        gap: isPantallaRole(currentUser?.role) ? 7 : 5,
+                                                        flex: 1,
+                                                        minHeight: 0,
+                                                        overflowY: 'auto',
+                                                    }}>
+                                                        <p style={{ 
+                                                            fontSize: isPantallaRole(currentUser?.role) ? '0.8rem' : '0.65rem', 
+                                                            fontWeight: 800, 
+                                                            textTransform: 'uppercase', 
+                                                            color: '#fbbf24', 
+                                                            marginBottom: 4,
+                                                            letterSpacing: '0.04em',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: 5,
+                                                            flexShrink: 0
+                                                        }}>
+                                                            <MapPin size={isPantallaRole(currentUser?.role) ? 14 : 11} />
+                                                            Zonas de Vigilancia
+                                                        </p>
+                                                        {(() => {
+                                                            const recreoType: '1' | '2' = (slot.label?.toLowerCase().includes('2') || slot.label?.toLowerCase().includes('segund') || (slot.start_time && parseInt(slot.start_time) >= 13)) ? '2' : '1';
+                                                            const d = new Date(date);
+                                                            const year = d.getFullYear();
+                                                            const month = d.getMonth() + 1;
+                                                            const grid = getMonthlyRecreoGrid(year, month, recreoType);
+
+                                                            return RECREO_ZONES.map(zone => {
+                                                                const teacherName = grid[`${zone.id}_${day}`] || '';
+                                                                const teacherObj = teacherName ? findTeacherByName(teacherName, teachers) : undefined;
+                                                                const isCurrentUser = currentUser && teacherName && (
+                                                                    normalizeText(teacherName).includes(normalizeText(currentUser.name)) ||
+                                                                    normalizeText(currentUser.name).includes(normalizeText(teacherName))
+                                                                );
+
+                                                                return (
+                                                                    <div
+                                                                        key={zone.id}
+                                                                        style={{
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            justifyContent: 'space-between',
+                                                                            padding: isPantallaRole(currentUser?.role) ? '7px 10px' : '4px 8px',
+                                                                            background: isCurrentUser ? 'rgba(245, 158, 11, 0.18)' : 'var(--bg-main)',
+                                                                            borderRadius: 8,
+                                                                            border: isCurrentUser ? '1px solid #f59e0b' : '1px solid var(--border-subtle)',
+                                                                            gap: 8,
+                                                                        }}
+                                                                    >
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                                                                            <div style={{ width: 4, height: isPantallaRole(currentUser?.role) ? 20 : 16, borderRadius: 2, background: zone.color, flexShrink: 0 }} />
+                                                                            <span style={{
+                                                                                fontSize: isPantallaRole(currentUser?.role) ? '0.85rem' : '0.72rem',
+                                                                                fontWeight: 800,
+                                                                                color: isCurrentUser ? '#f59e0b' : 'var(--text-primary)',
+                                                                                whiteSpace: 'nowrap'
+                                                                            }}>
+                                                                                {zone.shortName}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, overflow: 'hidden' }}>
+                                                                            {teacherObj ? (
+                                                                                <TeacherAvatar teacher={teacherObj} size={isPantallaRole(currentUser?.role) ? 22 : 18} showViewer={false} />
+                                                                            ) : (
+                                                                                <User size={isPantallaRole(currentUser?.role) ? 14 : 12} color="var(--text-muted)" />
+                                                                            )}
+                                                                            <span style={{
+                                                                                fontSize: isPantallaRole(currentUser?.role) ? '0.85rem' : '0.72rem',
+                                                                                fontWeight: isCurrentUser ? 800 : 600,
+                                                                                color: isCurrentUser ? '#f59e0b' : teacherName ? 'var(--text-primary)' : 'var(--text-muted)',
+                                                                                whiteSpace: 'nowrap',
+                                                                                overflow: 'hidden',
+                                                                                textOverflow: 'ellipsis',
+                                                                            }}>
+                                                                                {teacherName || '—'}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            });
+                                                        })()}
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <p style={{ 
+                                                            fontSize: isPantallaRole(currentUser?.role) ? '0.75rem' : '0.65rem', 
+                                                            fontWeight: 700, 
+                                                            textTransform: 'uppercase', 
+                                                            color: 'var(--text-muted)', 
+                                                            marginBottom: 8,
+                                                            flexShrink: 0
+                                                        }}>
+                                                            Ausencias
+                                                        </p>
                                                 <div 
                                                     className="custom-touch-scroll"
                                                     style={{ 
@@ -1419,6 +1509,8 @@ const GuardList: React.FC<GuardListProps> = ({
                                                         </div>
                                                     ))}
                                                 </div>
+                                                </>
+                                                )}
                                             </div>
                                         </div>
                                         {/* Guardia disponible */}

@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import Papa from 'papaparse';
 import CrownLogo from './CrownLogo';
+import { RecreoZonesManager } from './recreos/RecreoZonesManager';
 import { MonthDayPicker } from './MonthDayPicker';
 import { HelpBadge } from './help';
 import {
@@ -119,7 +120,7 @@ interface AdminPanelProps {
     currentUser: Teacher;
 }
 
-type Tab = 'teachers' | 'guards' | 'infra' | 'schedules' | 'personal_schedule' | 'import_export' | 'audit';
+type Tab = 'teachers' | 'guards' | 'infra' | 'schedules' | 'personal_schedule' | 'import_export' | 'audit' | 'recreos';
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefetch, guardGroupSchedules, currentUser }) => {
     const { theme } = useTheme();
@@ -947,6 +948,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                 {[
                     { id: 'import_export', label: '🚀 IMPORTAR CSV', icon: FileSpreadsheet },
                     { id: 'teachers', label: 'Profesores', icon: Users },
+                    { id: 'recreos', label: '☕ Zonas Recreo', icon: Coffee },
                     { id: 'schedules', label: 'Horarios Guardia', icon: Clock },
                     { id: 'personal_schedule', label: 'Horarios Lectivos', icon: Calendar },
                     { id: 'guards', label: 'Guardias Profesorado', icon: ShieldAlert },
@@ -1261,6 +1263,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                     </div>
                 ) : (
                     <>
+                        {activeTab === 'recreos' && (
+                            <RecreoZonesManager
+                                currentUser={currentUser}
+                                teachers={teachers}
+                                meta={meta}
+                                guardGroupSchedules={guardGroupSchedules}
+                            />
+                        )}
+
                         {activeTab === 'infra' && (
                             <div style={{
                                 background: 'var(--brand-950-subtle)',
