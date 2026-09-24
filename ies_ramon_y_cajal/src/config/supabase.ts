@@ -1,13 +1,16 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string) || '';
+const SUPABASE_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || '';
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
-    console.error('❌ Supabase environment variables are missing. Check your .env file.');
+    console.error('❌ Supabase environment variables are missing. Check your .env or Vercel Environment Variables.');
 }
 
-export const supabase: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+export const supabase: SupabaseClient = createClient(
+    SUPABASE_URL || 'https://placeholder.supabase.co',
+    SUPABASE_KEY || 'placeholder'
+);
 
 // Storage buckets
 export const BUCKET_PHOTOS = 'Fotos';
