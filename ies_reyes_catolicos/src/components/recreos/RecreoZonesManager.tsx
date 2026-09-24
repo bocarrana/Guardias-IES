@@ -19,7 +19,6 @@ import {
     Shield,
     Trash2,
     User,
-    UserCheck,
     Users,
     X,
 } from 'lucide-react';
@@ -200,22 +199,6 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
         const q = normalizeText(teacherSearch);
         return pool.filter(t => normalizeText(t.name).includes(q) || normalizeText(t.department || '').includes(q));
     }, [slotDutyTeachers, showAllTeachersInModal, teachers, teacherSearch]);
-
-    // Statistics: Count of recreo assignments per teacher in the active month
-    const teacherStats = useMemo(() => {
-        const counts: Record<string, number> = {};
-        const countFromGrid = (grid: RecreoGrid) => {
-            Object.values(grid).forEach(name => {
-                if (!name) return;
-                const teacher = findTeacherByName(name, teachers);
-                const key = teacher ? teacher.id : name;
-                counts[key] = (counts[key] || 0) + 1;
-            });
-        };
-        countFromGrid(grid1);
-        countFromGrid(grid2);
-        return counts;
-    }, [grid1, grid2, teachers]);
 
     const activeColorTheme = activeRecreoTab === '1' ? '#f43f5e' : '#3b82f6';
     const activeHeaderBg = activeRecreoTab === '1' ? 'rgba(244, 63, 94, 0.12)' : 'rgba(59, 130, 246, 0.12)';
@@ -753,60 +736,6 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                                     ))}
                                 </tbody>
                             </table>
-                        </div>
-                    </div>
-
-                    {/* Teacher Summary / Dedicated Hours Breakdown */}
-                    <div style={{
-                        background: 'var(--bg-card)',
-                        borderRadius: '20px',
-                        border: '1px solid var(--border-subtle)',
-                        padding: '18px 22px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 12,
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <UserCheck size={18} color="var(--brand-500)" />
-                            <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                                Resumen de Vigilancias Asignadas ({MONTH_NAMES[selectedMonth - 1]} {selectedYear})
-                            </h4>
-                        </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-                            {teachers.slice(0, 18).map(t => {
-                                const count = teacherStats[t.id] || teacherStats[t.name] || 0;
-                                if (count === 0) return null;
-                                return (
-                                    <div
-                                        key={t.id}
-                                        onClick={() => setFilterTeacherId(filterTeacherId === t.name ? '' : t.name)}
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 8,
-                                            padding: '5px 10px',
-                                            borderRadius: '10px',
-                                            background: filterTeacherId === t.name ? 'rgba(6, 182, 212, 0.2)' : 'var(--bg-main)',
-                                            border: `1px solid ${filterTeacherId === t.name ? 'var(--brand-500)' : 'var(--border-subtle)'}`,
-                                            fontSize: '0.78rem',
-                                            cursor: 'pointer',
-                                        }}
-                                    >
-                                        <TeacherAvatar teacher={t} size={20} showViewer={false} />
-                                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{t.name.split(' ')[0]} {t.name.split(' ')[1] || ''}</span>
-                                        <span style={{
-                                            padding: '1px 6px',
-                                            borderRadius: 6,
-                                            background: 'var(--brand-500)',
-                                            color: '#000',
-                                            fontWeight: 800,
-                                            fontSize: '0.7rem',
-                                        }}>
-                                            {count} sem.
-                                        </span>
-                                    </div>
-                                );
-                            })}
                         </div>
                     </div>
                 </div>
