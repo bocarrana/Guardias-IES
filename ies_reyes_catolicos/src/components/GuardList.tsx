@@ -16,7 +16,8 @@ import { canAccessAdminPanel, isAdministracionRole, isPantallaRole, isAdminRole,
 import { rankTeachers, filterGuardsForSlot } from '../utils/guardAssignment';
 import { LOGO_DARK_URL } from '../config/supabase';
 import { HelpBadge } from './help';
-import { RECREO_ZONES, getMonthlyRecreoGrid, findTeacherByName, normalizeText, formatShortTeacherName } from '../services/recreoZonesService';
+import { RecreoMap } from './recreos/RecreoMap';
+import { RECREO_ZONES, getMonthlyRecreoGrid, findTeacherByName, normalizeText, formatShortTeacherName, RecreoGrid, DayOfWeek } from '../services/recreoZonesService';
 
 interface ScrollableAvatarsProps {
     children: React.ReactNode;
@@ -195,6 +196,7 @@ const GuardList: React.FC<GuardListProps> = ({
     const [mapRoomId, setMapRoomId] = useState<string | null>(null);
     const [currentTime, setCurrentTime] = useState(new Date());
     const [selectedObservationGuard, setSelectedObservationGuard] = useState<Guard | null>(null);
+    const [recreoMapModal, setRecreoMapModal] = useState<{ zoneId: string; recreoTitle: string; slotGuardsDay: DayOfWeek; grid: RecreoGrid } | null>(null);
 
     // Estados para indicador En Vivo y botón de Actualización manual
     const [showLiveInfo, setShowLiveInfo] = useState(false);
@@ -1199,6 +1201,46 @@ const GuardList: React.FC<GuardListProps> = ({
                                                                             }}>
                                                                                 {zone.shortName}
                                                                             </span>
+                                                                            <button
+                                                                                type="button"
+                                                                                title={`Ver mapa de ${zone.name} (clic o doble clic)`}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setRecreoMapModal({
+                                                                                        zoneId: zone.id,
+                                                                                        recreoTitle: slot.label,
+                                                                                        slotGuardsDay: day as DayOfWeek,
+                                                                                        grid
+                                                                                    });
+                                                                                }}
+                                                                                onDoubleClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setRecreoMapModal({
+                                                                                        zoneId: zone.id,
+                                                                                        recreoTitle: slot.label,
+                                                                                        slotGuardsDay: day as DayOfWeek,
+                                                                                        grid
+                                                                                    });
+                                                                                }}
+                                                                                style={{
+                                                                                    background: 'rgba(255, 255, 255, 0.06)',
+                                                                                    border: `1px solid ${zone.color}50`,
+                                                                                    borderRadius: 6,
+                                                                                    padding: isPantallaRole(currentUser?.role) ? '2px 5px' : '1px 4px',
+                                                                                    cursor: 'pointer',
+                                                                                    display: 'inline-flex',
+                                                                                    alignItems: 'center',
+                                                                                    justifyContent: 'center',
+                                                                                    color: zone.color,
+                                                                                    lineHeight: 1,
+                                                                                    transition: 'all 0.15s ease',
+                                                                                    flexShrink: 0,
+                                                                                }}
+                                                                                onMouseEnter={(e) => { e.currentTarget.style.background = `${zone.color}30`; e.currentTarget.style.borderColor = zone.color; e.currentTarget.style.transform = 'scale(1.15)'; }}
+                                                                                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'; e.currentTarget.style.borderColor = `${zone.color}50`; e.currentTarget.style.transform = 'scale(1)'; }}
+                                                                            >
+                                                                                <MapPin size={isPantallaRole(currentUser?.role) ? 12 : 10} />
+                                                                            </button>
                                                                         </div>
                                                                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, overflow: 'hidden' }}>
                                                                             {teacherObj ? (
@@ -2939,6 +2981,84 @@ const GuardList: React.FC<GuardListProps> = ({
                 meta={meta}
                 onClose={() => setMapRoomId(null)}
             />
+
+            {/* Recreo Zone Map Modal */}
+            <AnimatePresence>
+                {recreoMapModal && (
+                    <div 
+                        style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            background: 'rgba(3, 7, 18, 0.8)',
+                            backdropFilter: 'blur(8px)',
+                            WebkitBackdropFilter: 'blur(8px)',
+                            zIndex: 99999,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: 16,
+                        }}
+                        onClick={() => setRecreoMapModal(null)}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                                width: '100%',
+                                maxWidth: 960,
+                                maxHeight: '92vh',
+                                overflowY: 'auto',
+                                background: 'var(--bg-card)',
+                                borderRadius: '24px',
+                                border: '1px solid var(--border-subtle)',
+                                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)',
+                                position: 'relative',
+                            }}
+                        >
+                            <button
+                                onClick={() => setRecreoMapModal(null)}
+                                style={{
+                                    position: 'absolute',
+                                    top: 16,
+                                    right: 16,
+                                    zIndex: 50,
+                                    background: 'rgba(255, 255, 255, 0.08)',
+                                    border: '1px solid var(--border-subtle)',
+                                    borderRadius: '50%',
+                                    width: 36,
+                                    height: 36,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'var(--text-secondary)',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'; }}
+                            >
+                                <X size={18} />
+                            </button>
+
+                            <RecreoMap
+                                recreoTitle={recreoMapModal.recreoTitle}
+                                selectedZoneId={recreoMapModal.zoneId}
+                                onSelectZone={(newZoneId) => setRecreoMapModal(prev => prev ? { ...prev, zoneId: newZoneId } : null)}
+                                assignments={RECREO_ZONES.map(z => {
+                                    const name = recreoMapModal.grid[`${z.id}_${recreoMapModal.slotGuardsDay}`] || '';
+                                    const t = name ? findTeacherByName(name, teachers) : undefined;
+                                    return { zone: z, teacherName: name, teacher: t, recreoType: '1' };
+                                })}
+                            />
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Observation & Task Modal */}
             <AnimatePresence>
