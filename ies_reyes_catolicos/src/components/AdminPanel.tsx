@@ -946,9 +946,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ teachers, guards, meta, onRefet
                 border: '1px solid var(--border-subtle)',
             }}>
                 {[
-                    { id: 'import_export', label: '🚀 IMPORTAR CSV', icon: FileSpreadsheet },
+                    { id: 'import_export', label: 'Importar CSV', icon: FileSpreadsheet },
                     { id: 'teachers', label: 'Profesores', icon: Users },
-                    { id: 'recreos', label: '☕ Zonas Recreo', icon: Coffee },
+                    { id: 'recreos', label: 'Zonas Recreo', icon: Coffee },
                     { id: 'schedules', label: 'Horarios Guardia', icon: Clock },
                     { id: 'personal_schedule', label: 'Horarios Lectivos', icon: Calendar },
                     { id: 'guards', label: 'Guardias Profesorado', icon: ShieldAlert },
