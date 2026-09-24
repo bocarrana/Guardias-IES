@@ -11,14 +11,12 @@ import {
     Filter,
     HelpCircle,
     Info,
-    Map as MapIcon,
     MapPin,
     Printer,
     RotateCcw,
     Save,
     Search,
     Shield,
-    Sparkles,
     Trash2,
     User,
     UserCheck,
@@ -37,11 +35,9 @@ import {
     saveMonthlyRecreoGrid,
     clearMonthlyRecreoGrid,
     copyMonthlyRecreoGrid,
-    getTodayRecreoAssignments,
     findTeacherByName,
     normalizeText,
 } from '../../services/recreoZonesService';
-import { RecreoMap } from './RecreoMap';
 import { RecreoPrintView } from './RecreoPrintView';
 import { toast } from 'sonner';
 
@@ -70,9 +66,8 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
     const [selectedYear, setSelectedYear] = useState<number>(today.getFullYear());
     const [selectedMonth, setSelectedMonth] = useState<number>(today.getMonth() + 1); // 1-12
 
-    // Tabs & views
+    // Tabs
     const [activeRecreoTab, setActiveRecreoTab] = useState<'1' | '2'>('1');
-    const [activeViewMode, setActiveViewMode] = useState<'matrix' | 'map' | 'today'>('matrix');
 
     // Grids for current month
     const [grid1, setGrid1] = useState<RecreoGrid>({});
@@ -221,11 +216,6 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
         return counts;
     }, [grid1, grid2, teachers]);
 
-    // Today's assignments data
-    const todayData = useMemo(() => {
-        return getTodayRecreoAssignments(teachers);
-    }, [teachers, grid1, grid2]);
-
     const activeColorTheme = activeRecreoTab === '1' ? '#f43f5e' : '#3b82f6';
     const activeHeaderBg = activeRecreoTab === '1' ? 'rgba(244, 63, 94, 0.12)' : 'rgba(59, 130, 246, 0.12)';
 
@@ -338,7 +328,7 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                 </div>
             </div>
 
-            {/* Navigation Bar: Month Selector + View Mode Switcher + Recreo 1/2 Toggle */}
+            {/* Navigation Bar: Month Selector + Recreo 1/2 Toggle */}
             <div style={{
                 display: 'flex',
                 flexWrap: 'wrap',
@@ -398,47 +388,6 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                     </button>
                 </div>
 
-                {/* View Mode Switcher */}
-                <div style={{
-                    display: 'flex',
-                    background: 'var(--bg-main)',
-                    padding: '4px',
-                    borderRadius: '14px',
-                    border: '1px solid var(--border-subtle)',
-                    gap: 4,
-                }}>
-                    {[
-                        { id: 'matrix', label: 'Cuadrante Mensual', icon: Users },
-                        { id: 'map', label: 'Mapa de Zonas', icon: MapIcon },
-                        { id: 'today', label: 'Hoy en el Recreo', icon: Sparkles },
-                    ].map(v => {
-                        const isActive = activeViewMode === v.id;
-                        return (
-                            <button
-                                key={v.id}
-                                onClick={() => setActiveViewMode(v.id as any)}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 6,
-                                    padding: '8px 14px',
-                                    borderRadius: '10px',
-                                    fontSize: '0.8rem',
-                                    fontWeight: 700,
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    background: isActive ? 'var(--brand-500)' : 'transparent',
-                                    color: isActive ? '#000000' : 'var(--text-secondary)',
-                                    transition: 'all 0.2s',
-                                }}
-                            >
-                                <v.icon size={15} />
-                                <span>{v.label}</span>
-                            </button>
-                        );
-                    })}
-                </div>
-
                 {/* 1º Recreo vs 2º Recreo Pill Switcher */}
                 <div style={{
                     display: 'flex',
@@ -490,10 +439,9 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
             </div>
 
             {/* ======================================================== */}
-            {/* VIEW 1: MATRIX / CUADRANTE MENSUAL                       */}
+            {/* CUADRANTE MENSUAL (JEFATURA / ADMIN)                     */}
             {/* ======================================================== */}
-            {activeViewMode === 'matrix' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     {/* Toolbar under matrix: Filter by Teacher + Copy/Reset actions */}
                     <div style={{
                         display: 'flex',
@@ -861,187 +809,6 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                         </div>
                     </div>
                 </div>
-            )}
-
-            {/* ======================================================== */}
-            {/* VIEW 2: INTERACTIVE MAP VIEW                             */}
-            {/* ======================================================== */}
-            {activeViewMode === 'map' && (
-                <RecreoMap
-                    recreoTitle={activeRecreoTab === '1' ? 'Primer Recreo' : 'Segundo Recreo'}
-                    assignments={activeRecreoTab === '1' ? todayData.recreo1 : todayData.recreo2}
-                />
-            )}
-
-            {/* ======================================================== */}
-            {/* VIEW 3: TODAY'S DUTIES VIEW (HOY EN EL RECREO)           */}
-            {/* ======================================================== */}
-            {activeViewMode === 'today' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                    {/* Header Banner */}
-                    <div style={{
-                        padding: '16px 20px',
-                        background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.03))',
-                        border: '1px solid rgba(245, 158, 11, 0.3)',
-                        borderRadius: '18px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        flexWrap: 'wrap',
-                        gap: 12,
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <Sparkles size={20} color="#f59e0b" />
-                            <div>
-                                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                                    Vigilancia de Recreo de Hoy ({todayData.dayName || 'Fin de semana'})
-                                </h3>
-                                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                    Profesores asignados a cada zona en los recreos del día de hoy.
-                                </p>
-                            </div>
-                        </div>
-
-                        <button
-                            onClick={() => setActiveViewMode('map')}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 6,
-                                padding: '8px 14px',
-                                borderRadius: '10px',
-                                background: 'rgba(255, 255, 255, 0.06)',
-                                border: '1px solid var(--border-subtle)',
-                                color: 'var(--text-primary)',
-                                fontSize: '0.8rem',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                            }}
-                        >
-                            <MapIcon size={14} color="var(--brand-500)" /> Ver en Mapa
-                        </button>
-                    </div>
-
-                    {/* 2 Columns: 1º Recreo and 2º Recreo */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 20 }}>
-                        {/* 1.er Recreo Column */}
-                        <div style={{
-                            background: 'var(--bg-card)',
-                            border: '1px solid var(--border-subtle)',
-                            borderRadius: '20px',
-                            padding: '20px',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 14,
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 10, borderBottom: '1px solid var(--border-subtle)' }}>
-                                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#f43f5e' }} />
-                                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                                    1.ᵉʳ Recreo (11:15 - 11:45)
-                                </h4>
-                            </div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                {todayData.recreo1.map(({ zone, teacherName, teacher }) => (
-                                    <div
-                                        key={zone.id}
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            padding: '10px 14px',
-                                            borderRadius: '14px',
-                                            background: 'var(--bg-main)',
-                                            border: '1px solid var(--border-subtle)',
-                                        }}
-                                    >
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            <div style={{ width: 8, height: 28, borderRadius: 4, background: zone.color }} />
-                                            <div>
-                                                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                                                    {zone.name}
-                                                </div>
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                                                    {zone.locations[0]}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            {teacher ? (
-                                                <TeacherAvatar teacher={teacher} size={28} showViewer={false} />
-                                            ) : (
-                                                <User size={16} color="var(--text-muted)" />
-                                            )}
-                                            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                                                {teacherName || 'Sin asignar'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* 2.º Recreo Column */}
-                        <div style={{
-                            background: 'var(--bg-card)',
-                            border: '1px solid var(--border-subtle)',
-                            borderRadius: '20px',
-                            padding: '20px',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 14,
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 10, borderBottom: '1px solid var(--border-subtle)' }}>
-                                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#3b82f6' }} />
-                                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                                    2.º Recreo (13:35 - 14:00)
-                                </h4>
-                            </div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                {todayData.recreo2.map(({ zone, teacherName, teacher }) => (
-                                    <div
-                                        key={zone.id}
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            padding: '10px 14px',
-                                            borderRadius: '14px',
-                                            background: 'var(--bg-main)',
-                                            border: '1px solid var(--border-subtle)',
-                                        }}
-                                    >
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            <div style={{ width: 8, height: 28, borderRadius: 4, background: zone.color }} />
-                                            <div>
-                                                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                                                    {zone.name}
-                                                </div>
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                                                    {zone.locations[0]}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            {teacher ? (
-                                                <TeacherAvatar teacher={teacher} size={28} showViewer={false} />
-                                            ) : (
-                                                <User size={16} color="var(--text-muted)" />
-                                            )}
-                                            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                                                {teacherName || 'Sin asignar'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* ======================================================== */}
             {/* CELL EDITING MODAL (JEFATURA / ADMIN)                    */}
