@@ -5,13 +5,13 @@ import {
     ChevronLeft,
     ChevronRight,
     Coffee,
-    Copy,
     Download,
     Eye,
     Filter,
     HelpCircle,
     Info,
     MapPin,
+    Pencil,
     Printer,
     RotateCcw,
     Save,
@@ -33,7 +33,6 @@ import {
     getMonthlyRecreoGrid,
     saveMonthlyRecreoGrid,
     clearMonthlyRecreoGrid,
-    copyMonthlyRecreoGrid,
     findTeacherByName,
     normalizeText,
     formatShortTeacherName,
@@ -79,8 +78,8 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
     const [teacherSearch, setTeacherSearch] = useState<string>('');
     const [showAllTeachersInModal, setShowAllTeachersInModal] = useState<boolean>(false);
 
-    // Teacher highlight filter
-    const [filterTeacherId, setFilterTeacherId] = useState<string>('');
+    // Edit mode toggle
+    const [isEditMode, setIsEditMode] = useState<boolean>(false);
 
     // Print view modal
     const [showPrintModal, setShowPrintModal] = useState<boolean>(false);
@@ -154,20 +153,7 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
         toast.info('Cuadrante restablecido');
     };
 
-    // Copy previous month
-    const handleCopyPreviousMonth = () => {
-        let prevMonth = selectedMonth - 1;
-        let prevYear = selectedYear;
-        if (prevMonth < 1) {
-            prevMonth = 12;
-            prevYear -= 1;
-        }
-
-        const copied = copyMonthlyRecreoGrid(prevYear, prevMonth, selectedYear, selectedMonth, activeRecreoTab);
-        setActiveGrid(copied);
-        setHasUnsavedChanges(true);
-        toast.success(`Copiado cuadrante de ${MONTH_NAMES[prevMonth - 1]} ${prevYear}`);
-    };
+    
 
     // Month Navigation
     const handlePrevMonth = () => {
@@ -292,34 +278,11 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                         <span>Imprimir / PDF</span>
                     </button>
 
-                    {isAdmin && (
-                        <button
-                            onClick={handleSave}
-                            disabled={!hasUnsavedChanges}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 8,
-                                padding: '10px 20px',
-                                borderRadius: '12px',
-                                background: hasUnsavedChanges ? 'var(--brand-500)' : 'rgba(255, 255, 255, 0.05)',
-                                color: hasUnsavedChanges ? '#000000' : 'var(--text-muted)',
-                                border: '1px solid var(--border-subtle)',
-                                fontSize: '0.85rem',
-                                fontWeight: 800,
-                                cursor: hasUnsavedChanges ? 'pointer' : 'not-allowed',
-                                boxShadow: hasUnsavedChanges ? '0 4px 16px rgba(6, 182, 212, 0.3)' : 'none',
-                                transition: 'all 0.2s',
-                            }}
-                        >
-                            <Save size={16} />
-                            <span>{hasUnsavedChanges ? 'Guardar Cambios' : 'Guardado'}</span>
-                        </button>
-                    )}
+                    
                 </div>
             </div>
 
-            {/* Navigation Bar: Month Selector + Recreo 1/2 Toggle */}
+            {/* Navigation Bar: Month Selector + Recreo 1/2 Toggle + Actions */}
             <div style={{
                 display: 'flex',
                 flexWrap: 'wrap',
@@ -427,111 +390,84 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                         <span>☕ 2.º Recreo</span>
                     </button>
                 </div>
+
+                {/* Admin Actions: Edit / Adjust, Save, Clear */}
+                {isAdmin && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <button
+                            onClick={() => setIsEditMode(!isEditMode)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                padding: '8px 16px',
+                                borderRadius: '10px',
+                                background: isEditMode ? 'rgba(6, 182, 212, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                                border: isEditMode ? '1px solid var(--brand-500)' : '1px solid var(--border-subtle)',
+                                color: isEditMode ? 'var(--brand-400)' : 'var(--text-primary)',
+                                fontSize: '0.85rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                            }}
+                        >
+                            <Pencil size={15} />
+                            <span>{isEditMode ? 'Finalizar ajuste' : 'Ajustar / Editar'}</span>
+                        </button>
+
+                        {hasUnsavedChanges && (
+                            <button
+                                onClick={handleSave}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    padding: '8px 16px',
+                                    borderRadius: '10px',
+                                    background: 'var(--brand-500)',
+                                    color: '#000000',
+                                    fontWeight: 800,
+                                    border: 'none',
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 4px 14px rgba(6, 182, 212, 0.35)',
+                                    transition: 'all 0.2s',
+                                }}
+                            >
+                                <Save size={15} />
+                                <span>Guardar</span>
+                            </button>
+                        )}
+
+                        <button
+                            onClick={handleClear}
+                            title="Vaciar este cuadrante"
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                padding: '8px 14px',
+                                borderRadius: '10px',
+                                background: 'rgba(239, 68, 68, 0.08)',
+                                border: '1px solid rgba(239, 68, 68, 0.2)',
+                                color: '#f87171',
+                                fontSize: '0.85rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                            }}
+                        >
+                            <Trash2 size={15} />
+                            <span>Vaciar</span>
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* ======================================================== */}
             {/* CUADRANTE MENSUAL (JEFATURA / ADMIN)                     */}
             {/* ======================================================== */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    {/* Toolbar under matrix: Filter by Teacher + Copy/Reset actions */}
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        flexWrap: 'wrap',
-                        gap: 12,
-                    }}>
-                        {/* Highlight teacher search */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, maxWidth: '360px' }}>
-                            <div style={{
-                                position: 'relative',
-                                width: '100%',
-                            }}>
-                                <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                <input
-                                    type="text"
-                                    placeholder="Resaltar a un profesor..."
-                                    value={filterTeacherId}
-                                    onChange={e => setFilterTeacherId(e.target.value)}
-                                    style={{
-                                        width: '100%',
-                                        padding: '8px 12px 8px 36px',
-                                        borderRadius: '12px',
-                                        background: 'var(--bg-card)',
-                                        border: '1px solid var(--border-subtle)',
-                                        color: 'var(--text-primary)',
-                                        fontSize: '0.85rem',
-                                        outline: 'none',
-                                    }}
-                                />
-                                {filterTeacherId && (
-                                    <button
-                                        onClick={() => setFilterTeacherId('')}
-                                        style={{
-                                            position: 'absolute',
-                                            right: 10,
-                                            top: '50%',
-                                            transform: 'translateY(-50%)',
-                                            background: 'none',
-                                            border: 'none',
-                                            color: 'var(--text-muted)',
-                                            cursor: 'pointer',
-                                        }}
-                                    >
-                                        <X size={14} />
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Admin helpers */}
-                        {isAdmin && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <button
-                                    onClick={handleCopyPreviousMonth}
-                                    title="Copiar asignaciones del mes anterior"
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 6,
-                                        padding: '7px 14px',
-                                        borderRadius: '10px',
-                                        background: 'rgba(255, 255, 255, 0.04)',
-                                        border: '1px solid var(--border-subtle)',
-                                        color: 'var(--text-secondary)',
-                                        fontSize: '0.8rem',
-                                        fontWeight: 600,
-                                        cursor: 'pointer',
-                                    }}
-                                >
-                                    <Copy size={14} />
-                                    <span>Copiar mes anterior</span>
-                                </button>
-
-                                <button
-                                    onClick={handleClear}
-                                    title="Vaciar este cuadrante"
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 6,
-                                        padding: '7px 14px',
-                                        borderRadius: '10px',
-                                        background: 'rgba(239, 68, 68, 0.08)',
-                                        border: '1px solid rgba(239, 68, 68, 0.2)',
-                                        color: '#f87171',
-                                        fontSize: '0.8rem',
-                                        fontWeight: 600,
-                                        cursor: 'pointer',
-                                    }}
-                                >
-                                    <Trash2 size={14} />
-                                    <span>Vaciar</span>
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
                     {/* Matrix Table Container */}
                     <div style={{
                         background: 'var(--bg-card)',
@@ -569,7 +505,7 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                             </div>
 
                             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                                {isAdmin ? '✏️ Clic en cualquier celda para asignar o cambiar' : '🔒 Modo solo consulta'}
+                                {isAdmin ? (isEditMode ? '✏️ Modo edición activo: Clic en cualquier celda para cambiar el profesor' : 'ℹ️ Pulsa en "Ajustar / Editar" para modificar asignaciones') : '🔒 Modo solo consulta'}
                             </span>
                         </div>
 
@@ -659,28 +595,25 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                                                     normalizeText(currentUser.name).includes(normalizeText(teacherName))
                                                 );
 
-                                                const isFilterMatch = filterTeacherId && teacherName && normalizeText(teacherName).includes(normalizeText(filterTeacherId));
+                                                
 
                                                 return (
                                                     <td
                                                         key={day}
                                                         onClick={() => {
-                                                            if (isAdmin) {
-                                                                setEditingCell({ zoneId: zone.id, day });
-                                                                setTeacherSearch('');
-                                                                setShowAllTeachersInModal(false);
-                                                            }
-                                                        }}
+        if (isAdmin) {
+            if (!isEditMode) setIsEditMode(true);
+            setEditingCell({ zoneId: zone.id, day });
+            setTeacherSearch('');
+            setShowAllTeachersInModal(false);
+        }
+    }}
                                                         style={{
                                                             padding: '12px 10px',
                                                             textAlign: 'center',
                                                             borderLeft: '1px solid var(--border-subtle)',
                                                             cursor: isAdmin ? 'pointer' : 'default',
-                                                            background: isFilterMatch
-                                                                ? 'rgba(6, 182, 212, 0.25)'
-                                                                : isCurrentUserCell
-                                                                ? 'rgba(245, 158, 11, 0.18)'
-                                                                : 'transparent',
+                                                            background: isCurrentUserCell ? 'rgba(245, 158, 11, 0.18)' : (isEditMode && isAdmin ? 'rgba(6, 182, 212, 0.04)' : 'transparent'),
                                                             transition: 'all 0.15s ease',
                                                             position: 'relative',
                                                         }}
@@ -691,11 +624,7 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                                                         }}
                                                         onMouseLeave={e => {
                                                             if (isAdmin) {
-                                                                e.currentTarget.style.background = isFilterMatch
-                                                                    ? 'rgba(6, 182, 212, 0.25)'
-                                                                    : isCurrentUserCell
-                                                                    ? 'rgba(245, 158, 11, 0.18)'
-                                                                    : 'transparent';
+                                                                e.currentTarget.style.background = isCurrentUserCell ? 'rgba(245, 158, 11, 0.18)' : (isEditMode && isAdmin ? 'rgba(6, 182, 212, 0.04)' : 'transparent');
                                                             }
                                                         }}
                                                     >

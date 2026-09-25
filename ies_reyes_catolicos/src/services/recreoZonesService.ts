@@ -160,7 +160,32 @@ const getStorageKey = (year: number, month: number, recreoType: '1' | '2'): stri
     return `${STORAGE_KEY_PREFIX}${year}_${month}_r${recreoType}`;
 };
 
-/** Get monthly schedule with corkboard defaults fallback */
+/** 
+ * Rotates a grid by N steps forward in the 5-zone cycle:
+ * Z1 Puerta -> Z1 Edificio -> Z2 -> Z3 -> Z4 -> Z1 Puerta
+ */
+export const rotateRecreoGrid = (grid: RecreoGrid, steps: number = 1): RecreoGrid => {
+    if (!grid || Object.keys(grid).length === 0) return {};
+    const zoneIds = RECREO_ZONES.map(z => z.id); // ['zona_1_puerta', 'zona_1_edificio', 'zona_2', 'zona_3', 'zona_4']
+    const totalZones = zoneIds.length;
+    const normalizedSteps = ((steps % totalZones) + totalZones) % totalZones;
+    if (normalizedSteps === 0) return { ...grid };
+
+    const rotated: RecreoGrid = {};
+    for (const day of DAYS_OF_WEEK) {
+        for (let i = 0; i < totalZones; i++) {
+            const srcZone = zoneIds[i];
+            const destZone = zoneIds[(i + normalizedSteps) % totalZones];
+            const teacherName = grid[`${srcZone}_${day}`];
+            if (teacherName !== undefined && teacherName !== null) {
+                rotated[`${destZone}_${day}`] = teacherName;
+            }
+        }
+    }
+    return rotated;
+};
+
+/** Get monthly schedule with automatic monthly cyclic rotation fallback */
 export const getMonthlyRecreoGrid = (year: number, month: number, recreoType: '1' | '2'): RecreoGrid => {
     try {
         const key = getStorageKey(year, month, recreoType);
@@ -172,12 +197,13 @@ export const getMonthlyRecreoGrid = (year: number, month: number, recreoType: '1
         console.warn('Error reading from localStorage:', e);
     }
 
-    // Default to Sep 2026 data if querying September
-    if (month === 9) {
-        return recreoType === '1' ? { ...DEFAULT_SEP_2026_RECREO_1 } : { ...DEFAULT_SEP_2026_RECREO_2 };
-    }
+    // Base corkboard data starts in Septiembre 2026 (Month 9)
+    const baseYear = 2026;
+    const baseMonth = 9;
+    const diffMonths = (year - baseYear) * 12 + (month - baseMonth);
+    const baseGrid = recreoType === '1' ? DEFAULT_SEP_2026_RECREO_1 : DEFAULT_SEP_2026_RECREO_2;
 
-    return {};
+    return rotateRecreoGrid(baseGrid, diffMonths);
 };
 
 /** Save monthly schedule */
