@@ -118,7 +118,9 @@ export const RecreoMap: React.FC<RecreoMapProps> = ({
             padding: '16px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '14px',
+            gap: '12px',
+            maxHeight: '90vh',
+            overflow: 'hidden',
         }}>
             {/* Map Graphic Container using InteractiveFloorMap & General_SVG */}
             <div style={{
@@ -127,7 +129,8 @@ export const RecreoMap: React.FC<RecreoMapProps> = ({
                 borderRadius: '18px',
                 border: '1px solid rgba(255,255,255,0.08)',
                 overflow: 'hidden',
-                height: '520px',
+                height: 'clamp(260px, 48vh, 400px)',
+                flex: '1 1 auto',
                 display: 'flex',
                 flexDirection: 'column',
             }}>
@@ -135,7 +138,7 @@ export const RecreoMap: React.FC<RecreoMapProps> = ({
                     floorLabel={`PLANO GENERAL · ${activeZone.name.toUpperCase()}`}
                     svgMarkup={processedSvgMarkup}
                     onRoomClick={handleMapElementClick}
-                    initialScale={0.75}
+                    initialScale={0.55}
                     minScale={0.35}
                 />
             </div>

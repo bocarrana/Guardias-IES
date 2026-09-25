@@ -1,3 +1,5 @@
+import { supabase } from '../config/supabase';
+import { invalidateCache } from './supabaseClient';
 import { Teacher } from '../types';
 
 export interface RecreoZone {
@@ -84,13 +86,13 @@ const DEFAULT_SEP_2026_RECREO_1: RecreoGrid = {
     'zona_2_Martes': 'Jorge Ferrer',
     'zona_2_Miércoles': 'Nicolás Bernad',
     'zona_2_Jueves': 'Mª Teresa Sánchez',
-    'zona_2_Viernes': 'Raquel Sanz',
+    'zona_2_Viernes': '',
 
     'zona_3_Lunes': 'Fco. Javier Muñoz',
     'zona_3_Martes': 'Susana Martínez',
     'zona_3_Miércoles': 'Javier Asín',
     'zona_3_Jueves': 'Ángel Violeta',
-    'zona_3_Viernes': 'Odette Lardiés',
+    'zona_3_Viernes': 'Odet Lardies',
 
     'zona_4_Lunes': 'Sonia Bleda',
     'zona_4_Martes': 'Pablo Benedé',
@@ -179,22 +181,42 @@ export const getMonthlyRecreoGrid = (year: number, month: number, recreoType: '1
 };
 
 /** Save monthly schedule */
-export const saveMonthlyRecreoGrid = (year: number, month: number, recreoType: '1' | '2', grid: RecreoGrid): void => {
+export const saveMonthlyRecreoGrid = async (year: number, month: number, recreoType: '1' | '2', grid: RecreoGrid): Promise<void> => {
+    const key = getStorageKey(year, month, recreoType);
     try {
-        const key = getStorageKey(year, month, recreoType);
         localStorage.setItem(key, JSON.stringify(grid));
     } catch (e) {
         console.error('Error saving recreo grid to localStorage:', e);
     }
+
+    try {
+        const id = `_CONFIG_${key}`;
+        await supabase.from('Aulas').upsert({
+            'id aulas': id,
+            'aulas': id,
+            'ubicación': JSON.stringify(grid),
+        }, { onConflict: 'id aulas' });
+        invalidateCache('meta_options');
+    } catch (err) {
+        console.error('Error syncing recreo grid to Supabase:', err);
+    }
 };
 
 /** Clear monthly schedule */
-export const clearMonthlyRecreoGrid = (year: number, month: number, recreoType: '1' | '2'): void => {
+export const clearMonthlyRecreoGrid = async (year: number, month: number, recreoType: '1' | '2'): Promise<void> => {
+    const key = getStorageKey(year, month, recreoType);
     try {
-        const key = getStorageKey(year, month, recreoType);
         localStorage.removeItem(key);
     } catch (e) {
         console.error('Error clearing recreo grid:', e);
+    }
+
+    try {
+        const id = `_CONFIG_${key}`;
+        await supabase.from('Aulas').delete().eq('id aulas', id);
+        invalidateCache('meta_options');
+    } catch (err) {
+        console.error('Error removing recreo grid from Supabase:', err);
     }
 };
 

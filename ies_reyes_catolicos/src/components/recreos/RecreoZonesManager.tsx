@@ -127,21 +127,28 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
     };
 
     // Save current schedule
-    const handleSave = () => {
-        saveMonthlyRecreoGrid(selectedYear, selectedMonth, '1', grid1);
-        saveMonthlyRecreoGrid(selectedYear, selectedMonth, '2', grid2);
-        setHasUnsavedChanges(false);
-        toast.success('Cuadrante mensual guardado correctamente', {
-            description: `${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} actualizado.`
-        });
+    const handleSave = async () => {
+        try {
+            await Promise.all([
+                saveMonthlyRecreoGrid(selectedYear, selectedMonth, '1', grid1),
+                saveMonthlyRecreoGrid(selectedYear, selectedMonth, '2', grid2)
+            ]);
+            setHasUnsavedChanges(false);
+            toast.success('Cuadrante mensual guardado en la nube', {
+                description: `${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} sincronizado en todos los dispositivos.`
+            });
+        } catch (err) {
+            console.error('Error saving recreo quadrant:', err);
+            toast.error('Error al sincronizar el cuadrante en la nube');
+        }
     };
 
     // Clear schedule
-    const handleClear = () => {
+    const handleClear = async () => {
         if (!window.confirm(`¿Estás seguro de vaciar el cuadrante del ${activeRecreoTab === '1' ? '1.er' : '2.º'} recreo para ${MONTH_NAMES[selectedMonth - 1]}?`)) {
             return;
         }
-        clearMonthlyRecreoGrid(selectedYear, selectedMonth, activeRecreoTab);
+        await clearMonthlyRecreoGrid(selectedYear, selectedMonth, activeRecreoTab);
         setActiveGrid({});
         setHasUnsavedChanges(false);
         toast.info('Cuadrante restablecido');

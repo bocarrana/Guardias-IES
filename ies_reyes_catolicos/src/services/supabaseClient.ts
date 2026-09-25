@@ -910,7 +910,7 @@ export const createGuard = async (guard: Partial<Guard>): Promise<any> => {
         'Profesor ausente': guard.requesting_teacher_id !== undefined ? guard.requesting_teacher_id : null,
         'Estado': guard.status || GuardStatus.AVAILABLE,
         'Tipo de Guardia': guard.type,
-        'Tarea dejada': (guard.has_task === 'NO' || !guard.has_task) ? 'NO' : 'S\u00cd',
+        'Tarea dejada': guard.has_task || 'NO',
         'Observaciones': sanitizeInput(guard.observations) || null,
         'Archivo de tarea': guard.task_file_url || null,
     };
@@ -1023,7 +1023,7 @@ export const updateGuardDetails = async (guardId: string, guard: Partial<Guard>)
         'Grupo atendido': guard.group_id,
         'Materia ausente': guard.subject_id,
         'Tipo de Guardia': guard.type,
-        'Tarea dejada': guard.has_task ? ((guard.has_task === 'NO' || !guard.has_task) ? 'NO' : 'S\u00cd') : undefined,
+        'Tarea dejada': guard.has_task,
         'Observaciones': sanitizeInput(guard.observations),
         'Archivo de tarea': guard.task_file_url,
     };
@@ -1082,11 +1082,31 @@ export const getMetaOptions = async (): Promise<MetaOptions> => {
             end_time: s['hora fin'],
         }));
 
-        const classrooms = extract(results[1]).map((c: any) => ({
-            id: c['id aulas'],
-            name: c['aulas'],
-            location: c['ubicación'],
-        }));
+        const rawClassrooms = extract(results[1]);
+
+        // Sincronizar cuadrantes de recreo guardados en la nube con el almacenamiento local
+        rawClassrooms.forEach((c: any) => {
+            const id = c['id aulas'];
+            if (id && typeof id === 'string' && id.startsWith('_CONFIG_recreo_schedule_')) {
+                const storageKey = id.replace('_CONFIG_', '');
+                const jsonStr = c['ubicación'];
+                if (jsonStr) {
+                    try {
+                        localStorage.setItem(storageKey, jsonStr);
+                    } catch (e) {
+                        console.error('Error caching recreo grid from Supabase:', e);
+                    }
+                }
+            }
+        });
+
+        const classrooms = rawClassrooms
+            .filter((c: any) => !c['id aulas']?.startsWith('_CONFIG_'))
+            .map((c: any) => ({
+                id: c['id aulas'],
+                name: c['aulas'],
+                location: c['ubicación'],
+            }));
 
         const groups = extract(results[2]).map((g: any) => ({
             id: g['id grupos'],

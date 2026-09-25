@@ -7,7 +7,7 @@ import {
     ChevronLeft, ChevronRight, X, Dices, ChevronDown, MessageSquare, FileCheck, RotateCw,
     Inbox, Paperclip, Layers, ExternalLink, Download, Filter, RotateCcw, Coffee
 } from 'lucide-react';
-import { getStorageUrl, getTaskFileUrl } from '../services/supabaseClient';
+import { getStorageUrl, getTaskFileUrl, invalidateCache } from '../services/supabaseClient';
 import TeacherAvatar from './TeacherAvatar';
 import CrownLogo from './CrownLogo';
 import ClassroomMapModal from './ClassroomMapModal';
@@ -207,6 +207,7 @@ const GuardList: React.FC<GuardListProps> = ({
         if (isRefreshing) return;
         setIsRefreshing(true);
         try {
+            invalidateCache('meta_options');
             if (onRefresh) {
                 await onRefresh();
             }
@@ -3027,27 +3028,41 @@ const GuardList: React.FC<GuardListProps> = ({
                         >
                             <button
                                 onClick={() => setRecreoMapModal(null)}
+                                aria-label="Cerrar plano"
                                 style={{
                                     position: 'absolute',
-                                    top: 16,
-                                    right: 16,
-                                    zIndex: 50,
-                                    background: 'rgba(255, 255, 255, 0.08)',
-                                    border: '1px solid var(--border-subtle)',
+                                    top: 14,
+                                    right: 14,
+                                    zIndex: 9999,
+                                    background: 'rgba(15, 23, 42, 0.92)',
+                                    border: '1.5px solid rgba(255, 255, 255, 0.25)',
                                     borderRadius: '50%',
-                                    width: 36,
-                                    height: 36,
+                                    width: 38,
+                                    height: 38,
+                                    minWidth: 38,
+                                    minHeight: 38,
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    color: 'var(--text-secondary)',
+                                    color: '#ffffff',
                                     cursor: 'pointer',
-                                    transition: 'all 0.2s',
+                                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.5)',
+                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    backdropFilter: 'blur(8px)',
+                                    WebkitBackdropFilter: 'blur(8px)',
                                 }}
-                                onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'; }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.95)';
+                                    e.currentTarget.style.borderColor = '#ef4444';
+                                    e.currentTarget.style.transform = 'scale(1.08)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'rgba(15, 23, 42, 0.92)';
+                                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)';
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                }}
                             >
-                                <X size={18} />
+                                <X size={20} strokeWidth={2.5} />
                             </button>
 
                             <RecreoMap
