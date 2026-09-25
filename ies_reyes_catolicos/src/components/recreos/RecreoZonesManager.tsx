@@ -200,7 +200,7 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
         <div style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '24px',
+            gap: '12px',
             width: '100%',
             fontFamily: 'var(--font-sans)',
             paddingBottom: '40px',
@@ -209,39 +209,40 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
             <div style={{
                 background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(59, 130, 246, 0.04))',
                 border: '1px solid var(--border-subtle)',
-                borderRadius: '24px',
-                padding: '24px 28px',
+                borderRadius: '16px',
+                padding: '10px 18px',
                 display: 'flex',
                 flexWrap: 'wrap',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                gap: '18px',
-                boxShadow: 'var(--shadow-md)',
+                gap: '12px',
+                boxShadow: 'var(--shadow-sm)',
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 16,
+                        width: 34,
+                        height: 34,
+                        borderRadius: 10,
                         background: 'linear-gradient(135deg, #06b6d4, #3b82f6)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: '0 4px 16px rgba(6, 182, 212, 0.3)',
+                        boxShadow: '0 2px 10px rgba(6, 182, 212, 0.25)',
+                        flexShrink: 0,
                     }}>
-                        <Coffee size={26} color="#ffffff" />
+                        <Coffee size={18} color="#ffffff" />
                     </div>
                     <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-primary)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)' }}>
                                 Gestión Mensual de Zonas de Recreo
                             </h2>
                             <span style={{
-                                fontSize: '0.7rem',
+                                fontSize: '0.65rem',
                                 fontWeight: 800,
                                 textTransform: 'uppercase',
-                                padding: '3px 8px',
-                                borderRadius: 6,
+                                padding: '2px 6px',
+                                borderRadius: 4,
                                 background: 'rgba(6, 182, 212, 0.15)',
                                 color: 'var(--brand-500)',
                                 border: '1px solid rgba(6, 182, 212, 0.25)',
@@ -249,36 +250,34 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                                 Panel de Jefatura
                             </span>
                         </div>
-                        <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
                             Asigna y organiza los profesores de guardia a cada una de las 5 zonas del centro para cada mes.
                         </p>
                     </div>
                 </div>
 
                 {/* Main Action Buttons */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <button
                         onClick={() => setShowPrintModal(true)}
                         style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 8,
-                            padding: '10px 18px',
-                            borderRadius: '12px',
+                            gap: 6,
+                            padding: '6px 14px',
+                            borderRadius: '10px',
                             background: 'rgba(255, 255, 255, 0.05)',
                             border: '1px solid var(--border-subtle)',
                             color: 'var(--text-primary)',
-                            fontSize: '0.85rem',
+                            fontSize: '0.8rem',
                             fontWeight: 700,
                             cursor: 'pointer',
                             transition: 'all 0.2s',
                         }}
                     >
-                        <Printer size={16} color="var(--brand-500)" />
+                        <Printer size={14} color="var(--brand-500)" />
                         <span>Imprimir / PDF</span>
                     </button>
-
-                    
                 </div>
             </div>
 
@@ -288,21 +287,21 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                 flexWrap: 'wrap',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                gap: 16,
+                gap: 12,
                 background: 'var(--bg-card)',
-                padding: '14px 20px',
-                borderRadius: '20px',
+                padding: '8px 14px',
+                borderRadius: '14px',
                 border: '1px solid var(--border-subtle)',
             }}>
                 {/* Month Navigator */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <button
                         onClick={handlePrevMonth}
                         title="Mes anterior"
                         style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: '10px',
+                            width: 30,
+                            height: 30,
+                            borderRadius: '8px',
                             border: '1px solid var(--border-subtle)',
                             background: 'rgba(255, 255, 255, 0.04)',
                             color: 'var(--text-primary)',
@@ -312,12 +311,12 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                             cursor: 'pointer',
                         }}
                     >
-                        <ChevronLeft size={18} />
+                        <ChevronLeft size={15} />
                     </button>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 170, justifyContent: 'center' }}>
-                        <Calendar size={18} color="var(--brand-500)" />
-                        <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 150, justifyContent: 'center' }}>
+                        <Calendar size={15} color="var(--brand-500)" />
+                        <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-primary)' }}>
                             {MONTH_NAMES[selectedMonth - 1]} {selectedYear}
                         </span>
                     </div>
@@ -326,9 +325,9 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                         onClick={handleNextMonth}
                         title="Mes siguiente"
                         style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: '10px',
+                            width: 30,
+                            height: 30,
+                            borderRadius: '8px',
                             border: '1px solid var(--border-subtle)',
                             background: 'rgba(255, 255, 255, 0.04)',
                             color: 'var(--text-primary)',
@@ -338,7 +337,7 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                             cursor: 'pointer',
                         }}
                     >
-                        <ChevronRight size={18} />
+                        <ChevronRight size={15} />
                     </button>
                 </div>
 
@@ -346,20 +345,20 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                 <div style={{
                     display: 'flex',
                     background: 'var(--bg-main)',
-                    padding: '4px',
-                    borderRadius: '14px',
+                    padding: '3px',
+                    borderRadius: '10px',
                     border: '1px solid var(--border-subtle)',
-                    gap: 4,
+                    gap: 3,
                 }}>
                     <button
                         onClick={() => setActiveRecreoTab('1')}
                         style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 6,
-                            padding: '8px 16px',
-                            borderRadius: '10px',
-                            fontSize: '0.85rem',
+                            gap: 5,
+                            padding: '5px 12px',
+                            borderRadius: '8px',
+                            fontSize: '0.8rem',
                             fontWeight: 800,
                             border: 'none',
                             cursor: 'pointer',
@@ -375,10 +374,10 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                         style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 6,
-                            padding: '8px 16px',
-                            borderRadius: '10px',
-                            fontSize: '0.85rem',
+                            gap: 5,
+                            padding: '5px 12px',
+                            borderRadius: '8px',
+                            fontSize: '0.8rem',
                             fontWeight: 800,
                             border: 'none',
                             cursor: 'pointer',
@@ -393,25 +392,25 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
 
                 {/* Admin Actions: Edit / Adjust, Save, Clear */}
                 {isAdmin && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <button
                             onClick={() => setIsEditMode(!isEditMode)}
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 6,
-                                padding: '8px 16px',
-                                borderRadius: '10px',
+                                gap: 5,
+                                padding: '5px 12px',
+                                borderRadius: '8px',
                                 background: isEditMode ? 'rgba(6, 182, 212, 0.2)' : 'rgba(255, 255, 255, 0.05)',
                                 border: isEditMode ? '1px solid var(--brand-500)' : '1px solid var(--border-subtle)',
                                 color: isEditMode ? 'var(--brand-400)' : 'var(--text-primary)',
-                                fontSize: '0.85rem',
+                                fontSize: '0.8rem',
                                 fontWeight: 700,
                                 cursor: 'pointer',
                                 transition: 'all 0.2s',
                             }}
                         >
-                            <Pencil size={15} />
+                            <Pencil size={14} />
                             <span>{isEditMode ? 'Finalizar ajuste' : 'Ajustar / Editar'}</span>
                         </button>
 
@@ -421,20 +420,20 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                                 style={{
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: 6,
-                                    padding: '8px 16px',
-                                    borderRadius: '10px',
+                                    gap: 5,
+                                    padding: '5px 12px',
+                                    borderRadius: '8px',
                                     background: 'var(--brand-500)',
                                     color: '#000000',
                                     fontWeight: 800,
                                     border: 'none',
-                                    fontSize: '0.85rem',
+                                    fontSize: '0.8rem',
                                     cursor: 'pointer',
-                                    boxShadow: '0 4px 14px rgba(6, 182, 212, 0.35)',
+                                    boxShadow: '0 2px 10px rgba(6, 182, 212, 0.35)',
                                     transition: 'all 0.2s',
                                 }}
                             >
-                                <Save size={15} />
+                                <Save size={14} />
                                 <span>Guardar</span>
                             </button>
                         )}
@@ -445,19 +444,19 @@ export const RecreoZonesManager: React.FC<RecreoZonesManagerProps> = ({
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 6,
-                                padding: '8px 14px',
-                                borderRadius: '10px',
+                                gap: 5,
+                                padding: '5px 10px',
+                                borderRadius: '8px',
                                 background: 'rgba(239, 68, 68, 0.08)',
                                 border: '1px solid rgba(239, 68, 68, 0.2)',
                                 color: '#f87171',
-                                fontSize: '0.85rem',
+                                fontSize: '0.8rem',
                                 fontWeight: 600,
                                 cursor: 'pointer',
                                 transition: 'all 0.2s',
                             }}
                         >
-                            <Trash2 size={15} />
+                            <Trash2 size={14} />
                             <span>Vaciar</span>
                         </button>
                     </div>
