@@ -9,6 +9,14 @@ import { Search, MapPin, CalendarPlus, Trash2, CalendarDays, Clock, User, Bookma
 import { isAdminRole, canAccessAdminPanel } from '../utils/roles';
 import { MonthDayPicker } from './MonthDayPicker';
 
+const DAYS_SPANISH_MAP = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+const getWeekdayForDate = (dateStr: string): string => {
+    if (!dateStr) return 'Lunes';
+    const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00');
+    return DAYS_SPANISH_MAP[d.getDay()] || 'Lunes';
+};
+
 interface FreeClassroomsProps {
     meta: MetaOptions;
     currentUser: Teacher | null;
@@ -172,12 +180,6 @@ const FreeClassrooms: React.FC<FreeClassroomsProps> = ({ meta, currentUser, onNa
         );
         }
         return free;
-    };
-
-    const getWeekdayForDate = (dateStr: string) => {
-        const d = new Date(dateStr);
-        const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-        return days[d.getDay()];
     };
 
     const getSlotStatus = (slotId: string) => {

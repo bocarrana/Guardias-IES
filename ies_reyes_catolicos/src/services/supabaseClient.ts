@@ -1939,15 +1939,19 @@ export const syncImminentLibreDisposicionGuards = async (): Promise<number> => {
         const ldRecords = await getLibreDisposicion();
         if (!ldRecords || ldRecords.length === 0) return 0;
 
-        // Limpieza de guardias no asignadas que estén a > 24h de antelación para proteger privacidad
+        // Limpieza de guardias no asignadas que estén a > 24h en paralelo rápido
         const futureLds = ldRecords.filter(ld => !isWithin24Hours(ld.fecha));
-        for (const fLd of futureLds) {
-            await supabase
-                .from('Guardias')
-                .delete()
-                .eq('Profesor ausente', fLd.profesor_id)
-                .eq('Fecha', fLd.fecha)
-                .eq('Estado', 'Pendiente/disponible');
+        if (futureLds.length > 0) {
+            await Promise.all(
+                futureLds.map(fLd =>
+                    supabase
+                        .from('Guardias')
+                        .delete()
+                        .eq('Profesor ausente', fLd.profesor_id)
+                        .eq('Fecha', fLd.fecha)
+                        .eq('Estado', 'Pendiente/disponible')
+                )
+            );
         }
 
         // Generar guardias para los registros dentro de las 24 horas

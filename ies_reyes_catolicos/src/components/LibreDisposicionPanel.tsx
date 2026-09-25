@@ -142,10 +142,7 @@ const LibreDisposicionPanel: React.FC<LibreDisposicionPanelProps> = ({ currentUs
 
     const fetchAll = useCallback(async () => {
         try {
-            if (isAdmin) {
-                await syncImminentLibreDisposicionGuards().catch(console.error);
-            }
-
+            // Cargar datos en paralelo inmediatamente para que la UI abra al instante
             const [ld, cupo, maxLd, days, tchrs] = await Promise.all([
                 getLibreDisposicion(),
                 getCupoMaximo(),
