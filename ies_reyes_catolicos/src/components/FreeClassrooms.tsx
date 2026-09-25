@@ -83,8 +83,8 @@ const FreeClassrooms: React.FC<FreeClassroomsProps> = ({ meta, currentUser, onNa
     }, []);
 
     const allowedRooms = useMemo(() => {
-        return meta.classrooms.filter(c => ['Informática', 'Ramón y Cajal', 'Sala Multiusos', 'Biblioteca'].includes(c.name));
-    }, [meta.classrooms]);
+        return (meta?.classrooms || []).filter(c => c?.name && ['Informática', 'Ramón y Cajal', 'Sala Multiusos', 'Biblioteca'].includes(c.name));
+    }, [meta?.classrooms]);
 
     useEffect(() => {
         if (!resAulaId && allowedRooms.length > 0) {
@@ -142,8 +142,9 @@ const FreeClassrooms: React.FC<FreeClassroomsProps> = ({ meta, currentUser, onNa
     }, [allSchedules, reservations]);
 
     const validClassrooms = useMemo(() => {
-        return meta.classrooms.filter(c => {
-            const n = c.name.toLowerCase();
+        return (meta?.classrooms || []).filter(c => {
+            if (!c || !c.name) return false;
+            const n = (c.name || '').toLowerCase();
             if (c.id === 'A047') return false;
             if (n.includes('pista')) return false;
             if (n.includes('frontón') || n.includes('fronton')) return false;
@@ -157,17 +158,18 @@ const FreeClassrooms: React.FC<FreeClassroomsProps> = ({ meta, currentUser, onNa
             if (['agro1', 'agro2', 'b01', 'b02', 'b03', 'c01', 'c02'].includes(n)) return false;
             return true;
         });
-    }, [meta.classrooms]);
+    }, [meta?.classrooms]);
 
     const getFreeClassrooms = (day: string, slotId: string): Classroom[] => {
         const occupiedIds = occupiedMap[day]?.[slotId] || new Set();
         let free = validClassrooms.filter(c => !occupiedIds.has(c.id));
         
         if (searchTerm) {
-            free = free.filter(c => 
-                c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                c.location?.toLowerCase().includes(searchTerm.toLowerCase())
-            );
+            const q = searchTerm.toLowerCase();
+        free = free.filter(c => 
+            (c.name || '').toLowerCase().includes(q) || 
+            (c.location || '').toLowerCase().includes(q)
+        );
         }
         return free;
     };
@@ -373,7 +375,7 @@ const FreeClassrooms: React.FC<FreeClassroomsProps> = ({ meta, currentUser, onNa
                         </div>
                         <div style={{ padding: 24, flex: 1, overflowY: 'auto' }}>
                             <InteractiveScheduleGrid
-                                slots={meta.slots}
+                                slots={meta?.slots || []}
                                 interactiveBreakSlots={true}
                                 showRowHeaders={true}
                                 getItem={() => ({})}
@@ -470,7 +472,7 @@ const FreeClassrooms: React.FC<FreeClassroomsProps> = ({ meta, currentUser, onNa
                              {(() => {
                                  const DAYS_MAP = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
                                  const todayDay = DAYS_MAP[new Date().getDay()] || 'Lunes';
-                                 const lectiveSlots = meta.slots.filter(s => !s.label?.toLowerCase().includes('recreo'));
+                                 const lectiveSlots = (meta?.slots || []).filter(s => !(s.label || '').toLowerCase().includes('recreo'));
 
                                  const getQuickCellStatus = (roomId: string, slotId: string) => {
                                      // 1. Check class schedule
@@ -735,7 +737,7 @@ const FreeClassrooms: React.FC<FreeClassroomsProps> = ({ meta, currentUser, onNa
                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                      <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Tramo / Disponibilidad</label>
                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 8, background: 'var(--bg-card)', borderRadius: 8, border: '1px solid var(--border-subtle)', maxHeight: 250, overflowY: 'auto' }}>
-                                        {meta.slots.filter(s => !s.label.toLowerCase().includes('recreo')).map(slot => {
+                                        {(meta?.slots || []).filter(s => !(s.label || '').toLowerCase().includes('recreo')).map(slot => {
                                              const stat = getSlotStatus(slot.id);
                                              return (
                                                  <label 
@@ -940,7 +942,7 @@ const FreeClassrooms: React.FC<FreeClassroomsProps> = ({ meta, currentUser, onNa
                                                                      </span>
                                                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.7rem', background: 'var(--bg-card)', padding: '2px 8px', borderRadius: 12, border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                                                                          <Clock size={10}/>
-                                                                         {meta.slots.find(s => s.id === res.tramo_horario)?.start_time} - {meta.slots.find(s => s.id === res.tramo_horario)?.end_time}
+                                                                         {meta?.slots?.find(s => s.id === res.tramo_horario)?.start_time} - {meta?.slots?.find(s => s.id === res.tramo_horario)?.end_time}
                                                                      </span>
                                                                      <span
                                                                          style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', cursor: onNavigateToTeacher ? 'pointer' : 'default', color: onNavigateToTeacher ? 'var(--brand-400)' : 'var(--text-secondary)', transition: 'opacity 0.2s', whiteSpace: 'nowrap' }}

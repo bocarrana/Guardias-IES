@@ -19,12 +19,14 @@ interface InteractiveScheduleGridProps {
 
 /** Detecta si una franja es un Recreo por su etiqueta */
 const isBreak = (slot: TimeSlot) =>
-    slot.label?.toLowerCase().includes('recreo') ||
-    slot.label?.toLowerCase().includes('descanso') ||
-    slot.label?.toLowerCase().includes('break');
+    Boolean(
+        slot?.label?.toLowerCase().includes('recreo') ||
+        slot?.label?.toLowerCase().includes('descanso') ||
+        slot?.label?.toLowerCase().includes('break')
+    );
 
 const InteractiveScheduleGrid: React.FC<InteractiveScheduleGridProps> = ({
-    slots, getItem, renderItemContent, onSlotClick, showRowHeaders = false, stickyOffset = 0, interactiveBreakSlots = false
+    slots = [], getItem, renderItemContent, onSlotClick, showRowHeaders = false, stickyOffset = 0, interactiveBreakSlots = false
 }) => {
     return (
         <div style={{
@@ -51,7 +53,7 @@ const InteractiveScheduleGrid: React.FC<InteractiveScheduleGridProps> = ({
             ))}
 
             {/* ── Slots Rows ──────────────────────────────────────────── */}
-            {slots.map(slot => {
+            {(slots || []).map(slot => {
                 const brk = isBreak(slot);
                 
                 return (
